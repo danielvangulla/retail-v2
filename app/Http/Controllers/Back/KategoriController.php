@@ -7,6 +7,7 @@ use App\Http\Controllers\Helpers;
 use App\Models\Kategori;
 use App\Models\Kategorisub;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class KategoriController extends Controller
 {
@@ -15,7 +16,7 @@ class KategoriController extends Controller
         $kategori = Kategori::whereNot('ket', 'No Category')->get();
         $kategorisub = Kategorisub::with('kategori')->orderBy('kategori_id')->get();
 
-        return View('back.kategori.index', compact('kategori', 'kategorisub'));
+        return Inertia::render('back/Kategori/Index', ['kategori' => $kategori, 'kategorisub' => $kategorisub]);
     }
 
     public function store(Request $r)

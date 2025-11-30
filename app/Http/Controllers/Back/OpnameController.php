@@ -7,12 +7,13 @@ use App\Models\Barang;
 use App\Models\Opname;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class OpnameController extends Controller
 {
     public function index()
     {
-        return View('back.opname.index');
+        return Inertia::render('back/Opname/Index');
     }
 
     public function opnameJson()
@@ -28,7 +29,7 @@ class OpnameController extends Controller
 
     public function create()
     {
-        return View('back.opname.create');
+        return Inertia::render('back/Opname/Create');
     }
 
     public function store(Request $r)

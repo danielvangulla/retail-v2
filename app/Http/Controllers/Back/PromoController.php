@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\Promo;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PromoController extends Controller
 {
     public function index()
     {
-        return View('back.promo.index');
+        return Inertia::render('back/Promo/Index');
     }
 
     public function promoJson()
@@ -27,7 +28,7 @@ class PromoController extends Controller
 
     public function create()
     {
-        return View('back.promo.create');
+        return Inertia::render('back/Promo/Create');
     }
 
     public function store(Request $r)

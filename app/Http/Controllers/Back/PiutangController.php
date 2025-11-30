@@ -7,6 +7,7 @@ use App\Http\Controllers\Helpers;
 use App\Models\Piutang;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PiutangController extends Controller
 {
@@ -71,7 +72,7 @@ class PiutangController extends Controller
 
     public function index()
     {
-        return View('back.piutang-member.index');
+        return Inertia::render('back/PiutangMember/Index');
     }
 
     public function store(Request $r)

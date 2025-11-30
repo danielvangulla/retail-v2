@@ -18,10 +18,21 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
-                'name' => 'Test User',
-                'password' => 'password',
+                'name' => 'Admin',
+                'password' => bcrypt('admin123'),
                 'email_verified_at' => now(),
             ]
         );
+
+        // Call application seeders ported from the original project
+        $this->call([
+            UserSeeder::class,
+            TransaksiTypeSeeder::class,
+            JobSeeder::class,
+            SetupSeeder::class,
+            PiutangSeeder::class,
+            DiscountSeeder::class,
+            // Optional: BarangSeeder, KategoriSeeder, KategorisubSeeder, PrinterSeeder, MejaSeeder
+        ]);
     }
 }

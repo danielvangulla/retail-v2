@@ -8,18 +8,19 @@ use App\Models\BarangRetur;
 use App\Models\BarangReturDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class ReturController extends Controller
 {
     public function index()
     {
         $data = BarangRetur::with('user')->with('details')->orderBy('created_at', 'desc')->get();
-        return View('back.retur.index', compact('data'));
+        return Inertia::render('back/Retur/Index', ['data' => $data]);
     }
 
     public function create()
     {
-        return View('back.retur.create');
+        return Inertia::render('back/Retur/Create');
     }
 
     public function store(Request $r)

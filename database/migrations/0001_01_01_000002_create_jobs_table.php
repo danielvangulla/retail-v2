@@ -13,12 +13,18 @@ return new class extends Migration
     {
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
-            $table->string('queue')->index();
-            $table->longText('payload');
-            $table->unsignedTinyInteger('attempts');
+            // Custom job fields (legacy app) — keep nullable to be compatible with Laravel queue jobs
+            $table->string('process_name')->nullable();
+            $table->tinyInteger('is_running')->default(0);
+            $table->string('by', 50)->nullable();
+
+            // Laravel queue fields (make nullable/defaults to be compatible with legacy `jobs` usage)
+            $table->string('queue')->nullable()->index();
+            $table->longText('payload')->nullable();
+            $table->unsignedTinyInteger('attempts')->default(0);
             $table->unsignedInteger('reserved_at')->nullable();
-            $table->unsignedInteger('available_at');
-            $table->unsignedInteger('created_at');
+            $table->unsignedInteger('available_at')->nullable();
+            $table->timestamps();
         });
 
         Schema::create('job_batches', function (Blueprint $table) {

@@ -8,18 +8,19 @@ use App\Models\Pembelian;
 use App\Models\PembelianDet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class PembelianController extends Controller
 {
     public function index()
     {
         $data = Pembelian::with('details')->orderBy('created_at', 'desc')->get();
-        return View('back.pembelian.index', compact('data'));
+        return Inertia::render('back/Pembelian/Index', ['data' => $data]);
     }
 
     public function create()
     {
-        return View('back.pembelian.create');
+        return Inertia::render('back/Pembelian/Create');
     }
 
     public function store(Request $r)
@@ -66,6 +67,6 @@ class PembelianController extends Controller
     public function show($id)
     {
         $data = Pembelian::with('details', 'details.barang')->find($id);
-        return View('back.pembelian.show', compact('data'));
+        return Inertia::render('back/Pembelian/Show', ['data' => $data]);
     }
 }
