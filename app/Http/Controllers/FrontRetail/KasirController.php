@@ -69,6 +69,8 @@ class KasirController extends Controller
 
     public function store(Request $r)
     {
+        \Log::info('Proses bayar request:', $r->all());
+
         if (!$r->state) {
             return response()->json([
                 'status' => 'error',
@@ -76,16 +78,24 @@ class KasirController extends Controller
             ], 403);
         }
 
-        $data = (object) $r->validate([
-            'items' => 'required',
-            'discSpv' => 'numeric',
-            'discPromo' => 'numeric',
-            'charge' => 'numeric',
-            'total' => 'required | numeric',
-            'bayar' => 'required | numeric',
-            'typeId' => '',
-            'memberId' => '',
-        ], Helpers::customErrorMsg());
+        try {
+            $data = (object) $r->validate([
+                'items' => 'required',
+                'discSpv' => 'numeric',
+                'discPromo' => 'numeric',
+                'charge' => 'numeric',
+                'total' => 'required | numeric',
+                'bayar' => 'required | numeric',
+                'typeId' => '',
+                'memberId' => '',
+            ], Helpers::customErrorMsg());
+        } catch (\Exception $e) {
+            \Log::error('Validation error:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ], 422);
+        }
 
         // Full Payment
         if ($r->state === 'full') {
@@ -273,15 +283,15 @@ class KasirController extends Controller
         foreach ($data->items as $v) {
             $v = (object) $v;
 
-            $discPromo = $v->disc_promo;
-            $namaPromo = $v->namaPromo;
+            $discPromo = $v->disc_promo ?? 0;
+            $namaPromo = $v->namaPromo ?? null;
 
             $qty = $v->qty;
-            $harga = $v->hargaJual;
+            $harga = $v->harga ?? $v->hargaJual ?? 0;
             $brutto = $qty * $harga;
-            $discSpv = $v->disc_spv;
+            $discSpv = $v->disc_spv ?? 0;
             $netto = $brutto - $discSpv - $discPromo;
-            $charge = $v->charge;
+            $charge = $v->charge ?? 0;
             $tax = $netto * $rateTax / 100;
             $service = $netto * $rateService / 100;
             $bayar = $netto + $tax + $service + $charge;
@@ -291,7 +301,7 @@ class KasirController extends Controller
                 'tgl' => $tgl,
                 'jam' => $jam,
                 'no_co' => $noCo,
-                'sku' => $v->sku,
+                'sku' => $v->sku ?? $v->id ?? null,
                 'qty' => $qty,
                 'harga' => $harga,
                 'brutto' => $brutto,

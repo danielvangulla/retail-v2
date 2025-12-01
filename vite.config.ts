@@ -16,6 +16,10 @@ export default defineConfig({
             port: 5173,
             protocol: hmrHost === 'localhost' ? 'ws' : 'wss',
         },
+        cors: {
+            origin: '*',
+            credentials: true,
+        },
     },
     plugins: [
         laravel({
