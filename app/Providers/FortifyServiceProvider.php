@@ -4,11 +4,13 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -40,6 +42,28 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        // Authenticate using username (name) and password.
+        Fortify::authenticateUsing(function (Request $request) {
+            $username = $request->input('username');
+            $password = $request->input('password');
+
+            if (empty($username)) {
+                throw ValidationException::withMessages(['username' => 'Username wajib diisi.']);
+            }
+
+            if (empty($password)) {
+                throw ValidationException::withMessages(['password' => 'Password wajib diisi.']);
+            }
+
+            $user = User::where('name', $username)->first();
+
+            if (! $user || ! password_verify($password, $user->password)) {
+                throw ValidationException::withMessages(['username' => 'Username atau password salah.']);
+            }
+
+            return $user;
+        });
     }
 
     /**

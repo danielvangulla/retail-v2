@@ -13,22 +13,20 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'level' => 1,
-                'name' => 'Supervisor',
-                'email' => 'spv@mail.com',
-                'password' => bcrypt('11111111'),
-                'pin' => '11111111'
+                'name' => 'supervisor',
+                'email' => 'supervisor@mail.com',
+                'password' => bcrypt('password123'),
             ],
             [
                 'level' => 2,
-                'name' => 'Kasir',
+                'name' => 'kasir',
                 'email' => 'kasir@mail.com',
-                'password' => bcrypt('22222222'),
-                'pin' => '22222222'
+                'password' => bcrypt('password123'),
             ],
         ];
 
-        foreach ($users as $k => $v) {
-            User::factory()->create($v);
+        foreach ($users as $user) {
+            User::factory()->create($user);
         }
     }
 }

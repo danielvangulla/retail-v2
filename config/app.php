@@ -107,6 +107,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Type
+    |--------------------------------------------------------------------------
+    |
+    | Custom application type identifier. You can set `APP_TYPE` in your
+    | environment to enable multi-app behavior (for example: 'retail').
+    |
+    */
+
+    'type' => env('APP_TYPE', 'retail'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |
