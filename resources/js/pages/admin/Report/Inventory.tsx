@@ -70,7 +70,7 @@ export default function InventoryReport({ barang, summary, search: initialSearch
         <AdminLayout title="Laporan Inventaris">
             <div className="space-y-6">
                 {/* Filters */}
-                <div className="bg-white rounded-lg shadow p-4 space-y-4">
+                <div className="bg-slate-800 rounded-lg shadow-lg p-4 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Search */}
                         <div className="relative">
@@ -81,19 +81,19 @@ export default function InventoryReport({ barang, summary, search: initialSearch
                                 value={filters.search}
                                 onChange={handleFilterChange}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-slate-500" />
                         </div>
 
                         {/* Low Stock Filter */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Filter</label>
+                            <label className="block text-sm font-medium text-white mb-2">Filter</label>
                             <select
                                 name="low_stock"
                                 value={filters.low_stock}
                                 onChange={handleFilterChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="0">Semua Barang</option>
                                 <option value="1">Stok Rendah Saja</option>
@@ -126,16 +126,16 @@ export default function InventoryReport({ barang, summary, search: initialSearch
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600">Total Barang</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{summary.total_items}</p>
+                    <div className="bg-slate-800 rounded-lg shadow-lg p-4">
+                        <p className="text-sm text-slate-400">Total Barang</p>
+                        <p className="text-3xl font-bold text-white mt-2">{summary.total_items}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600">Total Stok</p>
+                    <div className="bg-slate-800 rounded-lg shadow-lg p-4">
+                        <p className="text-sm text-slate-400">Total Stok</p>
                         <p className="text-3xl font-bold text-blue-600 mt-2">{summary.total_stok}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
-                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <div className="bg-slate-800 rounded-lg shadow-lg p-4 border-l-4 border-orange-500">
+                        <p className="text-sm text-slate-400 flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-orange-500" /> Stok Rendah
                         </p>
                         <p className="text-3xl font-bold text-orange-600 mt-2">{summary.low_stock_items}</p>
@@ -158,38 +158,38 @@ export default function InventoryReport({ barang, summary, search: initialSearch
                 )}
 
                 {/* Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-slate-700 border-b border-slate-700">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Barcode
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Deskripsi
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Kategori
                                     </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Min Stok
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Harga Jual
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Nilai Barang
                                     </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Status
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y divide-slate-700">
                                 {barang.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan={7} className="px-6 py-4 text-center text-slate-300">
                                             Tidak ada data barang
                                         </td>
                                     </tr>
@@ -197,21 +197,21 @@ export default function InventoryReport({ barang, summary, search: initialSearch
                                     barang.map((item) => {
                                         const nilai = 0; // We can't calculate without actual stok data
                                         return (
-                                            <tr key={item.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 text-sm font-mono text-gray-900">
+                                            <tr key={item.id} className="hover:bg-slate-700">
+                                                <td className="px-6 py-4 text-sm font-mono text-white">
                                                     {item.barcode}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900">{item.deskripsi}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                <td className="px-6 py-4 text-sm text-white">{item.deskripsi}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-400">
                                                     {item.kategori.nama}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600 text-center">
+                                                <td className="px-6 py-4 text-sm text-slate-400 text-center">
                                                     {item.min_stock}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 text-right">
+                                                <td className="px-6 py-4 text-sm text-white text-right">
                                                     Rp {item.harga_jual1.toLocaleString('id-ID')}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 text-right font-bold">
+                                                <td className="px-6 py-4 text-sm text-white text-right font-bold">
                                                     Rp {nilai.toLocaleString('id-ID')}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-center">

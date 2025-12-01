@@ -33,15 +33,15 @@ export default function Dashboard({
     topProducts,
 }: DashboardProps) {
     const StatCard = ({ icon: Icon, title, value, subtitle }: any) => (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-slate-800 rounded-lg shadow-lg-lg p-6 border border-slate-700">
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-gray-500 text-sm font-medium">{title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-                    {subtitle && <p className="text-gray-400 text-sm mt-1">{subtitle}</p>}
+                    <p className="text-slate-400 text-sm font-medium">{title}</p>
+                    <p className="text-3xl font-bold text-white mt-2">{value}</p>
+                    {subtitle && <p className="text-slate-500 text-sm mt-1">{subtitle}</p>}
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                    <Icon className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-blue-600/20 rounded-lg">
+                    <Icon className="h-6 w-6 text-blue-400" />
                 </div>
             </div>
         </div>
@@ -78,22 +78,22 @@ export default function Dashboard({
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Sales Trend */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">Tren Penjualan 7 Hari</h2>
+                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-6 border border-slate-700">
+                        <h2 className="text-lg font-bold text-white mb-4">Tren Penjualan 7 Hari</h2>
                         <div className="space-y-3">
                             {salesTrend.map((day) => (
                                 <div key={day.date} className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">{day.date}</span>
+                                    <span className="text-sm text-slate-400">{day.date}</span>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                                        <div className="w-32 bg-slate-700 rounded-full h-2">
                                             <div
-                                                className="bg-blue-600 h-2 rounded-full"
+                                                className="bg-blue-500 h-2 rounded-full"
                                                 style={{
                                                     width: `${Math.min((day.total / Math.max(...salesTrend.map((d) => d.total))) * 100, 100)}%`,
                                                 }}
                                             ></div>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-900">
+                                        <span className="text-sm font-medium text-white">
                                             Rp {day.total.toLocaleString('id-ID')}
                                         </span>
                                     </div>
@@ -103,19 +103,19 @@ export default function Dashboard({
                     </div>
 
                     {/* Top Products */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">Produk Terlaris</h2>
+                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-6 border border-slate-700">
+                        <h2 className="text-lg font-bold text-white mb-4">Produk Terlaris</h2>
                         <div className="space-y-3">
                             {topProducts.map((product) => (
                                 <div
                                     key={product.id}
-                                    className="flex items-center justify-between border-b border-gray-100 pb-3"
+                                    className="flex items-center justify-between border-b border-slate-700 pb-3"
                                 >
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900">{product.deskripsi}</p>
-                                        <p className="text-xs text-gray-500">{product.total_sold} terjual</p>
+                                        <p className="text-sm font-medium text-white">{product.deskripsi}</p>
+                                        <p className="text-xs text-slate-400">{product.total_sold} terjual</p>
                                     </div>
-                                    <p className="text-sm font-bold text-green-600">
+                                    <p className="text-sm font-bold text-green-400">
                                         Rp {product.total_revenue.toLocaleString('id-ID')}
                                     </p>
                                 </div>

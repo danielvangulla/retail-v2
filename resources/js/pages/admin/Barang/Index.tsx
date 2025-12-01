@@ -58,7 +58,7 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Daftar Barang</h2>
+                    <h2 className="text-2xl font-bold text-white">Daftar Barang</h2>
                     <button
                         onClick={() => router.visit('/back/barang/create')}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
@@ -69,7 +69,7 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white rounded-lg shadow p-4 space-y-4">
+                <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 space-y-4 border border-slate-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Search */}
                         <div className="relative">
@@ -79,16 +79,16 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-slate-500" />
                         </div>
 
                         {/* Kategori Filter */}
                         <select
                             value={kategoriFilter}
                             onChange={(e) => setKategoriFilter(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Semua Kategori</option>
                             {kategoris.map((kat) => (
@@ -102,7 +102,7 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                         <select
                             value={showFilter}
                             onChange={(e) => setShowFilter(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Semua Status</option>
                             <option value="1">Aktif</option>
@@ -120,68 +120,68 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                     </div>
 
                     {/* Results Info */}
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-slate-400">
                         Total: <span className="font-bold">{barang.total}</span> barang
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-slate-800 rounded-lg shadow-lg-lg overflow-hidden border border-slate-700">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-slate-700 border-b border-slate-600">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Barcode
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Deskripsi
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Kategori
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Harga Beli
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Harga Jual
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Stok
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Aksi
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y divide-slate-700">
                                 {barang.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan={8} className="px-6 py-4 text-center text-slate-400">
                                             Tidak ada data barang
                                         </td>
                                     </tr>
                                 ) : (
                                     barang.data.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                                        <tr key={item.id} className="border-b border-slate-700 hover:bg-slate-700">
+                                            <td className="px-6 py-4 text-sm text-slate-300 font-mono">
                                                 {item.barcode}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">{item.deskripsi}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                            <td className="px-6 py-4 text-sm text-white">{item.deskripsi}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-400">
                                                 {item.kategori?.nama || '-'}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900">
+                                            <td className="px-6 py-4 text-sm text-white">
                                                 Rp {item.harga_beli.toLocaleString('id-ID')}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 font-bold">
+                                            <td className="px-6 py-4 text-sm text-white font-bold">
                                                 Rp {item.harga_jual1.toLocaleString('id-ID')}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
-                                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                                <span className="px-2 py-1 bg-green-900/30 text-green-400 rounded text-xs font-medium">
                                                     Stok Aktif
                                                 </span>
                                             </td>
@@ -189,8 +189,8 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                                 <span
                                                     className={`px-2 py-1 rounded text-xs font-medium ${
                                                         item.st_aktif === 1
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-gray-100 text-gray-800'
+                                                            ? 'bg-blue-900/30 text-blue-400'
+                                                            : 'bg-slate-700 text-slate-400'
                                                     }`}
                                                 >
                                                     {item.st_aktif === 1 ? 'Aktif' : 'Nonaktif'}
@@ -199,14 +199,14 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                             <td className="px-6 py-4 text-sm space-x-2">
                                                 <button
                                                     onClick={() => handleEdit(item.id)}
-                                                    className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                                                    className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                     Edit
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
-                                                    className="text-red-600 hover:text-red-800 font-medium inline-flex items-center gap-1"
+                                                    className="text-red-400 hover:text-red-300 font-medium inline-flex items-center gap-1"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                     Hapus
@@ -221,8 +221,8 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
 
                     {/* Pagination */}
                     {barang.last_page > 1 && (
-                        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
+                        <div className="border-t border-slate-700 px-6 py-4 flex items-center justify-between bg-slate-800">
+                            <div className="text-sm text-slate-400">
                                 Halaman {barang.current_page} dari {barang.last_page}
                             </div>
                             <div className="flex gap-2">
@@ -236,7 +236,7 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                                 show: showFilter || undefined,
                                             })
                                         }
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                                        className="px-3 py-1 border border-slate-600 rounded text-sm text-slate-300 hover:bg-slate-700"
                                     >
                                         Sebelumnya
                                     </button>
@@ -251,7 +251,7 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                                 show: showFilter || undefined,
                                             })
                                         }
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                                        className="px-3 py-1 border border-slate-600 rounded text-sm text-slate-300 hover:bg-slate-700"
                                     >
                                         Selanjutnya
                                     </button>

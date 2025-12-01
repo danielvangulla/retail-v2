@@ -51,7 +51,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Daftar Kategori</h2>
+                    <h2 className="text-2xl font-bold text-white">Daftar Kategori</h2>
                     <button
                         onClick={() => router.visit('/back/kategori/create')}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
@@ -62,7 +62,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                 </div>
 
                 {/* Search */}
-                <div className="bg-white rounded-lg shadow p-4">
+                <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 border border-slate-700">
                     <div className="flex gap-4">
                         <div className="flex-1 relative">
                             <input
@@ -71,9 +71,9 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                            <Search className="absolute right-3 top-2.5 h-5 w-5 text-slate-500" />
                         </div>
                         <button
                             onClick={handleSearch}
@@ -83,48 +83,48 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                             {loading ? 'Mencari...' : 'Cari'}
                         </button>
                     </div>
-                    <div className="text-sm text-gray-600 mt-3">
+                    <div className="text-sm text-slate-400">
                         Total: <span className="font-bold">{kategoris.total}</span> kategori
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-slate-800 rounded-lg shadow-lg-lg overflow-hidden border border-slate-700">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-slate-700 border-b border-slate-600">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Nama Kategori
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Jumlah Barang
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Aksi
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y divide-slate-700">
                                 {kategoris.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan={3} className="px-6 py-4 text-center text-slate-400">
                                             Tidak ada data kategori
                                         </td>
                                     </tr>
                                 ) : (
                                     kategoris.data.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.nama}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        <tr key={item.id} className="border-b border-slate-700 hover:bg-slate-700">
+                                            <td className="px-6 py-4 text-sm font-medium text-white">{item.nama}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-400">
+                                                <span className="px-3 py-1 bg-blue-900/30 text-blue-400 rounded-full text-xs font-medium">
                                                     {item.barang_count} barang
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm space-x-2">
                                                 <button
                                                     onClick={() => handleEdit(item.id)}
-                                                    className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                                                    className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1"
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                     Edit
@@ -134,8 +134,8 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                                     disabled={item.barang_count > 0}
                                                     className={`font-medium inline-flex items-center gap-1 ${
                                                         item.barang_count > 0
-                                                            ? 'text-gray-400 cursor-not-allowed'
-                                                            : 'text-red-600 hover:text-red-800'
+                                                            ? 'text-slate-500 cursor-not-allowed'
+                                                            : 'text-red-400 hover:text-red-300'
                                                     }`}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -151,8 +151,8 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
 
                     {/* Pagination */}
                     {kategoris.last_page > 1 && (
-                        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
+                        <div className="border-t border-slate-700 px-6 py-4 flex items-center justify-between bg-slate-800">
+                            <div className="text-sm text-slate-400">
                                 Halaman {kategoris.current_page} dari {kategoris.last_page}
                             </div>
                             <div className="flex gap-2">
@@ -164,7 +164,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                                 search,
                                             })
                                         }
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                                        className="px-3 py-1 border border-slate-600 rounded text-sm text-slate-300 hover:bg-slate-700"
                                     >
                                         Sebelumnya
                                     </button>
@@ -177,7 +177,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                                 search,
                                             })
                                         }
-                                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50"
+                                        className="px-3 py-1 border border-slate-600 rounded text-sm text-slate-300 hover:bg-slate-700"
                                     >
                                         Selanjutnya
                                     </button>

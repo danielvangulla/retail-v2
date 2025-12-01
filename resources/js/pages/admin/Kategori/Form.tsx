@@ -42,17 +42,17 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
     return (
         <AdminLayout title={pageTitle}>
             <div className="max-w-lg">
-                <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="bg-slate-800 rounded-lg shadow-lg p-6 space-y-6">
                     {/* Nama */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">Nama Kategori</label>
+                        <label className="block text-sm font-medium text-white mb-2">Nama Kategori</label>
                         <input
                             type="text"
                             name="nama"
                             value={formData.nama}
                             onChange={handleChange}
                             className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.nama ? 'border-red-500' : 'border-gray-300'
+                                errors.nama ? 'border-red-500' : 'border-slate-600'
                             }`}
                             placeholder="Masukkan nama kategori"
                             required
@@ -76,7 +76,7 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
                         <button
                             type="button"
                             onClick={() => router.visit('/back/kategori')}
-                            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
+                            className="flex-1 bg-gray-300 hover:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition"
                         >
                             Batal
                         </button>

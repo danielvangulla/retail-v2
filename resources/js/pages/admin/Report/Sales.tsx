@@ -81,35 +81,35 @@ export default function SalesReport({ transactions, summary, dateFrom, dateTo }:
         <AdminLayout title="Laporan Penjualan">
             <div className="space-y-6">
                 {/* Filters */}
-                <div className="bg-white rounded-lg shadow p-4 space-y-4">
+                <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 space-y-4 border border-slate-700">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Date From */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Dari Tanggal</label>
+                            <label className="block text-sm font-medium text-white mb-2">Dari Tanggal</label>
                             <div className="relative">
                                 <input
                                     type="date"
                                     name="date_from"
                                     value={filters.date_from}
                                     onChange={handleFilterChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" />
+                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-slate-500 pointer-events-none" />
                             </div>
                         </div>
 
                         {/* Date To */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Sampai Tanggal</label>
+                            <label className="block text-sm font-medium text-white mb-2">Sampai Tanggal</label>
                             <div className="relative">
                                 <input
                                     type="date"
                                     name="date_to"
                                     value={filters.date_to}
                                     onChange={handleFilterChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
-                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" />
+                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-slate-500 pointer-events-none" />
                             </div>
                         </div>
 
@@ -139,18 +139,18 @@ export default function SalesReport({ transactions, summary, dateFrom, dateTo }:
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600">Total Transaksi</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{summary.total_transactions}</p>
+                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 border border-slate-700">
+                        <p className="text-sm text-slate-400">Total Transaksi</p>
+                        <p className="text-3xl font-bold text-white mt-2">{summary.total_transactions}</p>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600">Total Penjualan</p>
-                        <p className="text-3xl font-bold text-green-600 mt-2">
+                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 border border-slate-700">
+                        <p className="text-sm text-slate-400">Total Penjualan</p>
+                        <p className="text-3xl font-bold text-green-400 mt-2">
                             Rp {summary.total_sales.toLocaleString('id-ID')}
                         </p>
                     </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <p className="text-sm text-gray-600">Rata-rata Penjualan</p>
+                    <div className="bg-slate-800 rounded-lg shadow-lg p-4">
+                        <p className="text-sm text-slate-400">Rata-rata Penjualan</p>
                         <p className="text-3xl font-bold text-blue-600 mt-2">
                             Rp {summary.avg_sales.toLocaleString('id-ID')}
                         </p>
@@ -158,41 +158,41 @@ export default function SalesReport({ transactions, summary, dateFrom, dateTo }:
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-slate-700 border-b border-slate-700">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         ID Transaksi
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Kasir
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Tanggal
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Item
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Total
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         PPN
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Service
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Pembayaran
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody className="divide-y divide-slate-700">
                                 {transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan={8} className="px-6 py-4 text-center text-slate-300">
                                             Tidak ada data transaksi
                                         </td>
                                     </tr>
@@ -201,29 +201,29 @@ export default function SalesReport({ transactions, summary, dateFrom, dateTo }:
                                         const itemCount = trans.details.reduce((sum, d) => sum + d.qty, 0);
                                         const total = trans.details.reduce((sum, d) => sum + d.qty * d.harga - d.diskon, 0);
                                         return (
-                                            <tr key={trans.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 text-sm font-mono text-gray-900">
+                                            <tr key={trans.id} className="hover:bg-slate-700">
+                                                <td className="px-6 py-4 text-sm font-mono text-white">
                                                     {trans.id.substring(0, 8)}...
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{trans.kasir.name}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                <td className="px-6 py-4 text-sm text-slate-400">{trans.kasir.name}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-400">
                                                     {new Date(trans.created_at).toLocaleDateString('id-ID', {
                                                         year: 'numeric',
                                                         month: '2-digit',
                                                         day: '2-digit',
                                                     })}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{itemCount}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">
+                                                <td className="px-6 py-4 text-sm text-slate-400">{itemCount}</td>
+                                                <td className="px-6 py-4 text-sm text-white text-right font-medium">
                                                     Rp {total.toLocaleString('id-ID')}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                                <td className="px-6 py-4 text-sm text-slate-400 text-right">
                                                     Rp {trans.tax.toLocaleString('id-ID')}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                                <td className="px-6 py-4 text-sm text-slate-400 text-right">
                                                     Rp {trans.service.toLocaleString('id-ID')}
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 text-right font-bold">
+                                                <td className="px-6 py-4 text-sm text-white text-right font-bold">
                                                     Rp {trans.bayar.toLocaleString('id-ID')}
                                                 </td>
                                             </tr>

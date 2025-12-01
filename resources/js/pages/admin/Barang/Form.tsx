@@ -65,23 +65,23 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
     return (
         <AdminLayout title={pageTitle}>
             <div className="max-w-2xl">
-                <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="bg-slate-800 rounded-lg shadow-lg-lg p-6 space-y-6 border border-slate-700">
                     {/* Barcode */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">Barcode</label>
+                        <label className="block text-sm font-medium text-white mb-2">Barcode</label>
                         <input
                             type="text"
                             name="barcode"
                             value={formData.barcode}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.barcode ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.barcode ? 'border-red-500' : 'border-slate-600'
                             }`}
                             placeholder="Masukkan barcode"
                             required
                         />
                         {errors.barcode && (
-                            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                            <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                 <AlertCircle className="h-4 w-4" /> {errors.barcode}
                             </p>
                         )}
@@ -89,20 +89,20 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
 
                     {/* Deskripsi */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">Deskripsi</label>
+                        <label className="block text-sm font-medium text-white mb-2">Deskripsi</label>
                         <textarea
                             name="deskripsi"
                             value={formData.deskripsi}
                             onChange={handleChange}
                             rows={3}
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.deskripsi ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.deskripsi ? 'border-red-500' : 'border-slate-600'
                             }`}
                             placeholder="Masukkan deskripsi barang"
                             required
                         />
                         {errors.deskripsi && (
-                            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                            <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                 <AlertCircle className="h-4 w-4" /> {errors.deskripsi}
                             </p>
                         )}
@@ -110,13 +110,13 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
 
                     {/* Kategori */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">Kategori</label>
+                        <label className="block text-sm font-medium text-white mb-2">Kategori</label>
                         <select
                             name="kategori_id"
                             value={formData.kategori_id}
                             onChange={handleChange}
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.kategori_id ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.kategori_id ? 'border-red-500' : 'border-slate-600'
                             }`}
                             required
                         >
@@ -128,7 +128,7 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                             ))}
                         </select>
                         {errors.kategori_id && (
-                            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                            <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                 <AlertCircle className="h-4 w-4" /> {errors.kategori_id}
                             </p>
                         )}
@@ -137,14 +137,14 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                     {/* Price Grid */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Harga Beli</label>
+                            <label className="block text-sm font-medium text-white mb-2">Harga Beli</label>
                             <input
                                 type="number"
                                 name="harga_beli"
                                 value={formData.harga_beli}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.harga_beli ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.harga_beli ? 'border-red-500' : 'border-slate-600'
                                 }`}
                                 placeholder="0"
                                 step="0.01"
@@ -152,20 +152,20 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                                 required
                             />
                             {errors.harga_beli && (
-                                <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                                <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                     <AlertCircle className="h-4 w-4" /> {errors.harga_beli}
                                 </p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Harga Jual</label>
+                            <label className="block text-sm font-medium text-white mb-2">Harga Jual</label>
                             <input
                                 type="number"
                                 name="harga_jual"
                                 value={formData.harga_jual}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.harga_jual ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.harga_jual ? 'border-red-500' : 'border-slate-600'
                                 }`}
                                 placeholder="0"
                                 step="0.01"
@@ -173,7 +173,7 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                                 required
                             />
                             {errors.harga_jual && (
-                                <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                                <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                     <AlertCircle className="h-4 w-4" /> {errors.harga_jual}
                                 </p>
                             )}
@@ -183,32 +183,32 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                     {/* Stock Grid */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Min Stok</label>
+                            <label className="block text-sm font-medium text-white mb-2">Min Stok</label>
                             <input
                                 type="number"
                                 name="min_stock"
                                 value={formData.min_stock}
                                 onChange={handleChange}
-                                className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.min_stock ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full px-4 py-2 border rounded-lg text-sm bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.min_stock ? 'border-red-500' : 'border-slate-600'
                                 }`}
                                 placeholder="0"
                                 min="0"
                                 required
                             />
                             {errors.min_stock && (
-                                <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                                <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                                     <AlertCircle className="h-4 w-4" /> {errors.min_stock}
                                 </p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-900 mb-2">Status</label>
+                            <label className="block text-sm font-medium text-white mb-2">Status</label>
                             <select
                                 name="st_aktif"
                                 value={formData.st_aktif}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="1">Aktif</option>
                                 <option value="0">Nonaktif</option>
@@ -228,7 +228,7 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                         <button
                             type="button"
                             onClick={() => router.visit('/back/barang')}
-                            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
+                            className="flex-1 bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition"
                         >
                             Batal
                         </button>
