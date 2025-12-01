@@ -252,12 +252,9 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
         // Type check - ensure it's a string
         if (!idToPrint || typeof idToPrint !== 'string' || idToPrint.trim() === '') {
-            console.warn('handlePrintLast: No transaction ID', { idToPrint, lastTrxId, trxId });
             showAlertModal('Info', 'Belum ada transaksi hari ini', 'info', () => {});
             return;
         }
-
-        console.log('handlePrintLast: Opening print for', idToPrint);
 
         const width = 400;
         const height = 500;
@@ -265,7 +262,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         const top = (window.screen.height - height) / 2;
         const size = `width=${width},height=${height},left=${left},top=${top}`;
         const url = `/print-bill/${idToPrint}`;
-        console.log('Print URL:', url);
+
         const popupWindow = window.open(url, '_blank', size);
         if (popupWindow) {
             popupWindow.print();

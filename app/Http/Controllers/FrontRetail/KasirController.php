@@ -54,7 +54,6 @@ class KasirController extends Controller
                 'setup' => $setup,
             ]);
         } catch (\Throwable $th) {
-            \Log::error('PrintBill Error: ' . $th->getMessage());
             return Inertia::render('Kasir/PrintBill', [
                 'trx' => null,
                 'setup' => Helpers::getSetup('perusahaan'),
