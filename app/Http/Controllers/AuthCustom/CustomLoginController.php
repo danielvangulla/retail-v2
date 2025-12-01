@@ -43,17 +43,21 @@ class CustomLoginController extends Controller
             return response()->json($macId, 403);
         }
 
-        $user = User::where('pin', $request->pin)->first();
+        // Find user by username or email (case-insensitive for name)
+        $user = User::whereRaw('LOWER(name) = ?', [strtolower($request->username)])
+            ->orWhere('email', $request->username)
+            ->first();
 
         if (!isset($user)) {
             throw ValidationException::withMessages([
-                'error' => 'invalid PIN, please Try Again..!',
+                'username' => 'invalid username, please try again',
             ]);
         }
 
+        // Try to authenticate with password
         $credentials = [
             'email' => $user->email,
-            'password' => $request->pin,
+            'password' => $request->password,
         ];
 
         $validate = Auth::attempt($credentials);
@@ -62,7 +66,7 @@ class CustomLoginController extends Controller
             RateLimiter::hit($this->throttleKey($user, $request));
 
             throw ValidationException::withMessages([
-                'error' => 'Validation Error',
+                'password' => 'Invalid password',
             ]);
         }
 

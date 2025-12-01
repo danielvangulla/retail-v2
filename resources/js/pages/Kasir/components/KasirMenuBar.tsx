@@ -3,11 +3,15 @@ import { LogOut, User } from 'lucide-react';
 
 interface KasirMenuBarProps {
     userName?: string;
+    onLogoutClick?: () => void;
 }
 
-export default function KasirMenuBar({ userName = 'Kasir' }: KasirMenuBarProps) {
+export default function KasirMenuBar({ userName = 'Kasir', onLogoutClick }: KasirMenuBarProps) {
     const handleLogout = () => {
-        if (confirm('Apakah Anda yakin ingin logout?')) {
+        if (onLogoutClick) {
+            onLogoutClick();
+        } else {
+            // Fallback: direct logout if no handler provided
             router.post('/logout');
         }
     };

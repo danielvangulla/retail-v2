@@ -135,6 +135,16 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         }
     };
 
+    const handleLogoutClick = () => {
+        showConfirmModal(
+            'Logout',
+            'Apakah Anda yakin ingin logout?',
+            () => {
+                router.post('/logout');
+            }
+        );
+    };
+
     const loadBarangList = async () => {
         try {
             const response = await axios.post('/barang-list', { show: 1 });
@@ -560,7 +570,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
             <div className="h-screen flex flex-col bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
                 {/* Menu Bar */}
-                <KasirMenuBar userName={auth?.user?.name} />
+                <KasirMenuBar userName={auth?.user?.name} onLogoutClick={handleLogoutClick} />
 
                 {/* Main Content - No Scroll */}
                 <div className="flex-1 flex flex-col gap-1 sm:gap-2 p-1 sm:p-2 overflow-hidden">
