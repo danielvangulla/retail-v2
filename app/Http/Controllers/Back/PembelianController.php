@@ -12,24 +12,36 @@ use Inertia\Inertia;
 
 class PembelianController extends Controller
 {
-    public function index()
+    public function index(Request $r)
     {
-        $data = Pembelian::with('details')->orderBy('created_at', 'desc')->get();
-        return Inertia::render('back/Pembelian/Index', ['data' => $data]);
+        $search = $r->search ?? '';
+
+        $pembelians = Pembelian::with('details', 'user')
+            ->when($search, function ($q) use ($search) {
+                $q->where('tgl_faktur', 'like', "%$search%")
+                    ->orWhereHas('user', function ($query) use ($search) {
+                        $query->where('name', 'like', "%$search%");
+                    });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return Inertia::render('back/Pembelian/IndexNew', ['pembelians' => $pembelians]);
     }
 
     public function create()
     {
-        return Inertia::render('back/Pembelian/Create');
+        return Inertia::render('back/Pembelian/CreateNew');
     }
 
     public function store(Request $r)
     {
         $data = $r->data;
+        $tglFaktur = $r->tgl_faktur ?? date('Y-m-d');
 
         $pembelian = Pembelian::create([
             'user_id' => Auth::user()->id,
-            'tgl_faktur' => Date('Y-m-d'),
+            'tgl_faktur' => $tglFaktur,
             'is_lunas' => 1,
             'grand_total' => 0,
         ]);
@@ -38,20 +50,23 @@ class PembelianController extends Controller
             $v = (object) $v;
 
             $barang = Barang::where('sku', $v->sku)->first();
-            $barang->harga_beli = $v->hargaBeli / $barang->isi;
-            $barang->save();
+            if ($barang) {
+                // Update harga beli barang
+                $barang->harga_beli = $v->hargaBeli / $barang->isi;
+                $barang->save();
 
-            PembelianDet::create([
-                'pembelian_id' => $pembelian->id,
-                'sku' => $v->sku,
-                'barcode' => $v->barcode,
-                'qty' => $v->qtyBeli * $barang->isi,
-                'satuan_beli' => $barang->volume,
-                'harga_beli' => $v->hargaBeli,
-                'total' => $v->total,
-            ]);
+                PembelianDet::create([
+                    'pembelian_id' => $pembelian->id,
+                    'sku' => $v->sku,
+                    'barcode' => $v->barcode,
+                    'qty' => $v->qtyBeli * $barang->isi,
+                    'satuan_beli' => $barang->volume,
+                    'harga_beli' => $v->hargaBeli,
+                    'total' => $v->total,
+                ]);
 
-            $pembelian->grand_total += $v->total;
+                $pembelian->grand_total += $v->total;
+            }
         }
 
         $pembelian->save();
@@ -66,7 +81,7 @@ class PembelianController extends Controller
 
     public function show($id)
     {
-        $data = Pembelian::with('details', 'details.barang')->find($id);
-        return Inertia::render('back/Pembelian/Show', ['data' => $data]);
+        $data = Pembelian::with('details', 'details.barang', 'user')->find($id);
+        return Inertia::render('back/Pembelian/ShowNew', ['data' => $data]);
     }
 }
