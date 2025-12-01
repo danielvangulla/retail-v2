@@ -9,10 +9,16 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 // Set timeout untuk prevent hanging requests (30 seconds)
 axios.defaults.timeout = 30000;
 
-// Get CSRF token from meta tag
-const token = document.head.querySelector('meta[name="csrf-token"]');
-if (token) {
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = token.getAttribute('content');
+// Function to get CSRF token
+const getCsrfToken = (): string => {
+    const token = document.head.querySelector('meta[name="csrf-token"]');
+    return token?.getAttribute('content') || '';
+};
+
+// Set CSRF token immediately
+const csrfToken = getCsrfToken();
+if (csrfToken) {
+    axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
 } else {
     console.warn('CSRF token not found. Please ensure meta tag exists in HTML head.');
 }
@@ -20,11 +26,13 @@ if (token) {
 // Add request interceptor untuk logging dan validation
 axios.interceptors.request.use(
     (config) => {
-        // Re-check CSRF token setiap request
-        const currentToken = document.head.querySelector('meta[name="csrf-token"]');
+        // Re-check CSRF token setiap request dan update header
+        const currentToken = getCsrfToken();
         if (currentToken && config.headers) {
-            config.headers['X-CSRF-TOKEN'] = currentToken.getAttribute('content');
+            config.headers['X-CSRF-TOKEN'] = currentToken;
         }
+        // Ensure withCredentials for session-based auth
+        config.withCredentials = true;
         return config;
     },
     (error) => {
@@ -44,8 +52,13 @@ axios.interceptors.response.use(
                     console.error('Unauthorized access.');
                     break;
                 case 419:
-                    // CSRF token mismatch
-                    console.error('CSRF token mismatch.');
+                    // CSRF token mismatch or session expired
+                    console.error('CSRF token mismatch or session expired.');
+                    // Try to refresh CSRF token from meta tag
+                    const newToken = getCsrfToken();
+                    if (newToken) {
+                        axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+                    }
                     break;
                 case 429:
                     // Too many requests - rate limiting
@@ -69,3 +82,4 @@ axios.interceptors.response.use(
 );
 
 export default axios;
+

@@ -27,7 +27,9 @@ if (env('APP_TYPE') === 'retail') {
         Route::resource('/setup-users', UserPermissionController::class)->only(['index', 'store']);
         Route::post('/setup-users-json', [UserPermissionController::class, 'usersJson']);
 
+        // Kasir page (main kasir endpoint)
         Route::get('/home-space', [KasirController::class, 'index'])->name('home.space');
+        Route::get('/kasir', [KasirController::class, 'index'])->name('kasir'); // Alias untuk /kasir
 
         Route::post('/proses-bayar', [KasirController::class, 'store']);
         Route::post('/update-bayar', [KasirController::class, 'update']);

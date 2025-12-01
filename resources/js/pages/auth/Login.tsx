@@ -1,24 +1,47 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { Lock, User, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
+import axios from '@/lib/axios';
 
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    csrf_token?: string;
 }
 
-export default function Login({ status }: LoginProps) {
-    const form = useForm({ username: '', password: '' });
+export default function Login({ status, csrf_token }: LoginProps) {
+    const { props } = usePage();
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+    const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    function submit(e: React.FormEvent) {
+    async function submit(e: React.FormEvent) {
         e.preventDefault();
-        form.post('/login', {
-            onError: () => {
-                // Error handling
+        try {
+            setIsLoading(true);
+            setErrors({});
+            const response = await axios.post('/login', {
+                ...formData,
+                _token: csrf_token || (props as any)?.csrf_token
+            });
+
+            // If successful, check response for redirect URL
+            if (response.status === 200 && response.data?.redirect) {
+                setTimeout(() => {
+                    window.location.href = response.data.redirect;
+                }, 300);
             }
-        });
+        } catch (error: any) {
+            console.error('Login error:', error);
+            if (error.response?.status === 422) {
+                setErrors(error.response.data.errors || {});
+            } else if (error.response?.data?.errors) {
+                setErrors(error.response.data.errors);
+            }
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -69,16 +92,16 @@ export default function Login({ status }: LoginProps) {
                                             id="username"
                                             name="username"
                                             type="text"
-                                            value={form.data.username}
-                                            onChange={(e) => form.setData('username', e.target.value)}
+                                            value={formData.username}
+                                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                             className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:outline-none transition-all duration-200"
                                             placeholder="Masukkan username"
                                             autoFocus
-                                            disabled={form.processing}
+                                            disabled={isLoading}
                                         />
                                     </div>
-                                    {form.errors.username && (
-                                        <p className="mt-1 text-xs sm:text-sm text-red-600 font-medium">{form.errors.username}</p>
+                                    {errors.username && (
+                                        <p className="mt-1 text-xs sm:text-sm text-red-600 font-medium">{errors.username}</p>
                                     )}
                                 </div>
 
@@ -95,11 +118,11 @@ export default function Login({ status }: LoginProps) {
                                             id="password"
                                             name="password"
                                             type={showPassword ? 'text' : 'password'}
-                                            value={form.data.password}
-                                            onChange={(e) => form.setData('password', e.target.value)}
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                             className="w-full pl-12 pr-12 py-3 rounded-lg border border-gray-300 bg-gray-50 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:outline-none transition-all duration-200"
                                             placeholder="Masukkan password"
-                                            disabled={form.processing}
+                                            disabled={isLoading}
                                         />
                                         <button
                                             type="button"
@@ -119,18 +142,18 @@ export default function Login({ status }: LoginProps) {
                                             )}
                                         </button>
                                     </div>
-                                    {form.errors.password && (
-                                        <p className="mt-1 text-xs sm:text-sm text-red-600 font-medium">{form.errors.password}</p>
+                                    {errors.password && (
+                                        <p className="mt-1 text-xs sm:text-sm text-red-600 font-medium">{errors.password}</p>
                                     )}
                                 </div>
 
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
-                                    disabled={form.processing}
+                                    disabled={isLoading}
                                     className="w-full py-3 px-4 bg-linear-to-br from-blue-600 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 mt-6 flex items-center justify-center gap-2 hover:cursor-pointer"
                                 >
-                                    {form.processing ? (
+                                    {isLoading ? (
                                         <>
                                             <div className="animate-spin">
                                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -151,7 +174,7 @@ export default function Login({ status }: LoginProps) {
                             {/* Footer Info */}
                             <div className="mt-8 pt-6 border-t border-gray-200">
                                 <p className="text-center text-xs sm:text-sm text-gray-600">
-                                    NOVAQUILA • <span className="font-semibold">Retail v1.2</span>
+                                    NOVAQUILA.ID • <span className="font-semibold">Retail v1.2</span>
                                 </p>
                             </div>
                         </div>

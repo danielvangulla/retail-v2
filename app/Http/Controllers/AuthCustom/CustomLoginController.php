@@ -76,7 +76,15 @@ class CustomLoginController extends Controller
 
         Barang::setCache();
 
-        return redirect('/home-space');
+        // Return JSON response with redirect URL
+        // Level 1 = Supervisor, redirect to login-choice
+        // Level 2+ = Kasir, redirect to kasir page
+        $redirectUrl = $user->level == 1 ? '/login-choice' : '/kasir';
+        
+        return response()->json([
+            'status' => 'ok',
+            'redirect' => $redirectUrl,
+        ]);
     }
 
     private function throttleKey($user, $request): string
