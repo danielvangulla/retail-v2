@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import AdminLayout from '../Layout';
 import { router } from '@inertiajs/react';
 import { Trash2, Edit2, Plus, Search } from 'lucide-react';
+import { formatDigit } from '@/lib/formatters';
 
 interface BarangItem {
     id: string;
     barcode: string;
     deskripsi: string;
-    kategori: { nama: string };
+    kategori: { ket: string };
     harga_beli: number;
     harga_jual1: number;
     min_stock: number;
@@ -131,28 +132,28 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                         <table className="w-full">
                             <thead className="bg-slate-700 border-b border-slate-600">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Barcode
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
                                         Deskripsi
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Kategori
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Harga Beli
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Harga Jual
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
                                         Stok
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-300 uppercase">
                                         Aksi
                                     </th>
                                 </tr>
@@ -170,15 +171,15 @@ export default function BarangIndex({ barang, kategoris }: BarangIndexProps) {
                                             <td className="px-6 py-4 text-sm text-slate-300 font-mono">
                                                 {item.barcode}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-white">{item.deskripsi}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-400">
-                                                {item.kategori?.nama || '-'}
+                                            <td className="px-6 py-4 text-sm text-white truncate">{item.deskripsi}</td>
+                                            <td className="px-6 py-4 text-center text-sm text-white">
+                                                {item.kategori?.ket || '-'}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-white">
-                                                Rp {item.harga_beli.toLocaleString('id-ID')}
+                                            <td className="px-6 py-4 text-right text-sm text-white">
+                                                {formatDigit(item.harga_beli)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-white font-bold">
-                                                Rp {item.harga_jual1.toLocaleString('id-ID')}
+                                            <td className="px-6 py-4 text-right text-sm text-white font-bold">
+                                                {formatDigit(item.harga_jual1)}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className="px-2 py-1 bg-green-900/30 text-green-400 rounded text-xs font-medium">

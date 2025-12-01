@@ -97,13 +97,13 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
     return (
         <>
             <Head title={`Admin - ${title}`} />
-            <div className={`flex h-screen bg-slate-900 ${isLoading ? 'opacity-60' : ''} transition-opacity duration-200`}>
+            <div className={`flex h-screen bg-linear-to-br from-gray-50 via-blue-50 to-gray-100 ${isLoading ? 'opacity-90' : ''} transition-opacity duration-200`}>
                 {/* Loading Overlay */}
                 {isLoading && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-                        <div className="bg-slate-800 rounded-lg shadow-lg-lg p-8 flex flex-col items-center gap-4 border border-slate-700">
-                            <Loader className="h-8 w-8 text-blue-400 animate-spin" />
-                            <p className="text-white font-medium">Memuat halaman...</p>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="bg-white/95 rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 border border-white/20 ">
+                            <Loader className="h-8 w-8 text-blue-600 animate-spin" />
+                            <p className="text-gray-900 font-semibold">Loading...</p>
                         </div>
                     </div>
                 )}
@@ -111,13 +111,18 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 <aside
                     className={`${
                         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    } fixed left-0 top-0 z-40 h-full w-64 bg-slate-800 text-white shadow-2xl transition-transform duration-300 lg:translate-x-0 lg:relative overflow-y-auto`}
+                    } fixed left-0 top-0 z-40 h-full w-64 bg-linear-to-b from-white via-blue-50/50 to-gray-50 text-gray-900 shadow-2xl transition-transform duration-300 lg:translate-x-0 lg:relative overflow-y-auto border-r border-gray-200/50`}
                 >
                     {/* Logo */}
-                    <div className="border-b border-slate-700 p-6 sticky top-0 bg-slate-800">
-                        <div className="flex items-center gap-2">
-                            <Package className="h-6 w-6 text-blue-400" />
-                            <span className="text-lg font-bold">Retail Admin</span>
+                    <div className="border-b border-gray-200/50 p-6 sticky top-0 bg-linear-to-r from-white to-blue-50/50 backdrop-blur-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-linear-to-br from-blue-600 to-blue-500 rounded-lg shadow-lg">
+                                <Package className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <span className="text-lg font-bold bg-linear-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">Retail</span>
+                                <p className="text-xs text-gray-500 font-medium">Admin Dashboard</p>
+                            </div>
                         </div>
                     </div>
 
@@ -128,7 +133,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                 const Icon = item.icon;
                                 const hasSubmenu = !!item.submenu;
                                 const isExpanded = expandedMenu === item.label;
-                                
+
                                 // Check if current item is active
                                 const isItemActive = item.href ? (currentUrl === item.href || currentUrl.startsWith(item.href + '/')) && item.href !== '/back' : false;
                                 const isSubmenuActive = item.submenu ? item.submenu.some((sub) => currentUrl === sub.href || currentUrl.startsWith(sub.href + '/')) : false;
@@ -139,10 +144,10 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                             <>
                                                 <button
                                                     onClick={() => toggleMenu(item.label)}
-                                                    className={`w-full flex items-center justify-between gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                                    className={`w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
                                                         isSubmenuActive || isExpanded
-                                                            ? 'bg-slate-700 text-blue-400'
-                                                            : 'hover:bg-slate-700 text-white'
+                                                            ? 'bg-linear-to-r from-blue-500/10 to-blue-600/10 text-blue-700 border border-blue-200/50 shadow-sm'
+                                                            : 'hover:bg-gray-100/50 text-gray-700 hover:shadow-sm'
                                                     }`}
                                                 >
                                                     <div className="flex items-center gap-3">
@@ -155,7 +160,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                                 </button>
 
                                                 {isExpanded && item.submenu && (
-                                                    <ul className="mt-1 space-y-1 pl-6 border-l border-slate-700">
+                                                    <ul className="mt-2 space-y-1 pl-6 border-l-2 border-blue-300/30">
                                                         {item.submenu.map((subitem) => {
                                                             const isSubActive = currentUrl === subitem.href || currentUrl.startsWith(subitem.href + '/');
                                                             return (
@@ -166,10 +171,10 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                                                             e.preventDefault();
                                                                             handleNavClick(subitem.href);
                                                                         }}
-                                                                        className={`block rounded-lg px-4 py-2 text-sm transition-colors ${
+                                                                        className={`block rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer ${
                                                                             isSubActive
-                                                                                ? 'bg-blue-600 text-white font-medium'
-                                                                                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                                                                                ? 'bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/30'
+                                                                                : 'text-gray-600 hover:bg-linear-to-r hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:shadow-sm'
                                                                         }`}
                                                                     >
                                                                         {subitem.label}
@@ -187,10 +192,10 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                                     e.preventDefault();
                                                     handleNavClick(item.href!);
                                                 }}
-                                                className={`flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
                                                     isItemActive
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'hover:bg-slate-700 text-white'
+                                                        ? 'bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-md shadow-blue-500/30'
+                                                        : 'hover:bg-gray-100/50 text-gray-700 hover:shadow-sm'
                                                 }`}
                                             >
                                                 <Icon className="h-5 w-5" />
@@ -204,10 +209,10 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                     </nav>
 
                     {/* Logout - Bottom */}
-                    <div className="absolute bottom-0 w-full border-t border-slate-700 p-4 bg-slate-800">
+                    <div className="absolute bottom-0 w-full border-t border-gray-200/50 p-4 bg-linear-to-t from-gray-50 to-transparent backdrop-blur-sm">
                         <button
                             onClick={handleLogout}
-                            className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-600/10 text-red-400 transition-colors"
+                            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-red-50 hover:shadow-md text-red-600 transition-all duration-200 cursor-pointer"
                         >
                             <LogOut className="h-5 w-5" />
                             <span>Logout</span>
@@ -226,29 +231,29 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Top Bar */}
-                    <header className="border-b border-slate-700 bg-slate-800 shadow-lg">
+                    <header className="border-b border-gray-200/50 bg-white/80 backdrop-blur-lg shadow-sm">
                         <div className="flex items-center justify-between px-4 py-4 sm:px-6">
                             <button
                                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="lg:hidden p-2 hover:bg-slate-700 rounded-lg transition"
+                                className="lg:hidden p-2 hover:bg-gray-100/50 rounded-lg transition-colors duration-200 cursor-pointer"
                             >
                                 {sidebarOpen ? (
-                                    <X className="h-6 w-6 text-white" />
+                                    <X className="h-6 w-6 text-gray-700" />
                                 ) : (
-                                    <Menu className="h-6 w-6 text-white" />
+                                    <Menu className="h-6 w-6 text-gray-700" />
                                 )}
                             </button>
 
-                            <h1 className="text-2xl font-bold text-white">{title}</h1>
+                            <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{title}</h1>
 
                             <div className="flex items-center gap-4">
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-medium text-white">{auth?.user?.name}</p>
-                                    <p className="text-xs text-slate-400">
-                                        {auth?.user?.level === 1 ? 'Supervisor' : 'Kasir'}
+                                    <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
+                                    <p className="text-xs text-gray-500 font-medium">
+                                        {auth?.user?.level === 1 ? '👑 Supervisor' : '🛒 Kasir'}
                                     </p>
                                 </div>
-                                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                <div className="w-11 h-11 bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-white/50">
                                     {auth?.user?.name?.charAt(0).toUpperCase()}
                                 </div>
                             </div>
@@ -256,7 +261,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                     </header>
 
                     {/* Page Content */}
-                    <main className="flex-1 overflow-auto bg-slate-900">
+                    <main className="flex-1 overflow-auto bg-linear-to-br from-gray-50 via-blue-50/30 to-gray-100">
                         <div className="p-4 sm:p-6">
                             {children}
                         </div>

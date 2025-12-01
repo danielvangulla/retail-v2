@@ -26,7 +26,7 @@ class KategoriController extends Controller
         $query = Kategori::query();
 
         if ($request->search) {
-            $query->where('nama', 'LIKE', "%{$request->search}%");
+            $query->where('ket', 'LIKE', "%{$request->search}%");
         }
 
         $kategoris = $query->withCount('barangs')->paginate(20);
@@ -45,7 +45,7 @@ class KategoriController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama' => 'required|unique:kategori',
+            'ket' => 'required|unique:kategori',
         ]);
 
         Kategori::create($validated);
@@ -67,7 +67,7 @@ class KategoriController extends Controller
         $kategori = Kategori::findOrFail($id);
 
         $validated = $request->validate([
-            'nama' => 'required|unique:kategori,nama,' . $id . ',id',
+            'ket' => 'required|unique:kategori,ket,' . $id . ',id',
         ]);
 
         $kategori->update($validated);

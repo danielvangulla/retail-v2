@@ -33,6 +33,11 @@ class Kategorisub extends Model
         return $this->belongsTo(Kategori::class);
     }
 
+    public function barangs()
+    {
+        return $this->hasMany(Barang::class, 'kategorisub_id');
+    }
+
     public static function getUsed()
     {
         $kategorisub = Kategorisub::select(['kategorisub.id', 'kategorisub.kategori_id', 'kategorisub.ket'])

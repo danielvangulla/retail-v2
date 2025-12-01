@@ -3,25 +3,33 @@ import AdminLayout from '../Layout';
 import { router, usePage } from '@inertiajs/react';
 import { AlertCircle } from 'lucide-react';
 
-interface KategoriFormProps {
-    kategori?: {
+interface KategoriItem {
+    id: string;
+    ket: string;
+}
+
+interface KategorisubFormProps {
+    kategorisub?: {
         id: string;
         ket: string;
+        kategori_id: string;
     };
+    kategoris: KategoriItem[];
     mode: 'create' | 'edit';
 }
 
-export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
+export default function KategorisubForm({ kategorisub, kategoris, mode }: KategorisubFormProps) {
     const { props } = usePage();
     const errors = (props as any).errors || {};
 
     const [formData, setFormData] = useState({
-        ket: kategori?.ket || '',
+        ket: kategorisub?.ket || '',
+        kategori_id: kategorisub?.kategori_id || '',
     });
 
     const [loading, setLoading] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -31,13 +39,13 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
         setLoading(true);
 
         if (mode === 'create') {
-            router.post('/back/kategori', formData);
-        } else if (kategori) {
-            router.put(`/back/kategori/${kategori.id}`, formData);
+            router.post('/back/kategorisub', formData);
+        } else if (kategorisub) {
+            router.put(`/back/kategorisub/${kategorisub.id}`, formData);
         }
     };
 
-    const pageTitle = mode === 'create' ? 'Tambah Kategori' : 'Edit Kategori';
+    const pageTitle = mode === 'create' ? 'Tambah Sub Kategori' : 'Edit Sub Kategori';
 
     return (
         <AdminLayout title={pageTitle}>
@@ -48,9 +56,35 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
                         <p className="text-gray-500 text-sm">Silakan isi form di bawah dengan benar</p>
                     </div>
 
-                    {/* Nama */}
+                    {/* Kategori */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-900">Nama Kategori</label>
+                        <label className="block text-sm font-semibold text-gray-900">Kategori</label>
+                        <select
+                            name="kategori_id"
+                            value={formData.kategori_id}
+                            onChange={handleChange}
+                            className={`w-full px-4 py-3 border rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                                errors.kategori_id ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
+                            }`}
+                            required
+                        >
+                            <option value="">📂 Pilih Kategori</option>
+                            {kategoris.map((k) => (
+                                <option key={k.id} value={k.id}>
+                                    {k.ket}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.kategori_id && (
+                            <p className="text-red-600 text-sm font-medium flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" /> {errors.kategori_id}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Nama Sub Kategori */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900">Nama Sub Kategori</label>
                         <input
                             type="text"
                             name="ket"
@@ -59,7 +93,7 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
                             className={`w-full px-4 py-3 border rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
                                 errors.ket ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'
                             }`}
-                            placeholder="Masukkan nama kategori"
+                            placeholder="Masukkan nama sub kategori"
                             required
                         />
                         {errors.ket && (
@@ -76,11 +110,11 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
                             disabled={loading}
                             className="flex-1 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 shadow-lg shadow-blue-500/30 cursor-pointer"
                         >
-                            {loading ? 'Menyimpan...' : mode === 'create' ? '✨ Tambah Kategori' : '✨ Simpan Perubahan'}
+                            {loading ? 'Menyimpan...' : mode === 'create' ? '✨ Tambah Sub Kategori' : '✨ Simpan Perubahan'}
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/kategori')}
+                            onClick={() => router.visit('/back/kategorisub')}
                             className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-3 rounded-xl font-semibold transition-all cursor-pointer"
                         >
                             Batal

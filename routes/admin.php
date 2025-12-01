@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BarangController;
 use App\Http\Controllers\Admin\KategoriController;
+use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,10 @@ Route::middleware(['auth', 'supervisor'])->group(function () {
     // Kategori management
     Route::resource('/back/kategori', KategoriController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::post('/back/kategori-list', [KategoriController::class, 'list'])->name('kategori.list');
+
+    // Kategorisub management
+    Route::resource('/back/kategorisub', KategorisubController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::post('/back/kategorisub-list', [KategorisubController::class, 'list'])->name('kategorisub.list');
 
     // User management
     Route::resource('/back/user', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

@@ -28,6 +28,11 @@ class Kategori extends Model
 
     protected $casts = [];
 
+    public function barangs()
+    {
+        return $this->hasMany(Barang::class, 'kategori_id', 'id');
+    }
+
     public static function getUsed()
     {
         $kategori = Kategori::select(['kategori.id', 'kategori.ket'])
