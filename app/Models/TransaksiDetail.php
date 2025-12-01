@@ -31,7 +31,7 @@ class TransaksiDetail extends Model
 
     public function barang()
     {
-        return $this->belongsTo(Barang::class, 'sku', 'sku');
+        return $this->belongsTo(Barang::class, 'sku', 'id');
     }
 
     public function transaksi()

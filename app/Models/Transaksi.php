@@ -69,7 +69,15 @@ class Transaksi extends Model
     public static function getLastTrxByKasir()
     {
         $kasirId = Auth::user()->id;
-        $trx = self::with(['payments', 'payments.type', 'details', 'details.barang', 'piutang', 'komplemen'])
+        $trx = self::with([
+            'payments', 
+            'payments.type', 
+            'details', 
+            'details.barang', 
+            'piutang', 
+            'komplemen',
+            'kasir'
+        ])
             ->where('user_kasir_id', $kasirId)
             ->orderBy('created_at', 'desc')
             ->first();

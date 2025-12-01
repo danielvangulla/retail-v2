@@ -24,7 +24,15 @@ class KasirController extends Controller
         if ($trxId === '') {
             $trx = Transaksi::getLastTrxByKasir();
         } else {
-            $trx = Transaksi::with(['payments', 'payments.type', 'details', 'details.barang', 'piutang', 'komplemen'])->find($trxId);
+            $trx = Transaksi::with([
+                'payments',
+                'payments.type',
+                'details',
+                'details.barang',
+                'piutang',
+                'komplemen',
+                'kasir'
+            ])->find($trxId);
         }
 
         if (isset($trx->piutang) and $trx->piutang->is_staff) {
@@ -61,16 +69,19 @@ class KasirController extends Controller
             ["z", "x", "c", "v", "b", "n", "m", ",", ".", "-"],
         ];
 
+        // Get last transaction ID for this kasir
+        $lastTrx = Transaksi::getLastTrxByKasir();
+        $lastTrxId = $lastTrx ? $lastTrx->id : '';
+
         return Inertia::render('Kasir/Index', [
             'paymentTypes' => $paymentTypes,
             'keysArray' => $keysArray,
+            'lastTrxId' => $lastTrxId,
         ]);
     }
 
     public function store(Request $r)
     {
-        \Log::info('Proses bayar request:', $r->all());
-
         if (!$r->state) {
             return response()->json([
                 'status' => 'error',
@@ -90,7 +101,6 @@ class KasirController extends Controller
                 'memberId' => '',
             ], Helpers::customErrorMsg());
         } catch (\Exception $e) {
-            \Log::error('Validation error:', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => 'error',
                 'msg' => $e->getMessage()

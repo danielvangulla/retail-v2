@@ -1,9 +1,31 @@
 import { Head } from '@inertiajs/react';
+import React from 'react';
+import { formatTgl, formatTime, formatDigit } from '@/lib/formatters';
+
+interface Barang {
+    sku: string;
+    deskripsi?: string;
+    alias?: string;
+    volume?: string;
+    multiplier?: boolean;
+}
+
+interface TransaksiDetail {
+    sku: string;
+    qty: number;
+    harga: number;
+    brutto: number;
+    charge?: number;
+    disc_spv?: number;
+    disc_promo?: number;
+    nama_promo?: string;
+    barang?: Barang;
+}
 
 interface Transaction {
     id: string;
     payments: any[];
-    details: any[];
+    details: TransaksiDetail[];
     piutang?: any;
     komplemen?: any;
     brutto: number;
@@ -15,10 +37,14 @@ interface Transaction {
     bayar: number;
     payment: number;
     kembali: number;
+    created_at: string;
+    kasir: {
+        name: string;
+    };
 }
 
 interface Setup {
-    perusahaan: string;
+    nama: string;
     alamat1: string;
     alamat2: string;
 }
@@ -33,133 +59,119 @@ export default function PrintBill({ trx, setup }: Props) {
         <>
             <Head title="Print Bill" />
 
-            <div className="min-h-screen bg-white p-8">
-                <div className="max-w-md mx-auto border-2 border-dashed border-gray-800 p-6 font-mono text-sm">
+            <style>
+                {`
+                    @media print {
+                        @page {
+                            size: 80mm auto;
+                            margin: 0;
+                        }
+                    }
+                `}
+            </style>
+
+            <div className="flex justify-center min-h-screen bg-gray-100">
+                <div className="w-[80mm] p-[2mm] bg-white text-black font-mono text-[11px] leading-tight">
                     {/* Header */}
-                    <div className="text-center mb-4">
-                        <h1 className="text-2xl font-bold mb-2">{setup.perusahaan}</h1>
-                        <p>{setup.alamat1}</p>
-                        <p>{setup.alamat2}</p>
-                        <div className="border-t-2 border-dashed border-gray-800 my-4"></div>
+                    <div className="text-center text-base font-bold mb-0.5">{setup.nama}</div>
+                    
+                    <div className="text-center text-[10px] mb-1">
+                        {setup.alamat1}<br />
+                        {setup.alamat2}
                     </div>
 
-                    {/* Transaction Details */}
-                    <div className="mb-4">
-                        <div className="flex justify-between">
-                            <span>ID Transaksi:</span>
-                            <span className="font-bold">{trx.id}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Tanggal:</span>
-                            <span>{new Date().toLocaleString('id-ID')}</span>
-                        </div>
+                    <div className="border-t border-black my-0.5"></div>
+
+                    <div className="text-center text-[10px] my-0.5">
+                        {formatTgl(trx.created_at)} {formatTime(trx.created_at)}<br />
+                        Kasir: {trx.kasir?.name}
                     </div>
 
-                    <div className="border-t-2 border-dashed border-gray-800 my-4"></div>
+                    <div className="border-t border-black my-0.5"></div>
 
                     {/* Items */}
-                    <table className="w-full mb-4">
-                        <thead>
-                            <tr className="border-b border-gray-800">
-                                <th className="text-left py-2">Item</th>
-                                <th className="text-center py-2">Qty</th>
-                                <th className="text-right py-2">Harga</th>
-                                <th className="text-right py-2">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {trx.details?.map((detail, index) => (
-                                <tr key={index} className="border-b border-gray-300">
-                                    <td className="py-2">{detail.barang?.deskripsi || '-'}</td>
-                                    <td className="text-center">{detail.qty}</td>
-                                    <td className="text-right">{detail.harga?.toLocaleString('id-ID')}</td>
-                                    <td className="text-right font-bold">{detail.bayar?.toLocaleString('id-ID')}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-
-                    <div className="border-t-2 border-dashed border-gray-800 my-4"></div>
-
-                    {/* Summary */}
-                    <div className="space-y-2 mb-4">
-                        <div className="flex justify-between">
-                            <span>Subtotal:</span>
-                            <span>Rp {trx.brutto?.toLocaleString('id-ID')}</span>
-                        </div>
-                        {trx.disc_spv > 0 && (
-                            <div className="flex justify-between">
-                                <span>Disc. SPV:</span>
-                                <span>- Rp {trx.disc_spv?.toLocaleString('id-ID')}</span>
-                            </div>
-                        )}
-                        {trx.disc_promo > 0 && (
-                            <div className="flex justify-between">
-                                <span>Disc. Promo:</span>
-                                <span>- Rp {trx.disc_promo?.toLocaleString('id-ID')}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between">
-                            <span>Netto:</span>
-                            <span>Rp {trx.netto?.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>PPN:</span>
-                            <span>Rp {trx.tax?.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Service:</span>
-                            <span>Rp {trx.service?.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="border-t-2 border-gray-800 pt-2 flex justify-between font-bold text-lg">
-                            <span>TOTAL:</span>
-                            <span>Rp {trx.bayar?.toLocaleString('id-ID')}</span>
-                        </div>
-                    </div>
-
-                    <div className="border-t-2 border-dashed border-gray-800 my-4"></div>
-
-                    {/* Payment */}
-                    <div className="space-y-2 mb-4">
-                        {trx.payments?.map((payment, index) => (
-                            <div key={index} className="flex justify-between">
-                                <span>{payment.type?.ket || 'Pembayaran'}:</span>
-                                <span>Rp {payment.nominal?.toLocaleString('id-ID')}</span>
+                    <div className="my-1">
+                        {trx.details?.map((v, index) => (
+                            <div key={index} className="mb-1">
+                                <div className="text-[11px] font-bold mb-px">
+                                    {v.barang?.deskripsi || v.barang?.alias || 'Item'}
+                                </div>
+                                <div className="flex justify-between text-[10px] pl-1">
+                                    <span>
+                                        {v.qty} {v.barang?.volume || 'pcs'} x {formatDigit(v.harga || 0)}
+                                        {(v.charge || 0) > 0 && ` +${formatDigit(v.charge || 0)}`}
+                                    </span>
+                                    <span>{formatDigit((v.brutto || 0) + (v.charge || 0))}</span>
+                                </div>
+                                {((v.disc_spv || 0) + (v.disc_promo || 0) > 0) && (
+                                    <div className="flex justify-between text-[10px] pl-1">
+                                        <span>Diskon {v.nama_promo || ''}</span>
+                                        <span>-{formatDigit((v.disc_spv || 0) + (v.disc_promo || 0))}</span>
+                                    </div>
+                                )}
                             </div>
                         ))}
-                        <div className="flex justify-between font-bold">
-                            <span>Total Bayar:</span>
-                            <span>Rp {trx.payment?.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg">
-                            <span>Kembali:</span>
-                            <span>Rp {trx.kembali?.toLocaleString('id-ID')}</span>
-                        </div>
                     </div>
 
-                    <div className="border-t-2 border-dashed border-gray-800 my-4"></div>
+                    <div className="border-t border-dashed border-black my-0.5"></div>
+
+                    {/* Total */}
+                    <div className="flex justify-between text-xs font-bold my-1">
+                        <span>TOTAL</span>
+                        <span>Rp {formatDigit(trx.bayar || 0)}</span>
+                    </div>
+
+                    <div className="border-t border-black my-0.5"></div>
+
+                    {/* Payment Details */}
+                    <div className="text-[10px] my-0.5">
+                        {trx.piutang ? (
+                            trx.piutang.is_staff ? (
+                                <div className="text-center">
+                                    <div>Sisa Deposit {trx.piutang.name}</div>
+                                    <div className="font-bold">
+                                        Rp {formatDigit(trx.piutang.deposit_sisa || 0)}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center">
+                                    <div>Piutang {trx.piutang.name}</div>
+                                    <div className="font-bold">
+                                        Rp {formatDigit(trx.bayar || 0)}
+                                    </div>
+                                </div>
+                            )
+                        ) : trx.komplemen ? (
+                            <div className="text-center">
+                                Komplemen by: {trx.komplemen.name}
+                            </div>
+                        ) : (
+                            <>
+                                {trx.payments?.map((v, index) => (
+                                    <div key={index} className="flex justify-between my-px">
+                                        <span>Bayar {v.type?.ket}</span>
+                                        <span className="font-bold">
+                                            Rp {formatDigit(trx.payment || 0)}
+                                        </span>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between my-px">
+                                    <span>Kembali</span>
+                                    <span className="font-bold">
+                                        Rp {formatDigit(trx.kembali || 0)}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="border-t border-black my-0.5"></div>
+
+                    {/* Transaction ID */}
+                    <div className="text-center text-[8px] my-2">No.Ref: {trx.id}</div>
 
                     {/* Footer */}
-                    <div className="text-center">
-                        <p className="font-bold">Terima Kasih</p>
-                        <p>Atas Kunjungan Anda</p>
-                    </div>
-                </div>
-
-                {/* Print Button */}
-                <div className="text-center mt-6 print:hidden">
-                    <button
-                        onClick={() => window.print()}
-                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-                    >
-                        Print Struk
-                    </button>
-                    <button
-                        onClick={() => window.close()}
-                        className="ml-4 px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold"
-                    >
-                        Tutup
-                    </button>
+                    <div className="text-center text-[10px] mt-1">==== Terima Kasih ====</div>
                 </div>
             </div>
         </>

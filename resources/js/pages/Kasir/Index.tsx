@@ -19,6 +19,7 @@ import useKasirCalculations from './hooks/useKasirCalculations';
 interface Props {
     paymentTypes: PaymentType[];
     keysArray: string[][];
+    lastTrxId?: string;
     auth?: {
         user?: {
             name?: string;
@@ -26,7 +27,7 @@ interface Props {
     };
 }
 
-export default function KasirIndex({ paymentTypes, keysArray, auth }: Props) {
+export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initialLastTrxId = '', auth }: Props) {
     // State management
     const [items, setItems] = useState<BarangItem[]>([]);
     const [selectedItems, setSelectedItems] = useState<BarangItem[]>([]);
@@ -36,7 +37,7 @@ export default function KasirIndex({ paymentTypes, keysArray, auth }: Props) {
     const [showSearchResults, setShowSearchResults] = useState(false);
     const [isPiutang, setIsPiutang] = useState(false);
     const [isStaff, setIsStaff] = useState(false);
-    const [lastTrxId, setLastTrxId] = useState('');
+    const [lastTrxId, setLastTrxId] = useState(initialLastTrxId);
     const [showResetButton, setShowResetButton] = useState(false);
     const [sessionExpired, setSessionExpired] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -261,7 +262,7 @@ export default function KasirIndex({ paymentTypes, keysArray, auth }: Props) {
             if (popupWindow) {
                 popupWindow.print();
                 setTimeout(() => {
-                    popupWindow.close();
+                    // popupWindow.close();
                 }, 1000);
             }
         }
