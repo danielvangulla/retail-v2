@@ -331,155 +331,226 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
         <>
             <Head title="Kasir - POS" />
 
-            <div className="grow flex flex-col gap-1 p-1">
-                {/* Main Screen */}
-                <div className="grow flex flex-col bg-blue-200 p-2 rounded-md border-2 border-orange-400 text-white h-[calc(80vh)]">
-                    <div className="flex flex-row justify-between items-center p-1 m-1">
-                        <div className="relative pl-4">
-                            <input
-                                ref={inputRef}
-                                id="inputBarcode"
-                                type="text"
-                                placeholder="Ketik / Scan Barcode.."
-                                value={searchQuery}
-                                onChange={(e) => handleSearchInput(e.target.value)}
-                                className="border border-gray-300 rounded-md py-1 pl-10 pr-4 bg-white text-black focus:outline-none focus:border-ocean-accent focus:ring-1 focus:ring-ocean-accent"
-                            />
-                            <span className="absolute inset-y-0 left-7 flex items-center">
-                                <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l5 5m0 0l-5-5m5 5L15 10M4 6a8 8 0 110 12 8 8 0 010-12z"></path>
-                                </svg>
-                            </span>
-                        </div>
+            <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 p-2">
+                {/* Main Container */}
+                <div className="h-[calc(100vh-1rem)] flex flex-col gap-2">
 
-                        <div className="relative pr-4">
-                            <p className="text-blue-600 text-4xl">
-                                Total Rp. <span className="font-extrabold">{formatNumber(grandTotal)}</span>
-                            </p>
+                    {/* Header Section */}
+                    <div className="bg-linear-to-br from-slate-800 to-slate-700 rounded-xl shadow-2xl border border-slate-600 p-3">
+                        <div className="flex items-center justify-between">
+                            {/* Search Box */}
+                            <div className="flex-1 max-w-md">
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                        <svg className="h-5 w-5 text-slate-400 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                    </div>
+                                    <input
+                                        ref={inputRef}
+                                        id="inputBarcode"
+                                        type="text"
+                                        placeholder="Scan barcode atau ketik nama barang..."
+                                        value={searchQuery}
+                                        onChange={(e) => handleSearchInput(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400
+                                                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                                 transition-all duration-200 shadow-inner"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Total Display */}
+                            <div className="flex items-center gap-3 bg-linear-to-br from-blue-600 to-blue-500 px-6 py-3 rounded-xl shadow-lg">
+                                <div className="text-right">
+                                    <div className="text-blue-100 text-xs font-medium uppercase tracking-wider">Grand Total</div>
+                                    <div className="text-white text-3xl font-bold tracking-tight">
+                                        Rp {formatNumber(grandTotal)}
+                                    </div>
+                                </div>
+                                <svg className="h-8 w-8 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Search Results */}
+                    {/* Search Results Modal */}
                     {showSearchResults && (
-                        <div className="bg-slate-300 border-2 border-blue-300 shadow-lg rounded-md p-1 h-[50vh] max-w-fit overflow-hidden flex flex-col fixed top-2/5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black z-50">
-                            <div className="overflow-y-auto flex-1">
-                                <table className="table table-auto w-full">
-                                    <thead className="sticky top-0 bg-slate-600 text-white">
+                        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+                            <div className="bg-slate-800 border border-slate-600 shadow-2xl rounded-xl overflow-hidden h-[70vh] w-full max-w-4xl">
+                                <div className="overflow-y-auto h-full">
+                                    <table className="w-full">
+                                        <thead className="sticky top-0 bg-linear-to-br from-slate-700 to-slate-600 shadow-md">
+                                            <tr className="text-slate-200">
+                                                <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Barcode</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Deskripsi</th>
+                                                <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Satuan</th>
+                                                <th className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wider">Harga</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-700">
+                                            {searchResults.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={4} className="px-4 py-12 text-center text-slate-400">
+                                                        <svg className="mx-auto h-12 w-12 text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                                                        </svg>
+                                                        Tidak ada hasil pencarian
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                searchResults.map((item) => (
+                                                    <tr
+                                                        key={item.id}
+                                                        onClick={() => {
+                                                            selectItemJual(item.id);
+                                                            setShowSearchResults(false);
+                                                            setSearchQuery('');
+                                                        }}
+                                                        className={`cursor-pointer transition-all duration-150 ${
+                                                            selectedResult?.id === item.id
+                                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                                : 'bg-slate-800/50 hover:bg-slate-700 text-slate-200'
+                                                        }`}
+                                                    >
+                                                        <td className="px-4 py-3 text-center font-mono text-sm">{item.barcode}</td>
+                                                        <td className="px-4 py-3 font-medium">{item.deskripsi}</td>
+                                                        <td className="px-4 py-3 text-center text-sm">{item.volume}</td>
+                                                        <td className="px-4 py-3 text-right font-semibold">Rp {formatNumber(item.harga_jual1)}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Cart Table */}
+                    <div className="flex-1 bg-slate-800 rounded-xl shadow-2xl border border-slate-600 overflow-hidden flex flex-col">
+                        <div className="overflow-y-auto flex-1" id="kasirScreen">
+                            <table className="w-full">
+                                <thead className="sticky top-0 bg-linear-to-br from-slate-700 to-slate-600 shadow-md">
+                                    <tr className="text-slate-200">
+                                        <th className="px-3 py-3 text-center text-sm font-semibold uppercase tracking-wider w-16">No</th>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold uppercase tracking-wider">Nama Barang</th>
+                                        <th className="px-3 py-3 text-center text-sm font-semibold uppercase tracking-wider w-24">Satuan</th>
+                                        <th className="px-3 py-3 text-center text-sm font-semibold uppercase tracking-wider w-20">Qty</th>
+                                        <th className="px-3 py-3 text-right text-sm font-semibold uppercase tracking-wider w-32">Harga</th>
+                                        <th className="px-3 py-3 text-right text-sm font-semibold uppercase tracking-wider w-28">Charge</th>
+                                        <th className="px-3 py-3 text-right text-sm font-semibold uppercase tracking-wider w-28">Disc</th>
+                                        <th className="px-3 py-3 text-right text-sm font-semibold uppercase tracking-wider w-36">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {calculatedData.items.length === 0 ? (
                                         <tr>
-                                            <th className="px-4 py-2 text-center">Barcode</th>
-                                            <th className="px-4 py-2 text-left">Deskripsi</th>
-                                            <th className="px-4 py-2 text-center">Satuan</th>
-                                            <th className="px-4 py-2 text-right">Harga Jual</th>
+                                            <td colSpan={8} className="px-4 py-20 text-center text-slate-400">
+                                                <svg className="mx-auto h-16 w-16 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                <div className="text-lg font-medium">Keranjang masih kosong</div>
+                                                <div className="text-sm mt-1">Scan atau cari barang untuk memulai transaksi</div>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                    {searchResults.length === 0 ? (
-                                        <tr><td colSpan={4} className="p-2 text-center text-black">No Data..</td></tr>
                                     ) : (
-                                        searchResults.map((item) => (
-                                            <tr
-                                                key={item.id}
-                                                onClick={() => {
-                                                    selectItemJual(item.id);
-                                                    setShowSearchResults(false);
-                                                    setSearchQuery('');
-                                                }}
-                                                className={`cursor-pointer hover:bg-blue-700 hover:text-white ${selectedResult?.id === item.id ? 'bg-blue-500 text-white' : 'bg-slate-200 text-black'}`}
-                                            >
-                                                <td className="border border-slate-500 px-4 py-1 text-center">{item.barcode}</td>
-                                                <td className="border border-slate-500 px-4 py-1 text-left">{item.deskripsi}</td>
-                                                <td className="border border-slate-500 px-4 py-1 text-center">{item.volume}</td>
-                                                <td className="border border-slate-500 px-4 py-1 text-right">{formatNumber(item.harga_jual1)}</td>
+                                        calculatedData.items.map((item, index) => (
+                                            <tr key={item.id} className="bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-slate-200">
+                                                <td className="px-3 py-2.5 text-center text-slate-400 font-medium">{index + 1}</td>
+                                                <td className="px-3 py-2.5 font-medium">{item.deskripsi}</td>
+                                                <td className="px-3 py-2.5 text-center text-sm text-slate-300">{item.volume}</td>
+                                                <td className="px-3 py-2.5 text-center">
+                                                    <span className="inline-flex items-center justify-center min-w-12 px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded-md font-semibold cursor-pointer transition-colors">
+                                                        {formatNumber(item.qty || 0)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right font-mono text-sm">Rp {formatNumber(item.hargaJual || 0)}</td>
+                                                <td className="px-3 py-2.5 text-right font-mono text-sm text-amber-400">{item.charge ? `Rp ${formatNumber(item.charge)}` : '-'}</td>
+                                                <td className="px-3 py-2.5 text-right font-mono text-sm text-green-400">{(item.disc_spv || 0) + (item.disc_promo || 0) > 0 ? `Rp ${formatNumber((item.disc_spv || 0) + (item.disc_promo || 0))}` : '-'}</td>
+                                                <td className="px-3 py-2.5 text-right font-bold text-lg">Rp {formatNumber(item.total || 0)}</td>
                                             </tr>
                                         ))
                                     )}
                                 </tbody>
                             </table>
                         </div>
-                        </div>
-                    )}
-
-                    {/* Cart Items Table */}
-                    <div id="kasirScreen" className="overflow-y-scroll">
-                        <table className="w-full table table-auto border-2 bg-slate-600">
-                            <thead>
-                                <tr>
-                                    <th className="border-2 border-white py-3">No.</th>
-                                    <th className="border-2 border-white py-3">Nama Barang</th>
-                                    <th className="border-2 border-white py-3">Satuan</th>
-                                    <th className="border-2 border-white py-3">Qty</th>
-                                    <th className="border-2 border-white py-3">Harga Rp.</th>
-                                    <th className="border-2 border-white py-3 w-36">Add. Charge</th>
-                                    <th className="border-2 border-white py-3 w-36">Disc.</th>
-                                    <th className="border-2 border-white py-3">Total Rp.</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-slate-500">
-                                {calculatedData.items.length === 0 ? (
-                                    <tr>
-                                        <td className="border-2 border-white p-2" colSpan={8}>No Data..</td>
-                                    </tr>
-                                ) : (
-                                    calculatedData.items.map((item, index) => (
-                                        <tr key={item.id}>
-                                            <td className="border-2 border-slate-300 px-2 py-1 text-center">{index + 1}</td>
-                                            <td className="border-2 border-slate-300 px-2">{item.deskripsi}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center">{item.volume}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center hover:bg-blue-500 cursor-pointer">{formatNumber(item.qty || 0)}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center">{formatNumber(item.hargaJual || 0)}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center">{formatNumber(item.charge || 0)}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center">{formatNumber((item.disc_spv || 0) + (item.disc_promo || 0))}</td>
-                                            <td className="border-2 border-slate-300 px-2 text-center">{formatNumber(item.total || 0)}</td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
                     </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="w-full flex flex-col bg-slate-300 p-2 rounded-md border-2 border-blue-400 text-black">
-                    <div className="flex flex-row gap-4 justify-center content-center">
-                        {showResetButton && (
+                    {/* Action Buttons */}
+                    <div className="bg-linear-to-br from-slate-800 to-slate-700 rounded-xl shadow-2xl border border-slate-600 p-3">
+                        <div className="flex items-center justify-center gap-2">
+                            {showResetButton && (
+                                <button
+                                    onClick={resetAll}
+                                    className="group flex items-center gap-2 px-4 py-2.5 bg-linear-to-br from-red-600 to-red-500 hover:from-red-500 hover:to-red-400
+                                             text-white rounded-lg font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+                                >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                    </svg>
+                                    <span>Reset</span>
+                                    <span className="text-xs opacity-75">(Esc)</span>
+                                </button>
+                            )}
+
                             <button
-                                onClick={resetAll}
-                                className="rounded-lg bg-red-700 hover:bg-red-500 text-white px-2 py-1 border-2 border-slate-500"
+                                onClick={handlePrintLast}
+                                className="group flex items-center gap-2 px-4 py-2.5 bg-linear-to-br from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400
+                                         text-white rounded-lg font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
                             >
-                                <i className="fa-solid fa-refresh"></i> Reset (Esc)
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                </svg>
+                                <span>Print Last</span>
+                                <span className="text-xs opacity-75">(PgUp)</span>
                             </button>
-                        )}
 
-                        <button
-                            onClick={handlePrintLast}
-                            className="rounded-lg bg-green-700 hover:bg-green-500 text-white px-2 py-1 border-2 border-slate-500"
-                        >
-                            <i className="fa-solid fa-print"></i> Print Last (PgUp)
-                        </button>
+                            <button
+                                className="group flex items-center gap-2 px-4 py-2.5 bg-linear-to-br from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400
+                                         text-white rounded-lg font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+                            >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>Diskon</span>
+                                <span className="text-xs opacity-75">(F5)</span>
+                            </button>
 
-                        <button
-                            className="rounded-lg bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 border-2 border-slate-500"
-                        >
-                            <i className="fa-solid fa-percent"></i> Diskon (F5)
-                        </button>
+                            <button
+                                className="group flex items-center gap-2 px-4 py-2.5 bg-linear-to-br from-slate-600 to-slate-500 hover:from-slate-500 hover:to-slate-400
+                                         text-white rounded-lg font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+                            >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                                </svg>
+                                <span>Komplemen</span>
+                                <span className="text-xs opacity-75">(F7)</span>
+                            </button>
 
-                        <button
-                            className="rounded-lg bg-slate-700 hover:bg-slate-500 text-white px-2 py-1 border-2 border-slate-500"
-                        >
-                            <i className="fa-solid fa-gift"></i> Komplemen (F7)
-                        </button>
+                            <button
+                                className="group flex items-center gap-2 px-4 py-2.5 bg-linear-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400
+                                         text-white rounded-lg font-medium shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+                            >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                <span>Piutang</span>
+                                <span className="text-xs opacity-75">(F8)</span>
+                            </button>
 
-                        <button
-                            className="rounded-lg bg-orange-700 hover:bg-orange-500 text-white px-2 py-1 border-2 border-slate-500"
-                        >
-                            <i className="fa-solid fa-hand"></i> Piutang (F8)
-                        </button>
-
-                        <button
-                            className="rounded-lg bg-blue-700 hover:bg-blue-500 text-white px-2 py-1 border-2 border-slate-500"
-                        >
-                            <i className="fa-solid fa-sack-dollar"></i> Pembayaran (F9)
-                        </button>
+                            <button
+                                className="group flex items-center gap-2 px-5 py-2.5 bg-linear-to-br from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400
+                                         text-white rounded-lg font-semibold shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 ring-2 ring-blue-400/50"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                <span>Pembayaran</span>
+                                <span className="text-xs opacity-75">(F9)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
