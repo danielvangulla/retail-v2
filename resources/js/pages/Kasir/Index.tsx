@@ -73,8 +73,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const [spvPin, setSpvPin] = useState('');
 
     const [showKomplemenModal, setShowKomplemenModal] = useState(false);
-    const [komplemenSearch, setKomplemenSearch] = useState('');
-    const [spvPinKomplemen, setSpvPinKomplemen] = useState('');
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentType | null>(null);
@@ -88,7 +86,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const qtyInputRef = useRef<HTMLInputElement>(null);
     const diskonInputRef = useRef<HTMLInputElement>(null);
     const spvPinRef = useRef<HTMLInputElement>(null);
-    const spvPinKomplemenRef = useRef<HTMLInputElement>(null);
     const paymentInputRef = useRef<HTMLInputElement>(null);
 
     // Custom hooks for calculations
@@ -328,56 +325,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
     const handleKomplemen = () => {
         setShowKomplemenModal(true);
-        setKomplemenSearch('');
-        setSpvPinKomplemen('');
-    };
-
-    const handleSelectKomplemen = async (item: BarangItem) => {
-        if (!spvPinKomplemen) {
-            showAlertModal('PIN Diperlukan', 'PIN supervisor diperlukan untuk komplemen', 'warning', () => {
-                spvPinKomplemenRef.current?.focus();
-            });
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            setLoadingMessage('Validasi PIN...');
-            const response = await axios.post('/validate-spv', { pin: spvPinKomplemen });
-
-            if (response.data.status === 'ok') {
-                const komplemenItem = {
-                    ...item,
-                    qty: 1,
-                    hargaJual: 0,
-                    harga_jual1: 0,
-                    disc_spv: 0,
-                    disc_promo: 0,
-                    charge: 0,
-                    total: 0
-                };
-
-                setSelectedItems(prev => [...prev, komplemenItem]);
-                setShowKomplemenModal(false);
-                setKomplemenSearch('');
-                setSpvPinKomplemen('');
-                inputRef.current?.focus();
-            } else {
-                showAlertModal('PIN Salah', 'PIN supervisor salah', 'error', () => {
-                    setSpvPinKomplemen('');
-                    spvPinKomplemenRef.current?.focus();
-                });
-            }
-        } catch (error: any) {
-            console.error('Error validating SPV:', error);
-            if (error.response?.status === 403) {
-                setSessionExpired(true);
-            } else {
-                showAlertModal('Gagal Validasi', 'Gagal validasi PIN supervisor', 'error');
-            }
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleTogglePiutang = () => {
@@ -566,7 +513,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 inputRef.current?.focus();
             } else if (showKomplemenModal) {
                 setShowKomplemenModal(false);
-                setKomplemenSearch('');
                 inputRef.current?.focus();
             } else if (showPaymentModal) {
                 setShowPaymentModal(false);
@@ -763,18 +709,14 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
             <KomplemenModal
                 show={showKomplemenModal}
-                items={items}
-                komplemenSearch={komplemenSearch}
-                spvPinKomplemen={spvPinKomplemen}
-                spvPinKomplemenRef={spvPinKomplemenRef}
-                onSearchChange={setKomplemenSearch}
-                onSpvPinChange={setSpvPinKomplemen}
-                onSelectItem={handleSelectKomplemen}
+                transaksiId={lastTrxId}
                 onClose={() => {
                     setShowKomplemenModal(false);
-                    setKomplemenSearch('');
-                    setSpvPinKomplemen('');
                     inputRef.current?.focus();
+                }}
+                onSuccess={() => {
+                    // Refresh atau handle setelah komplemen berhasil diproses
+                    setLastTrxId(lastTrxId);
                 }}
             />
 

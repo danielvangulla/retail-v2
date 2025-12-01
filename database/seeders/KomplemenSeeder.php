@@ -10,12 +10,15 @@ class KomplemenSeeder extends Seeder
     public function run(): void
     {
         $komplemen = [
-            ['name' => 'Owner'],
-            ['name' => 'Manager'],
+            ['name' => 'Owner', 'is_aktif' => 1, 'limit' => 0],
+            ['name' => 'Manager', 'is_aktif' => 1, 'limit' => 0],
         ];
 
         foreach ($komplemen as $v) {
-            Komplemen::create($v);
+            Komplemen::updateOrCreate(
+                ['name' => $v['name']],
+                $v
+            );
         }
     }
 }

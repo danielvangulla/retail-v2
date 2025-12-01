@@ -18,6 +18,7 @@ use App\Http\Controllers\Front\BillController;
 use App\Http\Controllers\Front\PaymentController;
 use App\Http\Controllers\Front\ReportController;
 use App\Http\Controllers\FrontRetail\KasirController;
+use App\Http\Controllers\FrontRetail\KomplemenController;
 use App\Http\Controllers\FrontRetail\ReportRetailController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,11 @@ if (env('APP_TYPE') === 'retail') {
 
         Route::post('/piutang-list', [PiutangBayarController::class, 'piutangList']);
         Route::resource('/piutang-bayar', PiutangBayarController::class)->only(['index', 'store']);
+
+        Route::post('/komplemen-list', [KomplemenController::class, 'list']);
+        Route::post('/komplemen-proses', [KomplemenController::class, 'proses']);
+        Route::get('/transaksi-detail/{id}', [KomplemenController::class, 'detail']);
+        Route::post('/komplemen-finish/{id}', [KomplemenController::class, 'finish']);
 
         Route::resource('/kategori', KategoriController::class)->only(['index', 'store']);
         Route::resource('/kategorisub', KategorisubController::class)->only(['index', 'store']);
