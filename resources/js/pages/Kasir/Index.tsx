@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import axios from 'axios';
 
@@ -56,11 +56,114 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
 
     const inputRef = useRef<HTMLInputElement>(null);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+    const canSelectSearchResultRef = useRef<boolean>(false);
 
     useEffect(() => {
         loadBarangList();
         inputRef.current?.focus();
-    }, []);
+
+        // Keyboard event handlers
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const blockedKeys = [
+                'Tab', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10',
+            ];
+
+            if (blockedKeys.includes(e.key)) {
+                e.preventDefault();
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            // Arrow Up - navigate search results
+            if (e.key === 'ArrowUp' && showSearchResults) {
+                e.preventDefault();
+                const currentIndex = searchResults.indexOf(selectedResult!);
+                if (currentIndex === 0) {
+                    setSelectedResult(searchResults[searchResults.length - 1]);
+                } else {
+                    setSelectedResult(searchResults[currentIndex - 1]);
+                }
+            }
+
+            // Arrow Down - navigate search results
+            if (e.key === 'ArrowDown' && showSearchResults) {
+                e.preventDefault();
+                const currentIndex = searchResults.indexOf(selectedResult!);
+                if (currentIndex === searchResults.length - 1) {
+                    setSelectedResult(searchResults[0]);
+                } else {
+                    setSelectedResult(searchResults[currentIndex + 1]);
+                }
+            }
+
+            // Enter - select highlighted result
+            if (e.key === 'Enter' && showSearchResults) {
+                e.preventDefault();
+                if (canSelectSearchResultRef.current && selectedResult) {
+                    selectItemJual(selectedResult.id);
+                    setShowSearchResults(false);
+                    setSearchQuery('');
+                    inputRef.current?.focus();
+                }
+            }
+
+            // Backspace - auto focus input
+            if (e.key === 'Backspace') {
+                if (document.activeElement !== inputRef.current && !showSearchResults) {
+                    inputRef.current?.focus();
+                    const currentVal = searchQuery;
+                    const remLastStr = currentVal.slice(0, -1);
+                    setSearchQuery(remLastStr);
+                    handleSearchInput(remLastStr);
+                }
+            }
+
+            // Delete - clear search
+            if (e.key === 'Delete' && !showSearchResults) {
+                setSearchQuery('');
+                handleSearchInput('');
+                inputRef.current?.focus();
+            }
+
+            // Escape - reset all
+            if (e.key === 'Escape' && !showSearchResults && selectedItems.length > 0) {
+                resetAll();
+            }
+
+            // F5 - Diskon
+            if (e.key === 'F5') {
+                // TODO: implement diskon modal
+            }
+
+            // F7 - Komplemen
+            if (e.key === 'F7') {
+                // TODO: implement komplemen modal
+            }
+
+            // F8 - Piutang
+            if (e.key === 'F8') {
+                // TODO: implement piutang modal
+            }
+
+            // F9 - Pembayaran
+            if (e.key === 'F9') {
+                // TODO: implement payment modal
+            }
+
+            // PageUp - Print last
+            if (e.key === 'PageUp') {
+                handlePrintLast();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+        };
+    }, [showSearchResults, searchResults, selectedResult, selectedItems, searchQuery]);
 
     useEffect(() => {
         if (selectedItems.length > 0) {
@@ -81,17 +184,16 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
         }
     };
 
-    const handleSearchInput = (value: string) => {
+    const handleSearchInput = useCallback((value: string) => {
         setSearchQuery(value);
         const searchString = value.toLowerCase();
 
         if (searchString.length >= 2) {
+            // Filter hanya barcode dan deskripsi (sesuai retail original)
             const filtered = items.filter(item =>
                 item.barcode.toLowerCase().includes(searchString) ||
-                item.deskripsi.toLowerCase().includes(searchString) ||
-                item.sku.toLowerCase().includes(searchString) ||
-                item.alias?.toLowerCase().includes(searchString)
-            );
+                item.deskripsi.toLowerCase().includes(searchString)
+            ).slice(0, 10); // Limit 10 items seperti retail original
 
             setSearchResults(filtered);
             setSelectedResult(filtered[0] || null);
@@ -99,44 +201,56 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
             if (filtered.length === 1) {
                 if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
-                searchTimeout.current = setTimeout(() => {
-                    const itemFound = items.find(item =>
-                        item.barcode.toLowerCase() === searchString ||
-                        item.sku.toLowerCase() === searchString
-                    );
+                // Find exact match untuk auto-select
+                const exactMatch = items.find(item =>
+                    item.barcode.toLowerCase() === searchString ||
+                    item.deskripsi.toLowerCase() === searchString
+                );
 
-                    if (itemFound) {
-                        selectItemJual(itemFound.id);
+                searchTimeout.current = setTimeout(() => {
+                    if (exactMatch) {
+                        selectItemJual(exactMatch.id);
                         setShowSearchResults(false);
                         setSearchQuery('');
                     }
+                }, 500); // 500ms seperti retail original
+            } else {
+                canSelectSearchResultRef.current = false;
+
+                setTimeout(() => {
+                    canSelectSearchResultRef.current = true;
                 }, 500);
             }
 
             setShowSearchResults(filtered.length > 0);
         } else {
             setShowSearchResults(false);
+            setSearchResults([]);
         }
-    };
+    }, [items]);
 
-    const selectItemJual = (id: string) => {
-        const exist = selectedItems.find(v => v.id === id);
+    const selectItemJual = useCallback((id: string) => {
+        setSelectedItems(prev => {
+            const exist = prev.find(v => v.id === id);
 
-        if (exist) {
-            setSelectedItems(prev => prev.map(v =>
-                v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
-            ));
-        } else {
-            const selected = items.find(v => v.id === id);
-            if (selected) {
-                setSelectedItems(prev => [...prev, { ...selected, qty: 1 }]);
+            if (exist) {
+                return prev.map(v =>
+                    v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
+                );
+            } else {
+                const selected = items.find(v => v.id === id);
+                if (selected) {
+                    return [...prev, { ...selected, qty: 1 }];
+                }
+                return prev;
             }
-        }
+        });
 
         inputRef.current?.focus();
-    };
+    }, [items]);
 
-    const calculateTotals = () => {
+    // Memoized calculation untuk avoid unnecessary recalculation
+    const calculatedData = useMemo(() => {
         let newTotalDisc = 0;
         let newTotalPromo = 0;
         let newTotalCharge = 0;
@@ -177,25 +291,31 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
             return v;
         });
 
-        setSelectedItems(updatedItems);
-        setTotalDisc(newTotalDisc);
-        setTotalPromo(newTotalPromo);
-        setTotalCharge(newTotalCharge);
-        setGrandTotal(newGrandTotal);
-    };
+        return {
+            items: updatedItems,
+            totalDisc: newTotalDisc,
+            totalPromo: newTotalPromo,
+            totalCharge: newTotalCharge,
+            grandTotal: newGrandTotal
+        };
+    }, [selectedItems, isPiutang, isStaff]);
 
+    // Update states ketika calculatedData berubah
     useEffect(() => {
-        calculateTotals();
-    }, [selectedItems.length, isPiutang, isStaff]);
+        setTotalDisc(calculatedData.totalDisc);
+        setTotalPromo(calculatedData.totalPromo);
+        setTotalCharge(calculatedData.totalCharge);
+        setGrandTotal(calculatedData.grandTotal);
+    }, [calculatedData]);
 
-    const resetAll = () => {
+    const resetAll = useCallback(() => {
         setSelectedItems([]);
         setIsPiutang(false);
         setIsStaff(false);
         setSearchQuery('');
         setShowSearchResults(false);
         inputRef.current?.focus();
-    };
+    }, []);
 
     const handlePrintLast = () => {
         if (lastTrxId) {
@@ -241,46 +361,41 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
 
                     {/* Search Results */}
                     {showSearchResults && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowSearchResults(false)}>
-                            <div
-                                className="bg-slate-300 border-2 border-blue-300 shadow-lg rounded-md p-1 h-[70vh] max-w-fit overflow-hidden flex flex-col"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="overflow-y-auto flex-1">
-                                    <table className="table table-auto w-full">
-                                        <thead className="sticky top-0 bg-slate-600 text-white">
-                                            <tr>
-                                                <th className="px-4 py-2 text-center">Barcode</th>
-                                                <th className="px-4 py-2 text-left">Deskripsi</th>
-                                                <th className="px-4 py-2 text-center">Satuan</th>
-                                                <th className="px-4 py-2 text-right">Harga Jual</th>
+                        <div className="bg-slate-300 border-2 border-blue-300 shadow-lg rounded-md p-1 h-[50vh] max-w-fit overflow-hidden flex flex-col fixed top-2/5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-black z-50">
+                            <div className="overflow-y-auto flex-1">
+                                <table className="table table-auto w-full">
+                                    <thead className="sticky top-0 bg-slate-600 text-white">
+                                        <tr>
+                                            <th className="px-4 py-2 text-center">Barcode</th>
+                                            <th className="px-4 py-2 text-left">Deskripsi</th>
+                                            <th className="px-4 py-2 text-center">Satuan</th>
+                                            <th className="px-4 py-2 text-right">Harga Jual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {searchResults.length === 0 ? (
+                                        <tr><td colSpan={4} className="p-2 text-center text-black">No Data..</td></tr>
+                                    ) : (
+                                        searchResults.map((item) => (
+                                            <tr
+                                                key={item.id}
+                                                onClick={() => {
+                                                    selectItemJual(item.id);
+                                                    setShowSearchResults(false);
+                                                    setSearchQuery('');
+                                                }}
+                                                className={`cursor-pointer hover:bg-blue-700 hover:text-white ${selectedResult?.id === item.id ? 'bg-blue-500 text-white' : 'bg-slate-200 text-black'}`}
+                                            >
+                                                <td className="border border-slate-500 px-4 py-1 text-center">{item.barcode}</td>
+                                                <td className="border border-slate-500 px-4 py-1 text-left">{item.deskripsi}</td>
+                                                <td className="border border-slate-500 px-4 py-1 text-center">{item.volume}</td>
+                                                <td className="border border-slate-500 px-4 py-1 text-right">{formatNumber(item.harga_jual1)}</td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {searchResults.length === 0 ? (
-                                                <tr><td colSpan={4} className="p-2 text-center text-black">No Data..</td></tr>
-                                            ) : (
-                                                searchResults.map((item) => (
-                                                    <tr
-                                                        key={item.id}
-                                                        onClick={() => {
-                                                            selectItemJual(item.id);
-                                                            setShowSearchResults(false);
-                                                            setSearchQuery('');
-                                                        }}
-                                                        className={`cursor-pointer hover:bg-blue-700 hover:text-white ${selectedResult?.id === item.id ? 'bg-blue-500 text-white' : 'bg-slate-200 text-black'}`}
-                                                    >
-                                                        <td className="border border-slate-500 px-4 py-1 text-center whitespace-nowrap">{item.barcode}</td>
-                                                        <td className="border border-slate-500 px-4 py-1 text-left whitespace-nowrap">{item.deskripsi}</td>
-                                                        <td className="border border-slate-500 px-4 py-1 text-center whitespace-nowrap">{item.volume}</td>
-                                                        <td className="border border-slate-500 px-4 py-1 text-right whitespace-nowrap">{formatNumber(item.harga_jual1)}</td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                         </div>
                     )}
 
@@ -300,12 +415,12 @@ export default function KasirIndex({ paymentTypes, keysArray }: Props) {
                                 </tr>
                             </thead>
                             <tbody className="bg-slate-500">
-                                {selectedItems.length === 0 ? (
+                                {calculatedData.items.length === 0 ? (
                                     <tr>
                                         <td className="border-2 border-white p-2" colSpan={8}>No Data..</td>
                                     </tr>
                                 ) : (
-                                    selectedItems.map((item, index) => (
+                                    calculatedData.items.map((item, index) => (
                                         <tr key={item.id}>
                                             <td className="border-2 border-slate-300 px-2 py-1 text-center">{index + 1}</td>
                                             <td className="border-2 border-slate-300 px-2">{item.deskripsi}</td>

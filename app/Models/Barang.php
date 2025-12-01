@@ -58,53 +58,29 @@ class Barang extends Model
             'sku',
             'barcode',
             'deskripsi',
+            'alias',
             'satuan',
             'isi',
             'volume',
-            'min_stock',
-            'harga_beli',
             'harga_jual1',
             'harga_jual2',
             'multiplier',
             'st_aktif',
-            'kategori_id',
         )->with([
-            'kategori' => function ($q) {
-                $q->select('id', 'ket');
-                $q->orderBy('ket');
-            },
-            'beliDetails' => function ($q) {
-                $q->selectRaw('sku, SUM(qty) as qty')
-                    ->groupBy('sku');
-            },
-            'trxDetails' => function ($q) {
-                $q->selectRaw('sku, nama_promo, SUM(qty) as qty')
-                    ->whereHas('transaksi', function ($q) {
-                        $q->where('is_cancel', 0);
-                    })
-                    ->groupBy('sku', 'nama_promo');
-            },
-            'retur' => function ($q) {
-                $q->selectRaw('barang_id, SUM(qty) as qty')
-                    ->groupBy('barang_id');
-            },
-            'expires' => function ($q) {
-                $q->selectRaw('barang_id, SUM(qty) as qty')
-                    ->groupBy('barang_id');
+            'prices' => function ($q) {
+                $q->select('id', 'barang_id', 'qty', 'harga1', 'harga2', 'multiplier')
+                    ->orderBy('qty');
             },
             'promo' => function ($q) {
                 $date = date('Y-m-d');
-                $q->selectRaw("'Promo' as nama_promo, barang_id, is_aktif, tgl_from, tgl_to, max_qty, harga_promo");
-                $q->where('tgl_from', '<=', $date);
-                $q->where('tgl_to', '>=', $date);
-                $q->where('is_aktif', 1);
+                $q->select('barang_id', 'is_aktif', 'tgl_from', 'tgl_to', 'max_qty', 'harga_promo')
+                    ->where('tgl_from', '<=', $date)
+                    ->where('tgl_to', '>=', $date)
+                    ->where('is_aktif', 1);
             },
-            'opname' => function ($q) {
-                $q->selectRaw("barang_id, sum(selisih) as selisih")
-                    ->groupBy('barang_id');
-            },
-            'prices'
-        ])->orderBy('sku')->get();
+        ])->where('st_aktif', 1)
+        ->orderBy('sku')
+        ->get();
     }
 
     public static function setCache()
@@ -120,41 +96,8 @@ class Barang extends Model
 
         $barangList = Cache::get('barangList');
 
-        $filteredBarang = $barangList->filter(function ($v) use ($show) {
-            return $v->st_aktif == $show;
-        });
-
-        if ($filteredBarang) {
-            foreach ($filteredBarang as $v) {
-                $v->stockIn = 0;
-                $v->stockOut = 0;
-                $v->selisihOpname = 0;
-
-                if (isset($v->beliDetails[0])) {
-                    $v->stockIn += $v->beliDetails[0]->qty;
-                }
-
-                foreach ($v->trxDetails as $vv) {
-                    $v->stockOut += $vv->qty;
-                }
-
-                if (isset($v->retur[0])) {
-                    $v->stockOut += $v->retur[0]->qty;
-                }
-
-                if (isset($v->expires[0])) {
-                    $v->stockOut += $v->expires[0]->qty;
-                }
-
-                if (isset($v->opname[0])) {
-                    $v->selisihOpname = intval($v->opname[0]->selisih);
-                }
-
-                $v->stock = $v->stockIn - $v->stockOut + $v->selisihOpname;
-            }
-        }
-
-        return $filteredBarang->values();
+        // Sudah di-filter st_aktif=1 di query, langsung return
+        return $barangList->values();
     }
 
     public static function getHargaBeli($id)
