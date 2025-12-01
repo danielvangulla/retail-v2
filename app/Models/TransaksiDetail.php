@@ -27,7 +27,18 @@ class TransaksiDetail extends Model
         'printed_at',
     ];
 
-    protected $casts = [];
+    protected $casts = [
+        'qty' => 'integer',
+        'harga' => 'float',
+        'brutto' => 'float',
+        'disc_spv' => 'float',
+        'disc_promo' => 'float',
+        'netto' => 'float',
+        'charge' => 'float',
+        'service' => 'float',
+        'tax' => 'float',
+        'bayar' => 'float',
+    ];
 
     public function barang()
     {

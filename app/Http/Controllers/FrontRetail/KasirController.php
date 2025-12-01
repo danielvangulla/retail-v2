@@ -14,6 +14,7 @@ use App\Models\TransaksiPaymentType;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -21,36 +22,44 @@ class KasirController extends Controller
 {
     public function printBill($trxId = '')
     {
-        if ($trxId === '') {
-            $trx = Transaksi::getLastTrxByKasir();
-        } else {
-            $trx = Transaksi::with([
-                'payments',
-                'payments.type',
-                'details',
-                'details.barang',
-                'piutang',
-                'komplemen',
-                'kasir'
-            ])->find($trxId);
-        }
-
-        if (isset($trx->piutang) and $trx->piutang->is_staff) {
-            $terpakai = 0;
-
-            foreach ($trx->piutang->transaksis as $v) {
-                $terpakai += $v->bayar;
+        try {
+            if ($trxId === '') {
+                $trx = Transaksi::getLastTrxByKasir();
+            } else {
+                $trx = Transaksi::with([
+                    'payments',
+                    'payments.type',
+                    'details',
+                    'details.barang',
+                    'piutang',
+                    'komplemen',
+                    'kasir'
+                ])->find($trxId);
             }
 
-            $trx->piutang->deposit_sisa = $v->piutang->deposit - $terpakai;
+            if ($trx && isset($trx->piutang) && $trx->piutang->is_staff) {
+                $terpakai = 0;
+
+                foreach ($trx->piutang->transaksis as $v) {
+                    $terpakai += $v->bayar;
+                }
+
+                $trx->piutang->deposit_sisa = $v->piutang->deposit - $terpakai;
+            }
+
+            $setup = Helpers::getSetup('perusahaan');
+
+            return Inertia::render('Kasir/PrintBill', [
+                'trx' => $trx,
+                'setup' => $setup,
+            ]);
+        } catch (\Throwable $th) {
+            \Log::error('PrintBill Error: ' . $th->getMessage());
+            return Inertia::render('Kasir/PrintBill', [
+                'trx' => null,
+                'setup' => Helpers::getSetup('perusahaan'),
+            ]);
         }
-
-        $setup = Helpers::getSetup('perusahaan');
-
-        return Inertia::render('Kasir/PrintBill', [
-            'trx' => $trx,
-            'setup' => $setup,
-        ]);
     }
 
     public function index()
@@ -343,12 +352,13 @@ class KasirController extends Controller
 
     public function validateSpv(Request $r)
     {
-        $spv = User::where('pin', $r->pin)->where('level', 1)->first();
-        if (!$spv) {
+        $spv = User::where('level', 1)->first();
+
+        if (!$spv || !Hash::check($r->pin, $spv->password)) {
             return response()->json([
                 "status" => "error",
                 "msg" => "Invalid PIN Supervisor !",
-            ], 403);
+            ], 401);
         }
 
         return response()->json([

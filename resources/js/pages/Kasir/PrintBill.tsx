@@ -55,6 +55,21 @@ interface Props {
 }
 
 export default function PrintBill({ trx, setup }: Props) {
+    // Handle empty transaction
+    if (!trx || !trx.id) {
+        return (
+            <>
+                <Head title="Print Bill" />
+                <div className="flex justify-center items-center min-h-screen bg-gray-100">
+                    <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-800 mb-4">Transaksi Tidak Ditemukan</div>
+                        <p className="text-gray-600">Belum ada transaksi untuk ditampilkan</p>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Print Bill" />
@@ -74,7 +89,7 @@ export default function PrintBill({ trx, setup }: Props) {
                 <div className="w-[80mm] p-[2mm] bg-white text-black font-mono text-[11px] leading-tight">
                     {/* Header */}
                     <div className="text-center text-base font-bold mb-0.5">{setup.nama}</div>
-                    
+
                     <div className="text-center text-[10px] mb-1">
                         {setup.alamat1}<br />
                         {setup.alamat2}
@@ -98,7 +113,7 @@ export default function PrintBill({ trx, setup }: Props) {
                                 </div>
                                 <div className="flex justify-between text-[10px] pl-1">
                                     <span>
-                                        {v.qty} {v.barang?.volume || 'pcs'} x {formatDigit(v.harga || 0)}
+                                        {v.qty} x {formatDigit(v.harga || 0)}
                                         {(v.charge || 0) > 0 && ` +${formatDigit(v.charge || 0)}`}
                                     </span>
                                     <span>{formatDigit((v.brutto || 0) + (v.charge || 0))}</span>

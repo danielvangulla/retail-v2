@@ -52,17 +52,34 @@ export default function useKasirKeyboard({
     inputRef
 }: UseKasirKeyboardProps) {
     useEffect(() => {
+        // Check if any modal is active (except search which is not a modal)
+        const isModalActive = showQtyModal || showDiskonModal || showKomplemenModal || showPaymentModal;
+
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Block default browser behavior only for specific keys when NO modal is active
             const blockedKeys = [
                 'Tab', 'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10',
+                'Delete', 'Backspace'
             ];
 
-            if (blockedKeys.includes(e.key)) {
+            // Only prevent default if not in modal or if it's a search
+            if (!isModalActive && blockedKeys.includes(e.key)) {
+                e.preventDefault();
+            }
+
+            // Always prevent Escape globally
+            if (e.key === 'Escape') {
                 e.preventDefault();
             }
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
+            // Allow keys only when search is active OR when NO modal is shown
+            if (isModalActive && !showSearchResults) {
+                // Modal is active and it's not search - let modal handle its own keys
+                return;
+            }
+
             if (e.key === 'ArrowUp' && showSearchResults) {
                 e.preventDefault();
                 onArrowUp();
@@ -73,7 +90,7 @@ export default function useKasirKeyboard({
                 onArrowDown();
             }
 
-            if (e.key === 'Tab' && selectedItems.length > 0 && !showSearchResults && !showQtyModal) {
+            if (e.key === 'Tab' && selectedItems.length > 0 && !showSearchResults) {
                 e.preventDefault();
                 onTab();
             }
@@ -83,12 +100,9 @@ export default function useKasirKeyboard({
                 onEnter();
             }
 
-            if (e.key === 'Enter' && showQtyModal) {
-                e.preventDefault();
-            }
-
             if (e.key === 'Backspace') {
-                if (document.activeElement !== inputRef.current && !showSearchResults && !showQtyModal && !showDiskonModal && !showKomplemenModal && !showPaymentModal) {
+                if (document.activeElement !== inputRef.current && !showSearchResults) {
+                    e.preventDefault();
                     onBackspace();
                 }
             }
@@ -98,32 +112,32 @@ export default function useKasirKeyboard({
                 onEscape();
             }
 
-            if (e.key === 'Delete') {
+            if (e.key === 'Delete' && !showSearchResults) {
                 e.preventDefault();
                 onDelete();
             }
 
-            if (e.key === 'F5') {
+            if (e.key === 'F5' && !showSearchResults) {
                 e.preventDefault();
                 onF5();
             }
 
-            if (e.key === 'F7') {
+            if (e.key === 'F7' && !showSearchResults) {
                 e.preventDefault();
                 onF7();
             }
 
-            if (e.key === 'F8') {
+            if (e.key === 'F8' && !showSearchResults) {
                 e.preventDefault();
                 onF8();
             }
 
-            if (e.key === 'F9') {
+            if (e.key === 'F9' && !showSearchResults) {
                 e.preventDefault();
                 onF9();
             }
 
-            if (e.key === 'PageUp') {
+            if (e.key === 'PageUp' && !showSearchResults) {
                 e.preventDefault();
                 onPageUp();
             }

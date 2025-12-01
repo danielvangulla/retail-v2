@@ -53,7 +53,7 @@ class Transaksi extends Model
 
     public function komplemen()
     {
-        return $this->belongsTo(User::class, 'komplemen_id');
+        return $this->belongsTo(Komplemen::class);
     }
 
     public function piutang()

@@ -247,25 +247,33 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         inputRef.current?.focus();
     };
 
-    const handlePrintLast = () => {
-        if (lastTrxId) {
-            const width = 400;
-            const height = 500;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-            const size = `width=${width},height=${height},left=${left},top=${top}`;
-            const url = `/print-bill/${lastTrxId}`;
-            const popupWindow = window.open(url, '_blank', size);
-            if (popupWindow) {
-                popupWindow.print();
-                setTimeout(() => {
-                    // popupWindow.close();
-                }, 1000);
-            }
-        }
-    };
+    const handlePrintLast = (trxId?: string) => {
+        const idToPrint = trxId || lastTrxId;
 
-    const handleDiskon = (item?: BarangItem) => {
+        // Type check - ensure it's a string
+        if (!idToPrint || typeof idToPrint !== 'string' || idToPrint.trim() === '') {
+            console.warn('handlePrintLast: No transaction ID', { idToPrint, lastTrxId, trxId });
+            showAlertModal('Info', 'Belum ada transaksi hari ini', 'info', () => {});
+            return;
+        }
+
+        console.log('handlePrintLast: Opening print for', idToPrint);
+
+        const width = 400;
+        const height = 500;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+        const size = `width=${width},height=${height},left=${left},top=${top}`;
+        const url = `/print-bill/${idToPrint}`;
+        console.log('Print URL:', url);
+        const popupWindow = window.open(url, '_blank', size);
+        if (popupWindow) {
+            popupWindow.print();
+            setTimeout(() => {
+                // popupWindow.close();
+            }, 1000);
+        }
+    };    const handleDiskon = (item?: BarangItem) => {
         if (selectedItems.length === 0) return;
 
         const targetItem = item || selectedItems[selectedItems.length - 1];
@@ -313,7 +321,12 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             }
         } catch (error: any) {
             console.error('Error validating SPV:', error);
-            if (error.response?.status === 403) {
+            if (error.response?.status === 401) {
+                showAlertModal('PIN Salah', 'PIN supervisor salah', 'error', () => {
+                    setSpvPin('');
+                    spvPinRef.current?.focus();
+                });
+            } else if (error.response?.status === 403) {
                 setSessionExpired(true);
             } else {
                 showAlertModal('Gagal Validasi', 'Gagal validasi PIN supervisor', 'error');
@@ -389,7 +402,16 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             const response = await axios.post('/proses-bayar', trxData);
 
             if (response.data.status === 'ok') {
-                const trxId = response.data.trxId || response.data.trx_id;
+                // Extract transaction ID (backend returns 'trxId' as string)
+                const trxId = response.data.trxId;
+
+                // Validate it's a string
+                if (!trxId || typeof trxId !== 'string') {
+                    console.error('Invalid trxId from response:', response.data);
+                    showAlertModal('Error', 'Transaction ID tidak valid', 'error', resetAll);
+                    return;
+                }
+
                 setLastTrxId(trxId);
 
                 const change = payment - grandTotal;
@@ -398,21 +420,19 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                     : 'Pembayaran berhasil!';
 
                 showAlertModal('Sukses', message, 'success', () => {
-                    if (trxId) {
-                        // Open print window in center of screen
-                        const width = 400;
-                        const height = 500;
-                        const left = (window.screen.width - width) / 2;
-                        const top = (window.screen.height - height) / 2;
-                        const size = `width=${width},height=${height},left=${left},top=${top}`;
+                    // Open print window in center of screen
+                    const width = 400;
+                    const height = 500;
+                    const left = (window.screen.width - width) / 2;
+                    const top = (window.screen.height - height) / 2;
+                    const size = `width=${width},height=${height},left=${left},top=${top}`;
 
-                        const popupWindow = window.open(`/print-bill/${trxId}`, '_blank', size);
-                        if (popupWindow) {
-                            popupWindow.print();
-                            setTimeout(() => {
-                                // popupWindow.close();
-                            }, 1000);
-                        }
+                    const popupWindow = window.open(`/print-bill/${trxId}`, '_blank', size);
+                    if (popupWindow) {
+                        popupWindow.print();
+                        setTimeout(() => {
+                            // popupWindow.close();
+                        }, 1000);
                     }
                 });
 
@@ -710,13 +730,18 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             <KomplemenModal
                 show={showKomplemenModal}
                 transaksiId={lastTrxId}
+                selectedItems={selectedItems}
                 onClose={() => {
                     setShowKomplemenModal(false);
                     inputRef.current?.focus();
                 }}
-                onSuccess={() => {
-                    // Refresh atau handle setelah komplemen berhasil diproses
-                    setLastTrxId(lastTrxId);
+                onSuccess={(newTrxId) => {
+                    // Print struk dengan transaksi komplemen baru (pass langsung, jangan tunggu state update)
+                    handlePrintLast(newTrxId);
+                    // Update lastTrxId untuk print manual berikutnya
+                    setLastTrxId(newTrxId);
+                    // Reset items
+                    resetAll();
                 }}
             />
 

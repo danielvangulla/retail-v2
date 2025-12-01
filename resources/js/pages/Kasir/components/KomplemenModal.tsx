@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { formatDigit } from '@/lib/formatters';
+import { BarangItem } from '@/components/kasir/types';
 
 interface Komplemen {
     id: string;
@@ -32,7 +34,8 @@ interface KomplemenModalProps {
     show: boolean;
     transaksiId: string;
     onClose: () => void;
-    onSuccess?: () => void;
+    onSuccess?: (newTrxId: string) => void;
+    selectedItems?: BarangItem[];
 }
 
 export default function KomplemenModal({
@@ -40,6 +43,7 @@ export default function KomplemenModal({
     transaksiId,
     onClose,
     onSuccess,
+    selectedItems = [],
 }: KomplemenModalProps) {
     const passwordRef = useRef<HTMLInputElement>(null);
     const [komplemens, setKomplemens] = useState<Komplemen[]>([]);
@@ -50,18 +54,42 @@ export default function KomplemenModal({
     const [error, setError] = useState('');
     const [processing, setProcessing] = useState(false);
     const [step, setStep] = useState<'input' | 'confirm'>('input');
+    const [newTrxId, setNewTrxId] = useState<string>(''); // Store new transaction ID
 
     useEffect(() => {
         if (show) {
             fetchKomplemens();
-            fetchTransaksi();
+            // Gunakan selectedItems dari prop, bukan fetch dari database
+            if (selectedItems.length > 0) {
+                const totalHarga = selectedItems.reduce((sum, item) => sum + ((item.hargaJual || item.harga_jual1 || 0) * (item.qty || 0)), 0);
+                setTransaksiData({
+                    id: transaksiId,
+                    netto: totalHarga,
+                    tax: 0,
+                    service: 0,
+                    bayar: totalHarga,
+                    details: selectedItems.map(item => ({
+                        sku: item.id,
+                        qty: item.qty || 0,
+                        harga_dasar: item.hargaJual || item.harga_jual1 || 0,
+                        disc_item: item.disc_spv || 0,
+                        subtotal: (item.hargaJual || item.harga_jual1 || 0) * (item.qty || 0),
+                        barang: {
+                            id: item.id,
+                            deskripsi: item.deskripsi,
+                            alias: item.alias || '',
+                        }
+                    }))
+                });
+            }
             setPassword('');
             setSelectedKomplemen('');
             setError('');
+            setNewTrxId(''); // Reset newTrxId
             setStep('input');
             setTimeout(() => passwordRef.current?.focus(), 100);
         }
-    }, [show]);
+    }, [show, selectedItems]);
 
     const fetchTransaksi = async () => {
         try {
@@ -101,13 +129,35 @@ export default function KomplemenModal({
         setProcessing(true);
         setError('');
         try {
+            // Calculate totals from selectedItems
+            const totalHarga = selectedItems.reduce((sum, item) => sum + ((item.hargaJual || item.harga_jual1 || 0) * (item.qty || 0)), 0);
+            const rateTax = 0; // Can be configured
+            const rateService = 0; // Can be configured
+            const tax = totalHarga * rateTax / 100;
+            const service = totalHarga * rateService / 100;
+            const bayar = totalHarga + tax + service;
+
             const response = await axios.post('/komplemen-proses', {
-                transaksi_id: transaksiId,
                 komplemen_id: selectedKomplemen,
                 pin: password,
+                // Send selectedItems as items
+                items: selectedItems.map(item => ({
+                    sku: item.id,
+                    qty: item.qty || 0,
+                    harga: item.hargaJual || item.harga_jual1 || 0,
+                    brutto: (item.hargaJual || item.harga_jual1 || 0) * (item.qty || 0),
+                })),
+                netto: totalHarga,
+                tax: tax,
+                service: service,
+                bayar: bayar,
             });
 
             if (response.data.status === 'ok') {
+                // Save new transaction ID
+                const trxId = response.data.data.id;
+                console.log('Komplemen Success! New TrxID:', trxId);
+                setNewTrxId(trxId);
                 setStep('confirm');
                 setProcessing(false);
             } else {
@@ -123,18 +173,26 @@ export default function KomplemenModal({
     const handleConfirmFinish = async () => {
         setProcessing(true);
         try {
-            // Panggil API untuk final confirmation/update status
-            const response = await axios.post(`/komplemen-finish/${transaksiId}`);
-            
-            if (response.data.status === 'ok') {
-                setPassword('');
-                setSelectedKomplemen('');
-                setStep('input');
-                onSuccess?.();
-                onClose();
-            } else {
-                setError(response.data.msg || 'Gagal menyelesaikan komplemen');
+            // Use saved newTrxId from handleProses
+            if (!newTrxId) {
+                setError('Transaction ID tidak ditemukan');
+                setProcessing(false);
+                return;
             }
+
+            console.log('Confirm Finish - newTrxId:', newTrxId);
+
+            setPassword('');
+            setSelectedKomplemen('');
+            setStep('input');
+
+            // Trigger print dengan transaksi ID baru dan reset items
+            if (onSuccess) {
+                console.log('Calling onSuccess with:', newTrxId);
+                onSuccess(newTrxId);
+            }
+
+            onClose();
         } catch (err: any) {
             setError(err.response?.data?.msg || 'Error menyelesaikan komplemen');
         } finally {
@@ -258,19 +316,19 @@ export default function KomplemenModal({
                         <div className="border-t border-gray-300 pt-2 mt-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal:</span>
-                                <span>Rp {(transaksiData?.netto || 0).toLocaleString('id-ID')}</span>
+                                <span>Rp {formatDigit(transaksiData?.netto || 0)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Tax:</span>
-                                <span>Rp {(transaksiData?.tax || 0).toLocaleString('id-ID')}</span>
+                                <span>Rp {formatDigit(transaksiData?.tax || 0)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Service:</span>
-                                <span>Rp {(transaksiData?.service || 0).toLocaleString('id-ID')}</span>
+                                <span>Rp {formatDigit(transaksiData?.service || 0)}</span>
                             </div>
                             <div className="flex justify-between font-bold text-base border-t border-gray-300 pt-2 mt-2">
                                 <span>Total:</span>
-                                <span>Rp {(transaksiData?.bayar || 0).toLocaleString('id-ID')}</span>
+                                <span>Rp {formatDigit(transaksiData?.bayar || 0)}</span>
                             </div>
                         </div>
                     </div>
@@ -283,7 +341,7 @@ export default function KomplemenModal({
                                     <div key={idx} className="text-sm flex justify-between">
                                         <span className="flex-1">{detail.barang?.deskripsi || detail.barang?.alias || detail.sku}</span>
                                         <span className="text-right">
-                                            {detail.qty}x Rp {(detail.harga_dasar).toLocaleString('id-ID')}
+                                            {detail.qty}x Rp {formatDigit(detail.harga_dasar || 0)}
                                         </span>
                                     </div>
                                 ))}

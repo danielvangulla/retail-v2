@@ -5,6 +5,7 @@ namespace App\Http\Controllers\FrontRetail;
 use App\Http\Controllers\Controller;
 use App\Models\Komplemen;
 use App\Models\Transaksi;
+use App\Models\TransaksiDetail;
 use App\Models\TransaksiPayment;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -50,9 +51,17 @@ class KomplemenController extends Controller
     {
         try {
             $validated = $request->validate([
-                'transaksi_id' => 'required|string|exists:transaksis,id',
                 'komplemen_id' => 'required|string|exists:komplemens,id',
                 'pin' => 'required|string',
+                'items' => 'required|array', // Items dari frontend (selectedItems)
+                'items.*.sku' => 'required|string',
+                'items.*.qty' => 'required|numeric|min:1',
+                'items.*.harga' => 'required|numeric',
+                'items.*.brutto' => 'required|numeric',
+                'netto' => 'required|numeric', // Total netto dari items
+                'tax' => 'required|numeric',
+                'service' => 'required|numeric',
+                'bayar' => 'required|numeric',
             ]);
 
             // Cek SPV password
@@ -65,30 +74,51 @@ class KomplemenController extends Controller
                 ], 403);
             }
 
-            // Get transaksi
-            $trx = Transaksi::findOrFail($validated['transaksi_id']);
-
-            // Delete existing payment records
-            TransaksiPayment::where('transaksi_id', $trx->id)->delete();
-
-            // Update transaksi as komplemen
             $user = Auth::user();
-            $trx->update([
+
+            // Create transaksi komplemen baru dengan data dari request (selectedItems)
+            $komplemenTrx = Transaksi::create([
+                'tgl' => now()->format('Y-m-d'),
                 'jam_selesai' => now(),
-                'kembali' => 0,
-                'is_piutang' => 0,
-                'piutang_id' => null,
-                'is_komplemen' => 1,
-                'komplemen_id' => $validated['komplemen_id'],
+                'meja' => '-',
+                'brutto' => $validated['netto'], // Tidak ada disc untuk komplemen
+                'disc_spv' => 0,
+                'disc_promo' => 0,
+                'netto' => $validated['netto'],
+                'tax' => $validated['tax'],
+                'service' => $validated['service'],
+                'bayar' => $validated['bayar'],
+                'payment' => 0, // Komplemen tidak ada pembayaran tunai
+                'kembali' => 0, // Tidak ada kembalian
                 'status' => 2, // PAID status
                 'user_kasir_id' => $user->id,
                 'user_spv_id' => $spv->id,
+                'is_komplemen' => 1,
+                'komplemen_id' => $validated['komplemen_id'],
             ]);
+
+            // Create detail items dari request (bukan dari database)
+            foreach ($validated['items'] as $item) {
+                TransaksiDetail::create([
+                    'transaksi_id' => $komplemenTrx->id,
+                    'tgl' => now()->format('Y-m-d'),
+                    'jam' => now(),
+                    'no_co' => uniqid(),
+                    'sku' => $item['sku'],
+                    'qty' => $item['qty'],
+                    'harga' => $item['harga'],
+                    'brutto' => $item['brutto'],
+                    'charge' => 0,
+                    'disc_spv' => 0,
+                    'disc_promo' => 0,
+                    'nama_promo' => '',
+                ]);
+            }
 
             return response()->json([
                 'status' => 'ok',
                 'msg' => 'Komplemen berhasil diproses',
-                'data' => $trx,
+                'data' => $komplemenTrx,
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

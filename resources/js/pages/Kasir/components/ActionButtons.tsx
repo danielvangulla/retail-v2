@@ -38,7 +38,7 @@ export default function ActionButtons({
             )}
 
             <button
-                onClick={onPrintLast}
+                onClick={() => onPrintLast()}
                 className="group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 bg-linear-to-br from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400
                          text-white rounded-md sm:rounded-lg font-medium text-xs sm:text-base shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 cursor-pointer whitespace-nowrap shrink-0"
             >
