@@ -17,6 +17,8 @@ use App\Http\Controllers\Front\OrderController;
 use App\Http\Controllers\Front\BillController;
 use App\Http\Controllers\Front\PaymentController;
 use App\Http\Controllers\Front\ReportController;
+use App\Http\Controllers\FrontRetail\KasirController;
+use App\Http\Controllers\FrontRetail\ReportRetailController;
 use Illuminate\Support\Facades\Route;
 
 if (env('APP_TYPE') === 'retail') {
@@ -24,21 +26,21 @@ if (env('APP_TYPE') === 'retail') {
         Route::resource('/setup-users', UserPermissionController::class)->only(['index', 'store']);
         Route::post('/setup-users-json', [UserPermissionController::class, 'usersJson']);
 
-        Route::get('/home-space', [HomeSpaceController::class, 'index'])->name('home.space');
+        Route::get('/home-space', [KasirController::class, 'index'])->name('home.space');
 
-        Route::post('/proses-bayar', [PaymentController::class, 'billPayment']);
-        Route::post('/update-bayar', [PaymentController::class, 'billPayment']);
+        Route::post('/proses-bayar', [KasirController::class, 'store']);
+        Route::post('/update-bayar', [KasirController::class, 'update']);
 
-        Route::get('/print-bill', [BillController::class, 'printBill']);
-        Route::get('/print-bill/{trxId}', [BillController::class, 'printBill']);
+        Route::get('/print-bill', [KasirController::class, 'printBill']);
+        Route::get('/print-bill/{trxId}', [KasirController::class, 'printBill']);
 
-        Route::post('/validate-spv', [HomeSpaceController::class, 'cekMeja']);
+        Route::post('/validate-spv', [KasirController::class, 'validateSpv']);
 
-        Route::get('/trx-edit/{id}', [OrderController::class, 'trxEdit']);
-        Route::post('/trx-edit-data', [OrderController::class, 'trxEditJson']);
-        Route::post('/trx-edit', [OrderController::class, 'trxUpdate']);
+        Route::get('/trx-edit/{id}', [KasirController::class, 'trxEdit']);
+        Route::post('/trx-edit-data', [KasirController::class, 'trxEditJson']);
+        Route::post('/trx-edit', [KasirController::class, 'update']);
 
-        Route::post('/trx-delete', [OrderController::class, 'trxDelete']);
+        Route::post('/trx-delete', [KasirController::class, 'trxDelete']);
 
         Route::post('/member-list', [PiutangController::class, 'memberList']);
         Route::resource('/piutang', PiutangController::class)->only(['index', 'store']);
@@ -74,20 +76,20 @@ if (env('APP_TYPE') === 'retail') {
         Route::get('/barang-deleted', [BarangController::class, 'indexDeleted']);
         Route::post('/barang-list-deleted', [BarangController::class, 'barangListDeleted']);
 
-        Route::get('/sales-by-user', [ReportController::class, 'salesByUser']);
-        Route::post('/sales-by-user', [ReportController::class, 'salesByUserJson']);
+        Route::get('/sales-by-user', [ReportRetailController::class, 'salesByUser']);
+        Route::post('/sales-by-user', [ReportRetailController::class, 'salesByUserJson']);
 
-        Route::get('/sales-by-tgl', [ReportController::class, 'salesByTgl']);
-        Route::post('/sales-by-tgl', [ReportController::class, 'salesByTglJson']);
+        Route::get('/sales-by-tgl', [ReportRetailController::class, 'salesByTgl']);
+        Route::post('/sales-by-tgl', [ReportRetailController::class, 'salesByTglJson']);
 
-        Route::get('/sales-by-trx', [ReportController::class, 'salesByTrx']);
-        Route::post('/sales-by-trx', [ReportController::class, 'salesByTrxJson']);
+        Route::get('/sales-by-trx', [ReportRetailController::class, 'salesByTrx']);
+        Route::post('/sales-by-trx', [ReportRetailController::class, 'salesByTrxJson']);
 
-        Route::get('/omset-by-tgl', [ReportController::class, 'omsetByTgl']);
-        Route::get('/omset-by-tgl/{tgl1}/{tgl2}', [ReportController::class, 'omsetByTgl']);
+        Route::get('/omset-by-tgl', [ReportRetailController::class, 'omsetByTgl']);
+        Route::get('/omset-by-tgl/{tgl1}/{tgl2}', [ReportRetailController::class, 'omsetByTgl']);
 
-        Route::get('/omset-by-tgl-kategori', [ReportController::class, 'omsetByTglKategori']);
-        Route::get('/omset-by-tgl-kategori/{tgl1}/{tgl2}', [ReportController::class, 'omsetByTglKategori']);
+        Route::get('/omset-by-tgl-kategori', [ReportRetailController::class, 'omsetByTglKategori']);
+        Route::get('/omset-by-tgl-kategori/{tgl1}/{tgl2}', [ReportRetailController::class, 'omsetByTglKategori']);
 
         Route::resource('/cashflow', CashflowController::class)->only(['index', 'create', 'store']);
 

@@ -7,6 +7,7 @@ use App\Models\PiutangBayar;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class PiutangBayarController extends Controller
 {
@@ -44,7 +45,7 @@ class PiutangBayarController extends Controller
 
     public function index()
     {
-        return View('back.piutang-bayar.index');
+        return Inertia::render('Piutang/PiutangBayar/Index');
     }
 
     public function store(Request $r)

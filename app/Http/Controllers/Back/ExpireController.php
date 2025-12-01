@@ -8,18 +8,19 @@ use App\Models\BarangExpire;
 use App\Models\BarangExpireDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class ExpireController extends Controller
 {
     public function index()
     {
         $data = BarangExpire::with('user')->with('details')->orderBy('created_at', 'desc')->get();
-        return View('back.expire.index', compact('data'));
+        return Inertia::render('Expire/Index', compact('data'));
     }
 
     public function create()
     {
-        return View('back.expire.create');
+        return Inertia::render('Expire/Create');
     }
 
     public function store(Request $r)

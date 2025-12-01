@@ -165,14 +165,14 @@ class PrinterPiutangServices extends BasePrinter implements ShouldQueue
         $print->close();
     }
 
-    public function printSum($print, $title, $price)
+    private function printSum($print, $title, $price)
     {
         $str = str_pad($title, 35, ' ', STR_PAD_LEFT);
         $netto = str_pad(number_format($price), 10, ' ', STR_PAD_LEFT); // 99,999,999
         $print->text("$str $netto\n");
     }
 
-    public function sumLine($print)
+    private function sumLine($print)
     {
         $print->setJustification(Printer::JUSTIFY_RIGHT);
         $print->textRaw(str_repeat(chr(196), 30) . PHP_EOL);

@@ -2,20 +2,50 @@
 
 namespace App\Traits;
 
-/**
- * HasQueue Trait
- *
- * Provides queue-related functionality for models.
- * This trait is a placeholder for queue tracking capabilities.
- */
+use App\Models\Queue;
+
 trait HasQueue
 {
-    /**
-     * Get or create a queue entry for this model.
-     */
-    public function queue()
+    public static function booted()
     {
-        // Placeholder for queue relationship or queue tracking logic
-        // Models using this trait can override to implement actual queue functionality
+        static::created(function ($model) {
+            // self::setQueue('insert', $model);
+        });
+
+        static::updated(function ($model) {
+            // self::setQueue('update', $model);
+        });
+    }
+
+    private static function setQueue(string $command, object $model)
+    {
+        $table = $model->getTable();
+        $data = $model::find($model->id);
+
+        Queue::where('command', $command)
+            ->where('sent', 1)
+            ->where('table_name', $table)
+            ->where('key', $model->id)
+            ->delete();
+
+        $queue = Queue::where('command', $command)
+            ->where('sent', 0)
+            ->where('table_name', $table)
+            ->where('key', $model->id)
+            ->first();
+
+        if ($queue) {
+            $queue->update([
+                'updated' => $queue->updated + 1,
+                'data' => $data,
+            ]);
+        } else {
+            Queue::create([
+                'command' => $command,
+                'table_name' => $table,
+                'key' => $model->id,
+                'data' => $data,
+            ]);
+        }
     }
 }

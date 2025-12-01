@@ -6,12 +6,13 @@ use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Helpers;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class UserPermissionController extends Controller
 {
     public function index()
     {
-        return View('back.users.index');
+        return Inertia::render('Settings/UserPermissions/Index');
     }
 
     public function usersJson()

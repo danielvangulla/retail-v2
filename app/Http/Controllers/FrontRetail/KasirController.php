@@ -1,0 +1,533 @@
+<?php
+
+namespace App\Http\Controllers\FrontRetail;
+
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\Helpers;
+use App\Models\Barang;
+use App\Models\Meja;
+use App\Models\PiutangBayar;
+use App\Models\Transaksi;
+use App\Models\TransaksiDetail;
+use App\Models\TransaksiPayment;
+use App\Models\TransaksiPaymentType;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+
+class KasirController extends Controller
+{
+    public function printBill($trxId = '')
+    {
+        if ($trxId === '') {
+            $trx = Transaksi::getLastTrxByKasir();
+        } else {
+            $trx = Transaksi::with(['payments', 'payments.type', 'details', 'details.barang', 'piutang', 'komplemen'])->find($trxId);
+        }
+
+        if (isset($trx->piutang) and $trx->piutang->is_staff) {
+            $terpakai = 0;
+
+            foreach ($trx->piutang->transaksis as $v) {
+                $terpakai += $v->bayar;
+            }
+
+            $trx->piutang->deposit_sisa = $v->piutang->deposit - $terpakai;
+        }
+
+        $setup = Helpers::getSetup('perusahaan');
+
+        return Inertia::render('Kasir/PrintBill', [
+            'trx' => $trx,
+            'setup' => $setup,
+        ]);
+    }
+
+    public function index()
+    {
+        $macId = (object) Helpers::macId();
+        if ($macId->status !== "registered.") {
+            return response()->json($macId, 403);
+        }
+
+        $paymentTypes = TransaksiPaymentType::orderBy("urutan")->orderBy("ket")->get();
+
+        $keysArray = [
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+            ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+            ["z", "x", "c", "v", "b", "n", "m", ",", ".", "-"],
+        ];
+
+        return Inertia::render('Kasir/Index', [
+            'paymentTypes' => $paymentTypes,
+            'keysArray' => $keysArray,
+        ]);
+    }
+
+    public function store(Request $r)
+    {
+        if (!$r->state) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => 'Akses ditolak !'
+            ], 403);
+        }
+
+        $data = (object) $r->validate([
+            'items' => 'required',
+            'discSpv' => 'numeric',
+            'discPromo' => 'numeric',
+            'charge' => 'numeric',
+            'total' => 'required | numeric',
+            'bayar' => 'required | numeric',
+            'typeId' => '',
+            'memberId' => '',
+        ], Helpers::customErrorMsg());
+
+        // Full Payment
+        if ($r->state === 'full') {
+            $trxId = $this->setTransaksi($data);
+            $this->setTransaksiPayment($data, $trxId);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+                'tgl' => Helpers::transactionDate(),
+            ], 200);
+        }
+
+        // Pending Payment
+        if ($r->state === 'piutang') {
+            // $spv = User::where('pin', $r->pin)->where('level', 1)->first();
+            // if (!$spv) {
+            //     return response()->json([
+            //         "status" => "error",
+            //         "msg" => "Invalid PIN Supervisor..!",
+            //     ], 403);
+            // }
+
+            $trxId = $this->setPiutang($data);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+            ], 200);
+        }
+
+        // Free or Komplemen
+        if ($r->state === 'komplemen') {
+            $trxId = $this->setKomplemen($data);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'msg' => 'Request Not Found !'
+        ], 404);
+    }
+
+    private function setPiutang($data)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $charge = $data->charge;
+        $discSpv = $data->discSpv;
+        $discPromo = $data->discPromo;
+
+        $brutto = $data->total + $discSpv + $discPromo - $charge;
+        $netto = $data->total - $charge;
+
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service + $charge;
+
+        $user = Auth::user();
+
+        $trxArr = [
+            'tgl' => Helpers::transactionDate(),
+            'jam_selesai' => DB::raw('CURRENT_TIMESTAMP'),
+            'meja' => '-',
+            'brutto' => $brutto,
+            'disc_spv' => $discSpv,
+            'disc_promo' => $discPromo,
+            'netto' => $netto,
+            'charge' => $charge,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'status' => Meja::$EMPTY,
+            'user_kasir_id' => $user->id,
+            'user_spv_id' => Auth::user()->id,
+            'is_piutang' => 1,
+            'piutang_id' => $data->memberId,
+        ];
+
+        $trx = Transaksi::create($trxArr);
+
+        if ($trx->piutang->is_staff) {
+            PiutangBayar::create([
+                'piutang_id' => $data->memberId,
+                'transaksi_id' => $trx->id,
+                'bayar' => $bayar,
+                'user_id' => $user->id,
+            ]);
+        }
+
+        return $trx->id;
+    }
+
+    private function setKomplemen($data)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $netto = $data->total;
+        $discSpv = $data->discSpv;
+        $discPromo = $data->discPromo;
+        $brutto = $netto + $discSpv + $discPromo;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service;
+
+        $trxArr = [
+            'tgl' => Helpers::transactionDate(),
+            'jam_selesai' => DB::raw('CURRENT_TIMESTAMP'),
+            'meja' => '-',
+            'brutto' => $brutto,
+            'disc_spv' => $discSpv,
+            'disc_promo' => $discPromo,
+            'netto' => $netto,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'status' => Meja::$EMPTY,
+            'user_kasir_id' => Auth::user()->id,
+            'user_spv_id' => Auth::user()->id,
+            'is_komplemen' => 1,
+            'komplemen_id' => Auth::user()->id,
+        ];
+
+        $trx = Transaksi::create($trxArr);
+        return $trx->id;
+    }
+
+    private function setTransaksi($data)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $netto = $data->total;
+        $discSpv = $data->discSpv;
+        $discPromo = $data->discPromo;
+
+        $brutto = $netto + $discSpv + $discPromo;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service;
+
+        $trxArr = [
+            'tgl' => Helpers::transactionDate(),
+            'jam_selesai' => DB::raw('CURRENT_TIMESTAMP'),
+            'meja' => '-',
+            'brutto' => $brutto,
+            'disc_spv' => $discSpv,
+            'disc_promo' => $discPromo,
+            'netto' => $netto,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'payment' => $data->bayar,
+            'kembali' => $data->bayar - $bayar,
+            'status' => Meja::$EMPTY,
+            'user_kasir_id' => Auth::user()->id,
+        ];
+
+        $trx = Transaksi::create($trxArr);
+        return $trx->id;
+    }
+
+    private function setTransaksiDetails($data, $trxId)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $user = Auth::user();
+        $tgl = Helpers::transactionDate();
+        $jam = DB::raw('CURRENT_TIMESTAMP');
+        $noCo = Helpers::generateNoCO();
+
+        foreach ($data->items as $v) {
+            $v = (object) $v;
+
+            $discPromo = $v->disc_promo;
+            $namaPromo = $v->namaPromo;
+
+            $qty = $v->qty;
+            $harga = $v->hargaJual;
+            $brutto = $qty * $harga;
+            $discSpv = $v->disc_spv;
+            $netto = $brutto - $discSpv - $discPromo;
+            $charge = $v->charge;
+            $tax = $netto * $rateTax / 100;
+            $service = $netto * $rateService / 100;
+            $bayar = $netto + $tax + $service + $charge;
+
+            $trxArr = [
+                'transaksi_id' => $trxId,
+                'tgl' => $tgl,
+                'jam' => $jam,
+                'no_co' => $noCo,
+                'sku' => $v->sku,
+                'qty' => $qty,
+                'harga' => $harga,
+                'brutto' => $brutto,
+                'disc_spv' => $discSpv,
+                'disc_promo' => $discPromo,
+                'nama_promo' => $namaPromo,
+                'netto' => $netto,
+                'charge' => $charge,
+                'tax' => $tax,
+                'service' => $service,
+                'bayar' => $bayar,
+                'user_order_id' => $user->id,
+            ];
+
+            TransaksiDetail::create($trxArr);
+        }
+    }
+
+    private function setTransaksiPayment($data, $trxId)
+    {
+        $trxTypeArr = [
+            'transaksi_id' => $trxId,
+            'type_id' => $data->typeId,
+            'nominal' => $data->total,
+        ];
+
+        TransaksiPayment::create($trxTypeArr);
+    }
+
+    public function validateSpv(Request $r)
+    {
+        $spv = User::where('pin', $r->pin)->where('level', 1)->first();
+        if (!$spv) {
+            return response()->json([
+                "status" => "error",
+                "msg" => "Invalid PIN Supervisor !",
+            ], 403);
+        }
+
+        return response()->json([
+            "status" => "ok",
+            "msg" => "-",
+        ], 200);
+    }
+
+    public function trxEdit($id)
+    {
+        $paymentTypes = TransaksiPaymentType::orderBy("urutan")->orderBy("ket")->get();
+
+        return Inertia::render('Kasir/Edit', [
+            'transactionId' => $id,
+            'paymentTypes' => $paymentTypes,
+        ]);
+    }
+
+    public function trxEditJson(Request $r)
+    {
+        $trx = Transaksi::with(['details' => function ($q) {
+            $q->select('transaksi_id', 'sku', 'qty', 'disc_spv');
+        }])->find($r->id);
+
+        if (!$trx) {
+            return response()->json([
+                "status" => "error",
+                "msg" => "Data not found !",
+            ], 404);
+        }
+
+        return response()->json([
+            "status" => "ok",
+            "msg" => "-",
+            "data" => $trx,
+        ], 200);
+    }
+
+    public function update(Request $r)
+    {
+        if (!$r->state) {
+            return response()->json([
+                'status' => 'error',
+                'msg' => 'Akses ditolak !'
+            ], 403);
+        }
+
+        $data = (object) $r->validate([
+            'id' => 'required',
+            'items' => 'required',
+            'charge' => 'numeric',
+            'total' => 'required | numeric',
+            'bayar' => 'required | numeric',
+            'typeId' => '',
+            'memberId' => '',
+        ], Helpers::customErrorMsg());
+
+        if ($r->state === 'full') {
+            $trxId = $data->id;
+
+            TransaksiDetail::where('transaksi_id', $trxId)->delete();
+            TransaksiPayment::where('transaksi_id', $trxId)->delete();
+
+            $this->updateTransaksi($data);
+            $this->setTransaksiPayment($data, $trxId);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+            ], 200);
+        }
+
+        if ($r->state === 'piutang') {
+            $trxId = $data->id;
+            TransaksiDetail::where('transaksi_id', $trxId)->delete();
+            TransaksiPayment::where('transaksi_id', $trxId)->delete();
+
+            $this->updatePiutang($data);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+            ], 200);
+        }
+
+        if ($r->state === 'komplemen') {
+            $spv = User::where('pin', $r->pin)->where('level', 1)->first();
+            if (!$spv) {
+                return response()->json([
+                    "status" => "error",
+                    "msg" => "Invalid PIN Supervisor..!",
+                ], 403);
+            }
+
+            $trxId = $data->id;
+            TransaksiDetail::where('transaksi_id', $trxId)->delete();
+            TransaksiPayment::where('transaksi_id', $trxId)->delete();
+
+            $this->updateKomplemen($data, $spv);
+            $this->setTransaksiDetails($data, $trxId);
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'msg' => 'Request Not Found !'
+        ], 404);
+    }
+
+    private function updateTransaksi($data)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $netto = $data->total;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service;
+
+        $trxArr = [
+            'brutto' => $data->total,
+            'netto' => $netto,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'payment' => $data->bayar,
+            'kembali' => $data->bayar - $bayar,
+            'user_spv_id' => Auth::user()->id,
+        ];
+
+        Transaksi::where('id', $data->id)->update($trxArr);
+    }
+
+    private function updatePiutang($data)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $netto = $data->total;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service;
+
+        $trxArr = [
+            'brutto' => $data->total,
+            'netto' => $netto,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'user_spv_id' => Auth::user()->id,
+            'is_piutang' => 1,
+            'piutang_id' => $data->memberId,
+        ];
+
+        Transaksi::where('id', $data->id)->update($trxArr);
+    }
+
+    private function updateKomplemen($data, $spv)
+    {
+        $rateTax = env("RATE_TAX");
+        $rateService = env("RATE_SERVICE");
+
+        $netto = $data->total;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service;
+
+        $trxArr = [
+            'brutto' => $data->total,
+            'netto' => $netto,
+            'tax' => $tax,
+            'service' => $service,
+            'bayar' => $bayar,
+            'user_spv_id' => Auth::user()->id,
+            'is_komplemen' => 1,
+            'komplemen_id' => $spv->id,
+        ];
+
+        Transaksi::where('id', $data->id)->update($trxArr);
+    }
+
+    public function trxDelete(Request $r)
+    {
+        $trx = Transaksi::find($r->id);
+        $trx->is_cancel = 1;
+        $trx->save();
+
+        return response()->json([
+            'status' => 'ok',
+            'msg' => '-',
+        ], 200);
+    }
+}
