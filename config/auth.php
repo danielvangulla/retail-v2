@@ -112,4 +112,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'mac_id' => env('AUTH_MAC_ID', '4540f6903f7f0d8829707a9f680e65c4'),
+
 ];

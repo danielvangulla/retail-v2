@@ -154,7 +154,7 @@ class Barang extends Model
             }
         }
 
-        return $filteredBarang;
+        return $filteredBarang->values();
     }
 
     public static function getHargaBeli($id)

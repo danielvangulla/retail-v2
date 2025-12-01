@@ -105,6 +105,14 @@ class Helpers extends Controller
 
     public static function macId()
     {
+        // Skip check if in development mode
+        // if (config('app.env') === 'local' || config('app.debug') === true) {
+        //     return [
+        //         'os' => strtoupper(PHP_OS),
+        //         'status' => 'registered (development mode)',
+        //     ];
+        // }
+
         $os = strtoupper(PHP_OS);
         $machineId = '';
 
@@ -120,6 +128,16 @@ class Helpers extends Controller
 
         if ($os === 'LINUX') {
             $machineId = trim(file_get_contents('/var/lib/dbus/machine-id'));
+
+            if ($machineId !== config("auth.mac_id")) {
+                return self::unregisteredInfo($os);
+            }
+        }
+
+        if ($os === 'DARWIN') {
+            $os = 'macOS';
+            $command = 'ioreg -rd1 -c IOPlatformExpertDevice | grep IOPlatformUUID | awk \'{print $3}\' | tr -d \'"\'';
+            $machineId = trim(shell_exec($command));
 
             if ($machineId !== config("auth.mac_id")) {
                 return self::unregisteredInfo($os);
