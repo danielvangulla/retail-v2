@@ -128,20 +128,20 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
                             <table className="w-full">
                                 <thead className="bg-linear-to-r from-gray-50 to-blue-50 border-b-2 border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                             No
                                         </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                             SKU
                                         </th>
                                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                             Nama Barang
                                         </th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                                            Satuan
-                                        </th>
                                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                             Qty
+                                        </th>
+                                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                            Satuan
                                         </th>
                                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                             Harga Beli
@@ -154,22 +154,20 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
                                 <tbody className="divide-y divide-gray-100">
                                     {data.details?.map((item, index) => (
                                         <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-sm text-gray-600">{index + 1}</td>
-                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">{item.sku}</td>
+                                            <td className="px-6 py-4 text-sm text-center text-gray-600">{index + 1}</td>
+                                            <td className="px-6 py-4 text-sm text-center font-semibold text-gray-900">{item.sku}</td>
                                             <td className="px-6 py-4">
-                                                <div className="text-sm font-semibold text-gray-900">{item.barang?.deskripsi}</div>
-                                                <div className="text-xs text-gray-500">{item.barang?.alias}</div>
+                                                <div className="text-sm font-semibold text-gray-900 w-48 truncate-48">{item.barang?.deskripsi}</div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">
-                                                {item.satuan_beli}
-                                                {item.barang?.isi && ` (${item.barang.isi} ${item.barang.satuan})`}
+                                            <td className="px-6 py-4 text-sm text-center font-semibold text-gray-900">{item.qty}</td>
+                                            <td className="px-6 py-4 text-sm text-center text-gray-700">
+                                                {item.barang.satuan}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{item.qty}</td>
                                             <td className="px-6 py-4 text-sm text-right text-gray-700">
-                                                Rp {formatDigit(item.harga_beli)}
+                                                {formatDigit(item.harga_beli)}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-right font-bold text-green-700">
-                                                Rp {formatDigit(item.total)}
+                                                {formatDigit(item.total)}
                                             </td>
                                         </tr>
                                     ))}
@@ -180,17 +178,16 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
 
                     {/* Grand Total */}
                     <div className="p-8 bg-linear-to-r from-blue-50 to-gray-50 border-t-2 border-gray-100">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-center gap-6">
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <DollarSign className="h-6 w-6 text-blue-600" />
                                     <span className="text-xl font-bold text-gray-900">Grand Total</span>
                                 </div>
-                                <p className="text-sm text-gray-500 mt-1">Total keseluruhan pembelian</p>
+                                <p className="text-xs text-gray-500 mt-1">Total keseluruhan pembelian</p>
                             </div>
                             <div className="text-right">
                                 <div className="text-4xl font-bold bg-linear-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-                                    Rp {formatDigit(data.grand_total)}
+                                    Rp. {formatDigit(data.grand_total)}
                                 </div>
                             </div>
                         </div>
@@ -199,7 +196,6 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
                     {/* Footer Info */}
                     <div className="px-8 py-4 bg-gray-50 border-t border-gray-100">
                         <p className="text-xs text-gray-500">
-                            Dibuat pada: <span className="font-medium text-gray-700">{formatDateTime(data.created_at)}</span>
                         </p>
                     </div>
                 </div>
