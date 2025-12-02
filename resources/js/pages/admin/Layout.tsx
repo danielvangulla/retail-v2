@@ -30,7 +30,8 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
     const currentUrl = (props as any).url || window.location.pathname;
 
     const navigationItems: NavItem[] = [
-        { label: 'Dashboard', href: '/admin', icon: Home },
+        { label: 'Dashboard', href: '/admin/dashboard', icon: Home },
+        { label: 'User', href: '/admin/user', icon: Users },
         {
             label: 'Setup',
             icon: Settings,
@@ -42,23 +43,15 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             ],
         },
         {
-            label: 'Pembelian',
-            icon: Package,
-            submenu: [
-                { label: 'Input Baru', href: '/admin/pembelian-create' },
-                { label: 'History', href: '/admin/pembelian' },
-                { label: 'Retur', href: '/admin/retur' },
-            ],
-        },
-        {
             label: 'Inventory',
             icon: Package,
             submenu: [
+                { label: 'Pembelian', href: '/admin/pembelian' },
+                { label: 'Retur Pembelian', href: '/admin/retur' },
                 { label: 'Stok Opname', href: '/admin/opname' },
                 { label: 'Kartu Stok', href: '/admin/kartu-stok' },
             ],
         },
-        { label: 'User', href: '/admin/user', icon: Users },
         { label: 'Laporan', href: '/admin/report/sales', icon: BarChart3 },
     ];
 

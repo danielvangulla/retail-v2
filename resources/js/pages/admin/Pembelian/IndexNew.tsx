@@ -59,7 +59,7 @@ export default function PembelianIndexNew({ pembelians = { data: [], current_pag
                         <p className="text-gray-500 text-sm mt-1">Kelola dan pantau semua transaksi pembelian barang</p>
                     </div>
                     <button
-                        onClick={() => router.visit('/admin/pembelian-create')}
+                        onClick={() => router.visit('/admin/pembelian/create')}
                         className="flex items-center gap-2 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 cursor-pointer"
                     >
                         <Plus className="h-5 w-5" />

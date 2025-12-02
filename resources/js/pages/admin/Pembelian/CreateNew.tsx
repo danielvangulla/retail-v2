@@ -370,10 +370,16 @@ export default function PembelianCreateNew() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-4">
+                    <button
+                        onClick={() => router.visit('/admin/pembelian')}
+                        className="w-auto md:w-48 bg-gray-400 hover:bg-gray-600 text-gray-900 hover:text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
+                    >
+                        Kembali
+                    </button>
                     <button
                         onClick={handleReset}
-                        className="w-auto md:w-48 bg-gray-400 hover:bg-red-600 text-gray-900 hover:text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
+                        className="w-auto md:w-48 bg-red-400 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
                     >
                         Reset Form
                     </button>

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 // Admin routes - protected by auth + supervisor middleware
 Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
     Route::post('/process-stok', function() {
         $result = \App\Services\StokProcessingService::processAll();
@@ -51,14 +51,14 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
 
     // Pembelian management
     Route::get('/pembelian', [PembelianController::class, 'index'])->name('pembelian.index');
-    Route::get('/pembelian-create', [PembelianController::class, 'create'])->name('pembelian.create');
+    Route::get('/pembelian/create', [PembelianController::class, 'create'])->name('pembelian.create');
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
     Route::get('/pembelian/{id}', [PembelianController::class, 'show'])->name('pembelian.show');
     Route::get('/pembelian/{id}/print', [PembelianController::class, 'print'])->name('pembelian.print');
 
     // Retur management
     Route::get('/retur', [ReturController::class, 'index'])->name('retur.index');
-    Route::get('/retur-create', [ReturController::class, 'create'])->name('retur.create');
+    Route::get('/retur/create', [ReturController::class, 'create'])->name('retur.create');
     Route::post('/retur', [ReturController::class, 'store'])->name('retur.store');
     Route::get('/retur/{id}', [ReturController::class, 'show'])->name('retur.show');
     Route::get('/retur/{id}/print', [ReturController::class, 'print'])->name('retur.print');

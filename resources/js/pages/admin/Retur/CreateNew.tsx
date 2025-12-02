@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import { AlertCircle, Trash2 } from 'lucide-react';
+import { AlertCircle, Trash2, Package, Save } from 'lucide-react';
 import { formatDigit } from '../../../lib/formatters';
 import AlertModal from '../../Kasir/components/AlertModal';
 import ConfirmModal from '../../Kasir/components/ConfirmModal';
@@ -37,8 +37,10 @@ export default function ReturCreateNew() {
     const [items, setItems] = useState<ReturItem[]>([]);
     const [ket, setKet] = useState('');
     const [loading, setLoading] = useState(false);
-    const [alertModal, setAlertModal] = useState({ show: false, title: '', msg: '', type: 'info' as 'info' | 'success' | 'warning' | 'error' });
-    const [confirmModal, setConfirmModal] = useState<{ show: boolean; title: string; msg: string }>({ show: false, title: '', msg: '' });
+    const [showAlertModal, setShowAlertModal] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<'reset' | 'save' | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
@@ -97,12 +99,8 @@ export default function ReturCreateNew() {
     const addItem = (barang: SearchResult) => {
         // Check duplicate
         if (items.some(item => item.sku === barang.sku)) {
-            setAlertModal({
-                show: true,
-                title: 'Duplikat Item',
-                msg: `Barang "${barang.deskripsi}" sudah ada di list`,
-                type: 'warning'
-            });
+            setAlertMessage(`"${barang.deskripsi}" sudah ada di daftar retur.`);
+            setShowAlertModal(true);
             return;
         }
 
@@ -138,31 +136,22 @@ export default function ReturCreateNew() {
         setItems(items.filter((_, i) => i !== idx));
     };
 
-    // Total
-    const grandTotal = items.reduce((sum, item) => sum + item.total, 0);
-
     // Handle save
     const handleSave = () => {
         if (items.length === 0) {
-            setAlertModal({
-                show: true,
-                title: 'Peringatan',
-                msg: 'Tambahkan minimal 1 item retur',
-                type: 'warning'
-            });
+            setAlertMessage('Tambahkan minimal 1 item retur');
+            setShowAlertModal(true);
             return;
         }
 
-        setConfirmModal({
-            show: true,
-            title: 'Konfirmasi Simpan',
-            msg: `Simpan ${items.length} item retur dengan total Rp ${formatDigit(grandTotal)}?`
-        });
+        setConfirmAction('save');
+        setShowConfirmModal(true);
     };
 
     // Confirm save
     const handleConfirmSave = async () => {
-        setConfirmModal({ show: false, title: '', msg: '' });
+        setShowConfirmModal(false);
+        setConfirmAction(null);
 
         try {
             const response = await fetch('/admin/retur', {
@@ -180,197 +169,245 @@ export default function ReturCreateNew() {
 
             const result = await response.json();
             if (result.status === 'ok') {
-                setAlertModal({
-                    show: true,
-                    title: 'Berhasil',
-                    msg: result.msg,
-                    type: 'success'
-                });
-                setTimeout(() => {
-                    router.visit('/admin/retur');
-                }, 1500);
+                router.visit('/admin/retur');
+            } else {
+                setAlertMessage(result.msg || 'Gagal menyimpan retur');
+                setShowAlertModal(true);
             }
-        } catch (error) {
-            setAlertModal({
-                show: true,
-                title: 'Error',
-                msg: 'Gagal menyimpan retur',
-                type: 'error'
-            });
+        } catch (error: any) {
+            setAlertMessage(error.message || 'Terjadi kesalahan');
+            setShowAlertModal(true);
         }
     };
 
     // Handle reset
     const handleReset = () => {
-        setConfirmModal({
-            show: true,
-            title: 'Konfirmasi Reset',
-            msg: 'Hapus semua data yang sudah diinput?'
-        });
+        setConfirmAction('reset');
+        setShowConfirmModal(true);
     };
+
+    const handleResetConfirm = () => {
+        setSearch('');
+        setResults([]);
+        setItems([]);
+        setKet('');
+        setHighlightedIndex(-1);
+        setShowConfirmModal(false);
+        setConfirmAction(null);
+        searchInputRef.current?.focus();
+    };
+
+    // Total
+    const grandTotal = items.reduce((sum, item) => sum + +item.total, 0);
 
     return (
         <AdminLayout title="Input Retur Barang">
-            <div className="max-w-6xl">
+            <div className="max-w-7xl mx-auto space-y-3">
+                {/* Header */}
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100/50">
+                    <h3 className="text-lg font-bold text-gray-900">Input Retur Barang</h3>
+                    <p className="text-xs text-gray-500">Tambahkan barang retur yang dikembalikan</p>
+                </div>
+
                 {/* Keterangan */}
-                <div className="bg-white rounded-xl shadow-sm border border-white/60 p-6 mb-6">
-                    <label className="block text-sm font-600 text-gray-700 mb-2">Keterangan (Optional)</label>
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100/50">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Keterangan (Optional)</label>
                     <input
                         type="text"
                         placeholder="Contoh: Barang rusak, kemasan penyok, dll"
                         value={ket}
                         onChange={(e) => setKet(e.target.value)}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
-                {/* Search */}
-                <div className="bg-white rounded-xl shadow-sm border border-white/60 p-6 mb-6">
-                    <label className="block text-sm font-600 text-gray-700 mb-3">Cari Barang (Min. 2 karakter)</label>
-                    <div className="relative">
-                        <input
-                            ref={searchInputRef}
-                            type="text"
-                            placeholder="Barcode / SKU / Nama Barang"
-                            value={search}
-                            onChange={(e) => handleSearchInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            autoComplete="off"
-                        />
+                {/* Search & Add */}
+                <div className="bg-white rounded-lg shadow-sm p-3 border border-gray-100/50">
+                    <div className="flex gap-2 items-end">
+                        <div className="flex-1 relative">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Cari Barang</label>
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                value={search}
+                                onChange={(e) => handleSearchInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder="SKU, Barcode, atau Nama... (↑↓ navigasi, Enter tambah)"
+                                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder-gray-400 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
 
-                        {/* Search Results */}
-                        {results.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                                {results.map((result, idx) => (
-                                    <button
-                                        key={result.id}
-                                        onClick={() => addItem(result)}
-                                        className={`w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors border-b border-gray-200 last:border-b-0 ${
-                                            idx === highlightedIndex ? 'bg-blue-100' : ''
-                                        }`}
-                                    >
-                                        <div className="font-600 text-gray-900">{result.deskripsi}</div>
-                                        <div className="text-sm text-gray-600">SKU: {result.sku} | Barcode: {result.barcode || '—'}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                            {results.length > 0 && (
+                                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    {results.map((barang, index) => (
+                                        <button
+                                            key={barang.id}
+                                            onClick={() => addItem(barang)}
+                                            className={`w-full px-2 py-2 text-left transition-colors border-b border-gray-100 last:border-0 cursor-pointer text-xs ${
+                                                highlightedIndex === index
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'hover:bg-blue-50 text-gray-900'
+                                            }`}
+                                        >
+                                            <div className="font-medium">{barang.deskripsi}</div>
+                                            <div className={`text-xs ${highlightedIndex === index ? 'text-blue-100' : 'text-gray-500'}`}>
+                                                SKU: {barang.sku} | {barang.barcode} | Rp {formatDigit(barang.harga_beli)}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
-                        {loading && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-lg p-4 text-center text-gray-500">
-                                Mencari...
-                            </div>
-                        )}
+                            {loading && (
+                                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs text-gray-500 text-center">
+                                    Mencari...
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Items Table */}
-                <div className="bg-white rounded-xl shadow-sm border border-white/60 overflow-hidden mb-6">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-linear-to-r from-blue-100 to-blue-50 border-b border-gray-200">
-                                <th className="px-6 py-3 text-left text-sm font-600 text-gray-700">SKU</th>
-                                <th className="px-6 py-3 text-left text-sm font-600 text-gray-700">Nama Barang</th>
-                                <th className="px-6 py-3 text-center text-sm font-600 text-gray-700">Qty</th>
-                                <th className="px-6 py-3 text-right text-sm font-600 text-gray-700">Harga</th>
-                                <th className="px-6 py-3 text-right text-sm font-600 text-gray-700">Total</th>
-                                <th className="px-6 py-3 text-center text-sm font-600 text-gray-700">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {items.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                        Belum ada item retur
-                                    </td>
-                                </tr>
-                            ) : (
-                                items.map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
-                                        <td className="px-6 py-4 text-sm font-600 text-gray-900">{item.sku}</td>
-                                        <td className="px-6 py-4 text-sm text-gray-700">{item.deskripsi}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={item.qtyRetur}
-                                                onChange={(e) => handleQtyChange(idx, parseInt(e.target.value) || 1)}
-                                                className="w-16 px-2 py-1 border border-gray-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm text-gray-700">Rp {formatDigit(item.hargaBeli)}</td>
-                                        <td className="px-6 py-4 text-right text-sm font-600 text-gray-900">Rp {formatDigit(item.total)}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => handleRemoveItem(idx)}
-                                                className="text-red-600 hover:text-red-800 transition"
-                                                title="Hapus"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                        {items.length > 0 && (
-                            <tfoot>
-                                <tr className="bg-linear-to-r from-blue-100 to-blue-50 border-t-2 border-gray-200">
-                                    <td colSpan={4} className="px-6 py-4 text-right font-600 text-gray-900">
-                                        TOTAL:
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-600 text-lg text-blue-600">
-                                        Rp {formatDigit(grandTotal)}
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        )}
-                    </table>
-                </div>
+                {items.length > 0 && (
+                    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100/50">
+                        <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
+                            <h4 className="text-xs font-semibold text-gray-900 flex items-center gap-1">
+                                <Package className="h-4 w-4 text-blue-600" />
+                                Daftar Retur ({items.length})
+                            </h4>
+                        </div>
 
-                {/* Buttons */}
-                <div className="flex gap-4 justify-end">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-2 py-2 text-center font-semibold text-gray-700">SKU</th>
+                                        <th className="px-2 py-2 text-left font-semibold text-gray-700">Nama Barang</th>
+                                        <th className="px-2 py-2 text-center font-semibold text-gray-700">Qty</th>
+                                        <th className="px-2 py-2 text-center font-semibold text-gray-700">Satuan</th>
+                                        <th className="px-2 py-2 text-center font-semibold text-gray-700">Harga</th>
+                                        <th className="px-2 py-2 text-right font-semibold text-gray-700">Total</th>
+                                        <th className="px-2 py-2 text-center font-semibold text-gray-700">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {items.map((item, idx) => (
+                                        <tr key={idx} className="hover:bg-blue-50/50">
+                                            <td className="px-2 py-2 font-medium text-gray-900 text-center">{item.sku}</td>
+                                            <td className="px-2 py-2 text-gray-700 w-48 truncate">{item.deskripsi}</td>
+                                            <td className="px-2 py-2 text-center">
+                                                <input
+                                                    type="number"
+                                                    value={item.qtyRetur}
+                                                    onChange={(e) =>
+                                                        handleQtyChange(idx, (+e.target.value || 0))
+                                                    }
+                                                    className="w-16 px-1.5 py-1 border border-gray-300 rounded text-xs text-center text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
+                                                    min="1"
+                                                />
+                                            </td>
+                                            <td className="px-2 py-2 text-gray-600 text-center">
+                                                {item.satuan}
+                                            </td>
+                                            <td className="px-2 py-2 text-center text-xs font-medium text-gray-700">
+                                                Rp {formatDigit(item.hargaBeli)}
+                                            </td>
+                                            <td className="px-2 py-2 text-right font-bold text-green-700 w-32">
+                                                Rp {formatDigit(item.total)}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                                <button
+                                                    onClick={() => handleRemoveItem(idx)}
+                                                    className="p-1 text-red-600 hover:bg-red-100 rounded transition cursor-pointer"
+                                                    title="Hapus"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Grand Total */}
+                        <div className="px-3 py-2 bg-blue-50 border-t border-gray-100">
+                            <div className="flex items-center justify-center gap-6">
+                                <span className="text-md font-semibold text-gray-900">Grand Total:</span>
+                                <span className="text-lg font-bold text-blue-700">
+                                    Rp. {formatDigit(grandTotal)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-center gap-2">
+                    <button
+                        onClick={() => router.visit('/admin/retur')}
+                        className="w-auto md:w-48 bg-gray-400 hover:bg-gray-600 text-gray-900 hover:text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
+                    >
+                        Kembali
+                    </button>
                     <button
                         onClick={handleReset}
-                        className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+                        className="w-auto md:w-48 bg-red-400 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
                     >
-                        Reset
+                        Reset Form
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                        disabled={loading || items.length === 0}
+                        className="w-auto md:w-48 flex items-center justify-center gap-1.5 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all shadow-md disabled:opacity-50 cursor-pointer"
                     >
-                        Simpan Retur
+                        <Save className="h-4 w-4" />
+                        {loading ? 'Menyimpan...' : 'Simpan Retur'}
                     </button>
                 </div>
-            </div>
 
-            {/* Alerts */}
-            <AlertModal
-                show={alertModal.show}
-                title={alertModal.title}
-                message={alertModal.msg}
-                type={alertModal.type}
-                onConfirm={() => setAlertModal({ show: false, title: '', msg: '', type: 'info' })}
-            />
+                {/* Info */}
+                {items.length === 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-start gap-2 text-xs">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-medium text-yellow-800">Belum ada barang ditambahkan</p>
+                            <p className="text-yellow-700">Gunakan form pencarian untuk menambahkan barang ke daftar retur.</p>
+                        </div>
+                    </div>
+                )}
 
-            <ConfirmModal
-                show={confirmModal.show}
-                title={confirmModal.title}
-                message={confirmModal.msg}
-                onConfirm={() => {
-                    if (confirmModal.title === 'Konfirmasi Simpan') {
-                        handleConfirmSave();
-                    } else if (confirmModal.title === 'Konfirmasi Reset') {
-                        setItems([]);
-                        setKet('');
-                        setConfirmModal({ show: false, title: '', msg: '' });
+                {/* Alert Modal */}
+                <AlertModal
+                    show={showAlertModal}
+                    title="Perhatian"
+                    message={alertMessage}
+                    type="warning"
+                    confirmText="Tutup"
+                    onConfirm={() => {
+                        setShowAlertModal(false);
+                        searchInputRef.current?.focus();
+                    }}
+                />
+
+                {/* Confirmation Modal */}
+                <ConfirmModal
+                    show={showConfirmModal}
+                    title={confirmAction === 'reset' ? 'Reset Form?' : 'Simpan Retur?'}
+                    message={
+                        confirmAction === 'reset'
+                            ? 'Apakah Anda yakin ingin reset form? Semua data akan dihapus.'
+                            : `Apakah Anda yakin ingin menyimpan retur dengan ${items.length} barang?`
                     }
-                }}
-                onCancel={() => setConfirmModal({ show: false, title: '', msg: '' })}
-            />
+                    type={confirmAction === 'reset' ? 'warning' : 'info'}
+                    confirmText={confirmAction === 'reset' ? 'Reset' : 'Simpan'}
+                    cancelText="Batal"
+                    onConfirm={confirmAction === 'reset' ? handleResetConfirm : handleConfirmSave}
+                    onCancel={() => {
+                        setShowConfirmModal(false);
+                        setConfirmAction(null);
+                    }}
+                />
+            </div>
         </AdminLayout>
     );
 }
