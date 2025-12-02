@@ -56,9 +56,9 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
             // Jangan start polling jika sudah ada
             if (pollInterval) return;
 
-            console.log('📡 Starting polling fallback (every 30s)...');
             setUsePolling(true);
             pollInterval = setInterval(async () => {
+                console.log('📡 Starting polling ...');
                 const data = await fetchDashboardData();
                 if (data) {
                     onUpdate(data);
@@ -69,7 +69,7 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
         // Stop polling
         const stopPolling = () => {
             if (pollInterval) {
-                console.log('🛑 Stopping polling (WebSocket active)');
+                console.log('🛑 Stopping polling ...');
                 clearInterval(pollInterval);
                 pollInterval = null;
                 setUsePolling(false);
@@ -82,7 +82,7 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
                 const { default: Echo } = await import('laravel-echo');
                 const socketIo = await import('socket.io-client');
 
-                console.log('🔗 Attempting WebSocket connection...');
+                // console.log('🔗 Attempting WebSocket connection...');
 
                 echoInstance = new Echo({
                     broadcaster: 'socket.io',
@@ -112,11 +112,11 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
                 });
 
                 echoInstance.connector.socket.on('connect_error', (error: any) => {
-                    console.warn('⚠️ Connection error:', error);
+                    // console.warn('⚠️ Connection error:', error);
                 });
 
                 echoInstance.connector.socket.on('disconnect', (reason: string) => {
-                    console.warn('⚠️ WebSocket disconnected:', reason);
+                    // console.warn('⚠️ WebSocket disconnected:', reason);
                     setIsConnected(false);
                     startPolling(); // Auto fallback ke polling ketika disconnect
                 });

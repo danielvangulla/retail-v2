@@ -101,7 +101,7 @@ class DashboardController extends Controller
             'supervisors' => $supervisors,
             'kasirs' => $kasirs,
             'salesTrend' => $salesTrend->map(fn($item) => [
-                'date' => $item->date ? Carbon::parse($item->date)->translatedFormat('j M') : '-',
+                'date' => $item->date ? Carbon::parse($item->date)->translatedFormat('d M Y') : '-',
                 'total' => (int) $item->total,
             ]),
             'topProducts' => $topProducts,
