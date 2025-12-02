@@ -312,7 +312,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                                                 <div className="bg-orange-50 rounded-lg p-3 border border-orange-100">
                                                                     <div className="text-xs font-semibold text-orange-900 mb-1">📊 Info</div>
                                                                     {item.harga_beli > 0 && item.harga_jual1 > 0 && (
-                                                                        <div className="mb-2">
+                                                                        <div className="w-full mb-2 flex flex-row items-center justify-between">
                                                                             <span className="text-xs text-orange-700">Margin:</span>
                                                                             <div className="text-sm font-bold text-orange-600">
                                                                                 {((item.harga_jual1 - item.harga_beli) / item.harga_beli * 100).toFixed(1)}%
@@ -320,8 +320,8 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                                                         </div>
                                                                     )}
                                                                     {item.min_stock > 0 && (
-                                                                        <div>
-                                                                            <span className="text-xs text-orange-700">Min Stock:</span>
+                                                                        <div className="w-full mb-2 flex flex-row items-center justify-between">
+                                                                            <span className="text-xs text-orange-700">Min Stok:</span>
                                                                             <div className="text-sm font-bold text-orange-600">
                                                                                 {item.min_stock} {item.satuan}
                                                                             </div>
