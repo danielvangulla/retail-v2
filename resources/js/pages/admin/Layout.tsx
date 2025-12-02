@@ -47,7 +47,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             submenu: [
                 { label: 'Input Baru', href: '/admin/pembelian-create' },
                 { label: 'History', href: '/admin/pembelian' },
-                { label: 'Retur', href: '/admin/pembelian-retur' },
+                { label: 'Retur', href: '/admin/retur' },
             ],
         },
         {

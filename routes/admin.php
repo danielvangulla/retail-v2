@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Admin\PembelianController;
+use App\Http\Controllers\Admin\ReturController;
 use Illuminate\Support\Facades\Route;
 
 // Admin routes - protected by auth + supervisor middleware
@@ -50,6 +51,14 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
     Route::get('/pembelian/{id}', [PembelianController::class, 'show'])->name('pembelian.show');
     Route::get('/pembelian/{id}/print', [PembelianController::class, 'print'])->name('pembelian.print');
+
+    // Retur management
+    Route::get('/retur', [ReturController::class, 'index'])->name('retur.index');
+    Route::get('/retur-create', [ReturController::class, 'create'])->name('retur.create');
+    Route::post('/retur', [ReturController::class, 'store'])->name('retur.store');
+    Route::get('/retur/{id}', [ReturController::class, 'show'])->name('retur.show');
+    Route::get('/retur/{id}/print', [ReturController::class, 'print'])->name('retur.print');
+    Route::delete('/retur/{id}', [ReturController::class, 'destroy'])->name('retur.destroy');
 
     // User management
     Route::resource('/user', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
