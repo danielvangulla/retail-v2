@@ -52,7 +52,14 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 { label: 'Kartu Stok', href: '/admin/kartu-stok' },
             ],
         },
-        { label: 'Laporan', href: '/admin/report/sales', icon: BarChart3 },
+        {
+            label: 'Laporan',
+            icon: BarChart3,
+            submenu: [
+                { label: 'Sales', href: '/admin/report/sales' },
+                { label: 'Profit', href: '/admin/profit' },
+            ],
+        },
     ];
 
     useEffect(() => {

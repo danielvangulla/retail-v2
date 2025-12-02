@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class KasirController extends Controller
@@ -315,8 +316,8 @@ class KasirController extends Controller
 
     private function setTransaksiDetails($data, $trxId)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env("RATE_TAX", 0);
+        $rateService = env("RATE_SERVICE", 0);
 
         $user = Auth::user();
         $tgl = Helpers::transactionDate();
@@ -360,6 +361,32 @@ class KasirController extends Controller
             ];
 
             TransaksiDetail::create($trxArr);
+
+            // === PENTING: Kurangi stok SAAT checkout (bukan saat scanning) ===
+            // Ini memastikan stok hanya berkurang ketika transaksi sudah final
+            $barangId = $v->sku ?? $v->id ?? null;
+            if ($barangId && $qty > 0) {
+                try {
+                    // Reduce stok dan clear reserved (karena sudah checkout)
+                    $reduceResult = \App\Models\BarangStock::reduceStok(
+                        $barangId,
+                        $qty,
+                        'out',
+                        'penjualan_kasir',
+                        $trxId,
+                        "Penjualan di Kasir - Trx: {$trxId}",
+                        $user->id
+                    );
+
+                    // Release reserved stok untuk item ini
+                    // (jika ada reserved dari scanning sebelumnya)
+                    if ($reduceResult['success']) {
+                        \App\Models\BarangStock::releaseReservedStok($barangId, $qty);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Stock reduction failed for barang {$barangId}: " . $e->getMessage());
+                }
+            }
         }
     }
 
@@ -715,4 +742,254 @@ class KasirController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check stock availability (fast endpoint untuk real-time validation)
+     * Digunakan saat user akan add item ke cart
+     */
+    /**
+     * Check stock availability - FAST version with 60-second cache
+     * For barcode scanning and quick checks during transaction
+     */
+    public function checkStockAvailability(Request $r)
+    {
+        try {
+            $barangId = $r->input('barang_id');
+            $qty = $r->input('qty', 1);
+
+            if (!$barangId || $qty <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Parameter tidak valid'
+                ], 400);
+            }
+
+            // Use cache for fast lookup (60 second TTL for performance)
+            $cacheKey = "stock_check_{$barangId}";
+
+            $stockData = cache()->remember($cacheKey, 60, function () use ($barangId) {
+                $barang = Barang::with('stock')->find($barangId);
+                if (!$barang) {
+                    return null;
+                }
+
+                $stock = $barang->stock;
+                $available = $stock ? max(0, $stock->quantity - $stock->reserved) : 0;
+
+                return [
+                    'available' => $available,
+                    'quantity' => $stock?->quantity ?? 0,
+                    'reserved' => $stock?->reserved ?? 0,
+                ];
+            });
+
+            if (!$stockData) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak ditemukan'
+                ], 404);
+            }
+
+            $isAvailable = $stockData['available'] >= $qty;
+
+            return response()->json([
+                'status' => 'ok',
+                'available' => $stockData['available'],
+                'requested' => $qty,
+                'is_available' => $isAvailable,
+                'message' => $isAvailable ? 'Stok tersedia' : "Stok tidak cukup. Available: {$stockData['available']}",
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk stock check for multiple items at once
+     * Returns stock availability for all items in array
+     * Useful for cart verification before checkout
+     */
+    public function checkBulkStockAvailability(Request $r)
+    {
+        try {
+            $items = $r->input('items', []);
+
+            if (!is_array($items) || count($items) === 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Items array required'
+                ], 400);
+            }
+
+            // Extract barang IDs
+            $barangIds = array_map(function ($item) {
+                return $item['id'] ?? $item['barang_id'] ?? null;
+            }, $items);
+            $barangIds = array_filter($barangIds);
+
+            if (empty($barangIds)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No valid barang IDs'
+                ], 400);
+            }
+
+            // Get bulk stock status
+            $stockData = Barang::getBulkStockStatus($barangIds);
+
+            // Check availability for each item
+            $results = [];
+            $allAvailable = true;
+
+            foreach ($items as $item) {
+                $id = $item['id'] ?? $item['barang_id'];
+                $qty = $item['qty'] ?? $item['quantity'] ?? 1;
+                $stock = $stockData[$id] ?? ['available' => 0, 'quantity' => 0, 'reserved' => 0];
+                $isAvailable = $stock['available'] >= $qty;
+
+                $results[] = [
+                    'barang_id' => $id,
+                    'requested' => $qty,
+                    'available' => $stock['available'],
+                    'is_available' => $isAvailable,
+                ];
+
+                if (!$isAvailable) {
+                    $allAvailable = false;
+                }
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'all_available' => $allAvailable,
+                'items' => $results,
+                'message' => $allAvailable ? 'Semua stok tersedia' : 'Ada item yang stok tidak cukup',
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }    /**
+     * Reserve stock item saat ditambah ke cart
+     * Ini BUKAN reduce stok, hanya tandai sebagai "reserved"
+     * Stok akan benar-benar berkurang saat checkout
+     */
+    public function reserveStockItem(Request $r)
+    {
+        try {
+            $barangId = $r->input('barang_id');
+            $qty = $r->input('qty', 1);
+
+            if (!$barangId || $qty <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Parameter tidak valid'
+                ], 400);
+            }
+
+            // Get barang
+            $barang = Barang::find($barangId);
+            if (!$barang) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak ditemukan'
+                ], 404);
+            }
+
+            // Reserve stock menggunakan ManageStok trait
+            $result = \App\Models\BarangStock::reserveStok(
+                $barangId,
+                $qty,
+                Auth::id()
+            );
+
+            if (!$result['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $result['message'] ?? 'Gagal reserve stok'
+                ], 400);
+            }
+
+            // Get updated stock
+            $stock = \App\Models\BarangStock::where('barang_id', $barangId)->first();
+            $available = max(0, ($stock?->quantity ?? 0) - ($stock?->reserved ?? 0));
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Stok berhasil di-reserve',
+                'data' => [
+                    'barang_id' => $barangId,
+                    'quantity' => $stock?->quantity ?? 0,
+                    'reserved' => $stock?->reserved ?? 0,
+                    'available' => $available,
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error reserving stock: ' . $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Release all reserved items saat cart di-reset atau checkout dibatalkan
+     */
+    public function releaseReservedItems(Request $r)
+    {
+        try {
+            $items = $r->input('items', []);
+
+            if (!is_array($items) || count($items) === 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Items tidak valid'
+                ], 400);
+            }
+
+            $releasedCount = 0;
+            $errors = [];
+
+            foreach ($items as $item) {
+                $item = (object) $item;
+                $barangId = $item->barang_id ?? $item->id ?? null;
+                $qty = $item->qty ?? $item->quantity ?? 0;
+
+                if (!$barangId || $qty <= 0) {
+                    $errors[] = "Item {$barangId} invalid";
+                    continue;
+                }
+
+                try {
+                    $result = \App\Models\BarangStock::releaseReservedStok($barangId, $qty);
+                    if ($result['success']) {
+                        $releasedCount++;
+                    } else {
+                        $errors[] = $result['message'] ?? "Gagal release {$barangId}";
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => "{$releasedCount} item berhasil di-release",
+                'released_count' => $releasedCount,
+                'errors' => $errors,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error releasing reserved items: ' . $th->getMessage()
+            ], 500);
+        }
+    }
 }
+

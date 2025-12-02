@@ -274,45 +274,69 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             return;
         }
 
-        // Reduce stok di backend
-        axios.post('/reduce-stock', { barang_id: id, qty: 1 })
-            .then((response) => {
-                if (response.data.status === 'ok') {
-                    // Update items dengan stok baru
-                    setItems(prevItems =>
-                        prevItems.map(item =>
-                            item.id === id ? { ...item, stock: response.data.data.stock } : item
-                        )
-                    );
-
-                    // Tambah ke selected items
-                    setSelectedItems(prev => {
-                        const exist = prev.find(v => v.id === id);
-
-                        if (exist) {
-                            return prev.map(v =>
-                                v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
-                            );
-                        } else {
-                            if (selectedBarang) {
-                                // Simpan flag scanned
-                                return [...prev, { ...selectedBarang, qty: 1, scanned }];
-                            }
-                            return prev;
-                        }
-                    });
-                } else {
+        // NEW: 3-Stage Stock Flow
+        // Step 1: Check stock availability (with cache)
+        axios.post('/check-stock-availability', { barang_id: id, qty: 1 })
+            .then((checkResponse) => {
+                if (!checkResponse.data.is_available) {
                     showAlertModal(
-                        'Error',
-                        response.data.message || 'Gagal mengurangi stok',
-                        'error'
+                        'Stok Tidak Cukup',
+                        `Available: ${checkResponse.data.available} pcs. Tidak dapat menambah ${selectedBarang?.deskripsi}`,
+                        'warning'
                     );
+                    inputRef.current?.focus();
+                    return;
                 }
+
+                // Step 2: Reserve stok (tidak kurangi, hanya tandai sebagai reserved)
+                axios.post('/reserve-stock-item', { barang_id: id, qty: 1 })
+                    .then((reserveResponse) => {
+                        if (reserveResponse.data.status === 'ok') {
+                            // Update available stock in UI
+                            const updatedAvailable = reserveResponse.data.data?.available || 0;
+                            setItems(prevItems =>
+                                prevItems.map(item =>
+                                    item.id === id ? { ...item, stock: updatedAvailable } : item
+                                )
+                            );
+
+                            // Step 3: Add to selected items with reserved flag
+                            setSelectedItems(prev => {
+                                const exist = prev.find(v => v.id === id);
+
+                                if (exist) {
+                                    return prev.map(v =>
+                                        v.id === id ? { ...v, qty: (v.qty || 1) + 1, reserved: 1 } : v
+                                    );
+                                } else {
+                                    if (selectedBarang) {
+                                        return [...prev, { ...selectedBarang, qty: 1, scanned, reserved: 1 }];
+                                    }
+                                    return prev;
+                                }
+                            });
+
+                            console.log(`✓ Reserved: ${selectedBarang?.deskripsi}`);
+                        } else {
+                            showAlertModal(
+                                'Error',
+                                reserveResponse.data.message || 'Gagal reserve stok',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch((error) => {
+                        showAlertModal(
+                            'Error',
+                            error.response?.data?.message || 'Gagal reserve stok',
+                            'error'
+                        );
+                    });
             })
             .catch((error) => {
                 showAlertModal(
                     'Error',
-                    error.response?.data?.message || 'Gagal memproses stok',
+                    error.response?.data?.message || 'Gagal cek stok',
                     'error'
                 );
             });
@@ -321,13 +345,32 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     }, [items, searchResults]);
 
     const resetAll = useCallback(() => {
+        // NEW: Release reserved items before clearing cart
+        if (selectedItems.length > 0) {
+            const itemsToRelease = selectedItems.map(item => ({
+                barang_id: item.id,
+                qty: item.qty,
+            }));
+
+            axios.post('/release-reserved-items', { items: itemsToRelease })
+                .then((response) => {
+                    console.log(`✓ Released ${response.data.released_count} items`);
+                    if (response.data.errors.length > 0) {
+                        console.warn('Release errors:', response.data.errors);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error releasing reserved items:', error);
+                });
+        }
+
         setSelectedItems([]);
         setIsPiutang(false);
         setIsStaff(false);
         setSearchQuery('');
         setShowSearchResults(false);
         inputRef.current?.focus();
-    }, []);
+    }, [selectedItems]);
 
     const handleEditQty = (item: BarangItem) => {
         setEditingItem(item);
@@ -338,28 +381,89 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const handleSaveQty = () => {
         if (editingItem && qtyInput) {
             const newQty = parseInt(qtyInput);
+            const oldQty = editingItem.qty || 1;
+            const qtyDiff = newQty - oldQty;
 
-            // Jika dari search (bukan scan), validasi stok
-            if (!editingItem.scanned) {
-                const currentItem = items.find(v => v.id === editingItem.id);
-                if (currentItem && newQty > currentItem.stock) {
-                    showAlertModal(
-                        'Stok Tidak Cukup',
-                        `Stok hanya tersedia ${currentItem.stock} unit. Anda mencoba edit ${newQty} unit.`,
-                        'warning'
-                    );
-                    return;
+            if (qtyDiff !== 0) {
+                // NEW: Handle qty change with reserved stock pattern
+                if (qtyDiff > 0) {
+                    // Increasing qty - need to reserve more
+                    axios.post('/check-stock-availability', { barang_id: editingItem.id, qty: qtyDiff })
+                        .then((checkResponse) => {
+                            if (!checkResponse.data.is_available) {
+                                showAlertModal(
+                                    'Stok Tidak Cukup',
+                                    `Available: ${checkResponse.data.available} pcs. Tidak dapat menambah ${qtyDiff} unit.`,
+                                    'warning'
+                                );
+                                return;
+                            }
+
+                            // Reserve additional qty
+                            axios.post('/reserve-stock-item', { barang_id: editingItem.id, qty: qtyDiff })
+                                .then((reserveResponse) => {
+                                    if (reserveResponse.data.status === 'ok') {
+                                        const updatedAvailable = reserveResponse.data.data?.available || 0;
+                                        setItems(prevItems =>
+                                            prevItems.map(item =>
+                                                item.id === editingItem.id ? { ...item, stock: updatedAvailable } : item
+                                            )
+                                        );
+
+                                        setSelectedItems(prev =>
+                                            prev.map(v =>
+                                                v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                            )
+                                        );
+                                    }
+                                })
+                                .catch((error) => {
+                                    showAlertModal('Error', error.response?.data?.message || 'Gagal reserve stok', 'error');
+                                });
+                        })
+                        .catch((error) => {
+                            showAlertModal('Error', error.response?.data?.message || 'Gagal cek stok', 'error');
+                        });
+                } else {
+                    // Decreasing qty - release some reserved
+                    axios.post('/release-reserved-items', [{
+                        barang_id: editingItem.id,
+                        qty: Math.abs(qtyDiff),
+                    }])
+                        .then((response) => {
+                            console.log(`✓ Released ${Math.abs(qtyDiff)} items`);
+                            setSelectedItems(prev =>
+                                prev.map(v =>
+                                    v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                )
+                            );
+                        })
+                        .catch((error) => {
+                            console.warn('Error releasing stok:', error);
+                            // Still update qty even if release fails
+                            setSelectedItems(prev =>
+                                prev.map(v =>
+                                    v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                )
+                            );
+                        });
                 }
             }
 
-            if (!isNaN(newQty) && newQty > 0) {
-                setSelectedItems(prev =>
-                    prev.map(v =>
-                        v.id === editingItem.id ? { ...v, qty: newQty } : v
-                    )
-                );
-            } else if (newQty === 0) {
-                setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+            if (newQty === 0) {
+                // Remove item completely and release reserved
+                axios.post('/release-reserved-items', [{
+                    barang_id: editingItem.id,
+                    qty: oldQty,
+                }])
+                    .then((response) => {
+                        console.log(`✓ Released all items for removal`);
+                        setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+                    })
+                    .catch((error) => {
+                        console.warn('Error releasing stok:', error);
+                        setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+                    });
             }
         }
         setShowQtyModal(false);
@@ -386,9 +490,10 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
         const popupWindow = window.open(url, '_blank', size);
         if (popupWindow) {
+            popupWindow.focus();
             popupWindow.print();
             setTimeout(() => {
-                // popupWindow.close();
+                popupWindow.close();
             }, 1000);
         }
     };    const handleDiskon = (item?: BarangItem) => {
@@ -580,33 +685,23 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             'Hapus Item',
             'Hapus item dari keranjang?',
             () => {
-                // Restore stok ke database
-                axios.post('/restore-stock', { barang_id: itemId, qty: 1 })
-                    .then((response) => {
-                        if (response.data.status === 'ok') {
-                            // Update local items
-                            setItems(prevItems =>
-                                prevItems.map(item =>
-                                    item.id === itemId ? { ...item, stock: response.data.data.stock } : item
-                                )
-                            );
+                // NEW: Release reserved stok ke database (not reduce)
+                const itemToDelete = selectedItems.find(v => v.id === itemId);
+                const qty = itemToDelete?.qty || 1;
 
-                            // Remove from selected items
-                            setSelectedItems(prev => prev.filter(v => v.id !== itemId));
-                        } else {
-                            showAlertModal(
-                                'Error',
-                                response.data.message || 'Gagal mengembalikan stok',
-                                'error'
-                            );
-                        }
+                axios.post('/release-reserved-items', [{
+                    barang_id: itemId,
+                    qty: qty,
+                }])
+                    .then((response) => {
+                        console.log(`✓ Released ${qty} items on deletion`);
+                        // Remove from selected items (stock will auto-refresh)
+                        setSelectedItems(prev => prev.filter(v => v.id !== itemId));
                     })
                     .catch((error) => {
-                        showAlertModal(
-                            'Error',
-                            error.response?.data?.message || 'Gagal mengembalikan stok',
-                            'error'
-                        );
+                        console.warn('Error releasing stok:', error);
+                        // Still remove from cart even if release fails
+                        setSelectedItems(prev => prev.filter(v => v.id !== itemId));
                     });
             },
             'warning'

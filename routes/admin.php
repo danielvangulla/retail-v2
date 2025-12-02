@@ -10,9 +10,14 @@ use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Admin\PembelianController;
 use App\Http\Controllers\Admin\ReturController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // Admin routes - protected by auth + supervisor middleware
 Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
+    Route::get('/', function() {
+        return redirect()->route('admin.dashboard');
+    });
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
@@ -20,6 +25,11 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
         $result = \App\Services\StokProcessingService::processAll();
         return response()->json(['status' => 'ok', 'data' => $result]);
     })->name('admin.process-stok');
+
+    // Profit Analysis Dashboard
+    Route::get('/profit', function() {
+        return Inertia::render('admin/ProfitDashboard');
+    })->name('profit.dashboard');
 
     // Setup / Basic Settings
     Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');

@@ -5,9 +5,11 @@ use App\Http\Controllers\Back\CashflowController;
 use App\Http\Controllers\Back\ExpireController;
 use App\Http\Controllers\Back\KategoriController;
 use App\Http\Controllers\Back\KategorisubController;
+use App\Http\Controllers\Back\ModulePermissionController;
 use App\Http\Controllers\Back\OpnameController;
 use App\Http\Controllers\Back\PembelianController;
 use App\Http\Controllers\Back\PiutangBayarController;
+use App\Http\Controllers\Back\ProfitAnalysisController;
 use App\Http\Controllers\Back\PiutangController;
 use App\Http\Controllers\Back\PromoController;
 use App\Http\Controllers\Back\ReturController;
@@ -36,6 +38,12 @@ if (env('APP_TYPE') === 'retail') {
         Route::post('/update-bayar', [KasirController::class, 'update']);
         Route::post('/reduce-stock', [KasirController::class, 'reduceStock']);
         Route::post('/restore-stock', [KasirController::class, 'restoreStock']);
+
+        // Reserved stock endpoints (untuk Kasir realtime)
+        Route::post('/check-stock-availability', [KasirController::class, 'checkStockAvailability']);
+        Route::post('/check-bulk-stock', [KasirController::class, 'checkBulkStockAvailability']);
+        Route::post('/reserve-stock-item', [KasirController::class, 'reserveStockItem']);
+        Route::post('/release-reserved-items', [KasirController::class, 'releaseReservedItems']);
 
         Route::get('/print-bill', [KasirController::class, 'printBill']);
         Route::get('/print-bill/{trxId}', [KasirController::class, 'printBill']);
@@ -109,5 +117,31 @@ if (env('APP_TYPE') === 'retail') {
         Route::post('/promo-list', [PromoController::class, 'promoJson']);
         Route::post('/promo-set-status', [PromoController::class, 'promoSetStatus']);
         Route::post('/promo-destroy', [PromoController::class, 'promoDestroy']);
+
+        // Module permission management (NEW)
+        Route::get('/module-permissions', [ModulePermissionController::class, 'index'])
+            ->middleware('check.module:settings,manage_users');
+        Route::get('/module-permissions/{user}', [ModulePermissionController::class, 'getUserPermissions'])
+            ->middleware('check.module:settings,manage_users');
+        Route::post('/module-permissions/{user}', [ModulePermissionController::class, 'updatePermissions'])
+            ->middleware('check.module:settings,manage_users');
+        Route::post('/module-permissions/{user}/grant-quick', [ModulePermissionController::class, 'grantQuickAccess'])
+            ->middleware('check.module:settings,manage_users');
+        Route::post('/module-permissions/{user}/revoke', [ModulePermissionController::class, 'revokeAccess'])
+            ->middleware('check.module:settings,manage_users');
+
+        // Profit & Cost Analysis (NEW)
+        Route::get('/profit-dashboard', [ProfitAnalysisController::class, 'dashboard'])
+            ->middleware('check.module:reports,view');
+        Route::get('/api/profit-analysis/daily', [ProfitAnalysisController::class, 'dailyAnalysis'])
+            ->middleware('check.module:reports,view');
+        Route::get('/api/profit-analysis/trend', [ProfitAnalysisController::class, 'trendAnalysis'])
+            ->middleware('check.module:reports,view');
+        Route::get('/api/profit-analysis/products', [ProfitAnalysisController::class, 'productProfitability'])
+            ->middleware('check.module:reports,view');
+        Route::get('/api/profit-analysis/product/{barangId}/margin', [ProfitAnalysisController::class, 'productMargin'])
+            ->middleware('check.module:reports,view');
+        Route::get('/api/profit-analysis/inventory-value', [ProfitAnalysisController::class, 'inventoryValue'])
+            ->middleware('check.module:reports,view');
     });
 }
