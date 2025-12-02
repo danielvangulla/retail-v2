@@ -113,7 +113,7 @@ export default function SetupIndex({ setup, setupId }: Props) {
                     </div>
 
                     {/* Form Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-white/60 p-4 sm:p-6 sm:p-8">
+                    <div className="bg-white rounded-xl shadow-sm border border-white/60 p-4 sm:p-6">
                         <form onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {/* Nama Toko */}
