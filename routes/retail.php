@@ -35,6 +35,7 @@ if (env('APP_TYPE') === 'retail') {
         Route::post('/proses-bayar', [KasirController::class, 'store']);
         Route::post('/update-bayar', [KasirController::class, 'update']);
         Route::post('/reduce-stock', [KasirController::class, 'reduceStock']);
+        Route::post('/restore-stock', [KasirController::class, 'restoreStock']);
 
         Route::get('/print-bill', [KasirController::class, 'printBill']);
         Route::get('/print-bill/{trxId}', [KasirController::class, 'printBill']);

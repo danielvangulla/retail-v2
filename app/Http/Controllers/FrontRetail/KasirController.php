@@ -634,4 +634,70 @@ class KasirController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Restore stock saat item dihapus dari cart
+     * Mengembalikan stok yang sudah dikurangi saat reduce-stock
+     */
+    public function restoreStock(Request $r)
+    {
+        try {
+            $barangId = $r->barang_id;
+            $qty = $r->qty ?? 1;
+
+            if (!$barangId || $qty <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Parameter tidak valid'
+                ], 400);
+            }
+
+            // Get barang
+            $barang = Barang::find($barangId);
+            if (!$barang) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak ditemukan'
+                ], 404);
+            }
+
+            // Add stock back (restore)
+            $result = \App\Models\BarangStock::addStok(
+                $barangId,
+                $qty,
+                'in',
+                'cancellation_kasir',
+                null,
+                'Pembatalan item dari kasir',
+                Auth::id()
+            );
+
+            if (!$result) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal mengembalikan stok'
+                ], 400);
+            }
+
+            // Get updated stock
+            $stock = \App\Models\BarangStock::where('barang_id', $barangId)->first();
+            $available = max(0, ($stock?->quantity ?? 0) - ($stock?->reserved ?? 0));
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Stok berhasil dikembalikan',
+                'data' => [
+                    'barang_id' => $barangId,
+                    'quantity' => $stock?->quantity ?? 0,
+                    'reserved' => $stock?->reserved ?? 0,
+                    'stock' => $available,
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error restoring stock: ' . $th->getMessage()
+            ], 500);
+        }
+    }
 }

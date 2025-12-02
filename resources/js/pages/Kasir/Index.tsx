@@ -566,7 +566,34 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             'Hapus Item',
             'Hapus item dari keranjang?',
             () => {
-                setSelectedItems(prev => prev.filter(v => v.id !== itemId));
+                // Restore stok ke database
+                axios.post('/restore-stock', { barang_id: itemId, qty: 1 })
+                    .then((response) => {
+                        if (response.data.status === 'ok') {
+                            // Update local items
+                            setItems(prevItems =>
+                                prevItems.map(item =>
+                                    item.id === itemId ? { ...item, stock: response.data.data.stock } : item
+                                )
+                            );
+
+                            // Remove from selected items
+                            setSelectedItems(prev => prev.filter(v => v.id !== itemId));
+                        } else {
+                            showAlertModal(
+                                'Error',
+                                response.data.message || 'Gagal mengembalikan stok',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch((error) => {
+                        showAlertModal(
+                            'Error',
+                            error.response?.data?.message || 'Gagal mengembalikan stok',
+                            'error'
+                        );
+                    });
             },
             'warning'
         );
