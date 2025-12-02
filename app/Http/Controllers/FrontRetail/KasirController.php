@@ -12,6 +12,7 @@ use App\Models\TransaksiDetail;
 use App\Models\TransaksiPayment;
 use App\Models\TransaksiPaymentType;
 use App\Models\User;
+use App\Events\DashboardUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -121,6 +122,9 @@ class KasirController extends Controller
             $this->setTransaksiPayment($data, $trxId);
             $this->setTransaksiDetails($data, $trxId);
 
+            // Broadcast dashboard update
+            event(new DashboardUpdated(['trxId' => $trxId, 'bayar' => $data->bayar], 'transaction'));
+
             return response()->json([
                 'status' => 'ok',
                 'msg' => '-',
@@ -142,6 +146,9 @@ class KasirController extends Controller
             $trxId = $this->setPiutang($data);
             $this->setTransaksiDetails($data, $trxId);
 
+            // Broadcast dashboard update
+            event(new DashboardUpdated(['trxId' => $trxId, 'bayar' => $data->bayar], 'transaction'));
+
             return response()->json([
                 'status' => 'ok',
                 'msg' => '-',
@@ -153,6 +160,9 @@ class KasirController extends Controller
         if ($r->state === 'komplemen') {
             $trxId = $this->setKomplemen($data);
             $this->setTransaksiDetails($data, $trxId);
+
+            // Broadcast dashboard update
+            event(new DashboardUpdated(['trxId' => $trxId], 'transaction'));
 
             return response()->json([
                 'status' => 'ok',
@@ -558,5 +568,70 @@ class KasirController extends Controller
             'status' => 'ok',
             'msg' => '-',
         ], 200);
+    }
+
+    /**
+     * Reduce stock saat barang di-scan di kasir
+     */
+    public function reduceStock(Request $r)
+    {
+        try {
+            $barangId = $r->barang_id;
+            $qty = $r->qty ?? 1;
+
+            if (!$barangId || $qty <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Parameter tidak valid'
+                ], 400);
+            }
+
+            // Get barang
+            $barang = Barang::find($barangId);
+            if (!$barang) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Barang tidak ditemukan'
+                ], 404);
+            }
+
+            // Reduce stock
+            $result = \App\Models\BarangStock::reduceStok(
+                $barangId,
+                $qty,
+                'out',
+                'penjualan_kasir',
+                null,
+                'Penjualan manual di kasir',
+                Auth::id()
+            );
+
+            if (!$result['success']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $result['message'] ?? 'Gagal mengurangi stok'
+                ], 400);
+            }
+
+            // Get updated stock
+            $stock = \App\Models\BarangStock::where('barang_id', $barangId)->first();
+            $available = max(0, ($stock?->quantity ?? 0) - ($stock?->reserved ?? 0));
+
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Stok berhasil dikurangi',
+                'data' => [
+                    'barang_id' => $barangId,
+                    'quantity' => $stock?->quantity ?? 0,
+                    'reserved' => $stock?->reserved ?? 0,
+                    'stock' => $available
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
     }
 }

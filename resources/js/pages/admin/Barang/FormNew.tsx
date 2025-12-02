@@ -29,6 +29,7 @@ interface BarangFormProps {
         min_stock: number;
         multiplier: boolean;
         st_aktif: number;
+        allow_sold_zero_stock: boolean;
         prices?: PriceItem[];
     };
     kategoris: Array<{ id: string; ket: string }>;
@@ -59,6 +60,7 @@ export default function BarangFormNew({ barang, kategoris, kategoriSubs }: Baran
         min_stock: barang?.min_stock || 1,
         multiplier: barang?.multiplier || false,
         st_aktif: barang?.st_aktif !== undefined ? barang.st_aktif.toString() : '1',
+        allow_sold_zero_stock: barang?.allow_sold_zero_stock !== undefined ? barang.allow_sold_zero_stock : true,
     });
 
     const [prices, setPrices] = useState<PriceItem[]>(
@@ -575,6 +577,26 @@ export default function BarangFormNew({ barang, kategoris, kategoriSubs }: Baran
                                             Barang nonaktif tidak akan muncul di kasir
                                         </p>
                                     </div>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="allow_sold_zero_stock"
+                                            checked={formData.allow_sold_zero_stock}
+                                            onChange={handleChange}
+                                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="text-sm font-semibold text-gray-900">
+                                                📦 Izinkan Penjualan saat Stok 0 atau Negatif
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-1">
+                                                Jika diaktifkan, barang tetap dapat dijual meskipun stok habis (backorder). Jika dimatikan, penjualan akan ditolak saat stok tidak cukup.
+                                            </p>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
                         )}

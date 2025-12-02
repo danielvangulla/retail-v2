@@ -12,4 +12,7 @@ class Job extends Model
     protected $table = 'jobs';
 
     protected $guarded = [];
+
+    // Allow all attributes to be mass-assignable
+    protected $fillable = ['process_name', 'is_running', 'by', 'queue', 'payload', 'attempts', 'reserved_at', 'available_at'];
 }

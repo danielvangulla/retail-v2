@@ -97,9 +97,8 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         isStaff
     );
 
-    // Load barang list
+    // Focus input on load
     useEffect(() => {
-        loadBarangList();
         inputRef.current?.focus();
     }, []);
 
@@ -148,83 +147,164 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         );
     };
 
-    const loadBarangList = async () => {
-        try {
-            const response = await axios.post('/barang-list', { show: 1 });
-            if (response.data.status === 'ok') {
-                setItems(response.data.data);
-            } else {
-                console.error('Failed to load items:', response.data.message);
-            }
-        } catch (error: any) {
-            console.error('Error loading barang:', error);
-            if (error.response?.status === 403) {
-                setSessionExpired(true);
-            }
-        }
-    };
-
     const handleSearchInput = useCallback((value: string) => {
         setSearchQuery(value);
         const searchString = value.toLowerCase();
 
+        // Clear timeout jika ada
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
         if (searchString.length >= 2) {
-            const filtered = items.filter(item =>
-                item.barcode.toLowerCase().includes(searchString) ||
-                item.deskripsi.toLowerCase().includes(searchString)
-            ).slice(0, 10);
+            // Debounce search API call 300ms
+            searchTimeout.current = setTimeout(() => {
+                axios.post('/barang-search', { q: searchString })
+                    .then((response) => {
+                        if (response.data.status === 'ok') {
+                            const results = response.data.data;
+                            setSearchResults(results);
+                            setSelectedResult(results[0] || null);
+                            setShowSearchResults(results.length > 0);
 
-            setSearchResults(filtered);
-            setSelectedResult(filtered[0] || null);
+                            // Jika exact match 1 barang, auto-select setelah 500ms
+                            if (results.length === 1) {
+                                canSelectSearchResultRef.current = true;
+                                const exactMatch = results.find((item: BarangItem) =>
+                                    item.barcode.toLowerCase() === searchString ||
+                                    item.deskripsi.toLowerCase() === searchString
+                                );
 
-            if (filtered.length === 1) {
-                canSelectSearchResultRef.current = true;
-
-                if (searchTimeout.current) clearTimeout(searchTimeout.current);
-
-                const exactMatch = items.find(item =>
-                    item.barcode.toLowerCase() === searchString ||
-                    item.deskripsi.toLowerCase() === searchString
-                );
-
-                searchTimeout.current = setTimeout(() => {
-                    if (exactMatch) {
-                        selectItemJual(exactMatch.id);
+                                if (exactMatch) {
+                                    setTimeout(() => {
+                                        handleSelectItemJual(exactMatch.id, true);
+                                        setShowSearchResults(false);
+                                        setSearchQuery('');
+                                    }, 500);
+                                }
+                            } else {
+                                canSelectSearchResultRef.current = false;
+                                setTimeout(() => { canSelectSearchResultRef.current = true; }, 500);
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Search error:', error);
                         setShowSearchResults(false);
-                        setSearchQuery('');
-                    }
-                }, 500);
-            } else {
-                canSelectSearchResultRef.current = false;
-                setTimeout(() => { canSelectSearchResultRef.current = true; }, 500);
-            }
-
-            setShowSearchResults(filtered.length > 0);
+                    });
+            }, 300);
         } else {
             setShowSearchResults(false);
             setSearchResults([]);
         }
-    }, [items]);
+    }, []);
 
-    const selectItemJual = useCallback((id: string) => {
-        setSelectedItems(prev => {
-            const exist = prev.find(v => v.id === id);
+    const handleSearchKeydown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (!showSearchResults || searchResults.length === 0) return;
 
-            if (exist) {
-                return prev.map(v =>
-                    v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
-                );
-            } else {
-                const selected = items.find(v => v.id === id);
-                if (selected) {
-                    return [...prev, { ...selected, qty: 1 }];
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedResult(prev => {
+                    const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : -1;
+                    const nextIndex = Math.min(currentIndex + 1, searchResults.length - 1);
+                    return searchResults[nextIndex] || searchResults[0];
+                });
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedResult(prev => {
+                    const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : searchResults.length;
+                    const prevIndex = Math.max(currentIndex - 1, 0);
+                    return searchResults[prevIndex] || null;
+                });
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedResult) {
+                    // Allow select if stock > 0 OR allow_sold_zero_stock is true
+                    if (selectedResult.stock > 0 || selectedResult.allow_sold_zero_stock) {
+                        handleSelectItemJual(selectedResult.id, false);
+                        setShowSearchResults(false);
+                        setSearchQuery('');
+                        inputRef.current?.focus();
+                    }
                 }
-                return prev;
-            }
-        });
+                break;
+            case 'Escape':
+                e.preventDefault();
+                setShowSearchResults(false);
+                inputRef.current?.focus();
+                break;
+        }
+    }, [showSearchResults, searchResults, selectedResult]);
+
+    const handleSelectItemJual = useCallback((id: string, scanned: boolean = false) => {
+        // Try to find in items array first, then in search results
+        let selectedBarang = items.find(v => v.id === id);
+        if (!selectedBarang) {
+            selectedBarang = searchResults.find(v => v.id === id);
+        }
+
+        if (!selectedBarang) {
+            showAlertModal('Error', 'Barang tidak ditemukan', 'error');
+            return;
+        }
+
+        // Check if stock is 0 or negative and item is not allowed to be sold
+        if (selectedBarang.stock <= 0 && !selectedBarang.allow_sold_zero_stock) {
+            showAlertModal(
+                'Stok Habis',
+                `${selectedBarang.deskripsi} tidak dapat dijual karena stok habis. Aktifkan "Bisa Jual saat Stok Habis" di pengaturan barang jika diizinkan.`,
+                'warning'
+            );
+            inputRef.current?.focus();
+            return;
+        }
+
+        // Reduce stok di backend
+        axios.post('/reduce-stock', { barang_id: id, qty: 1 })
+            .then((response) => {
+                if (response.data.status === 'ok') {
+                    // Update items dengan stok baru
+                    setItems(prevItems =>
+                        prevItems.map(item =>
+                            item.id === id ? { ...item, stock: response.data.data.stock } : item
+                        )
+                    );
+
+                    // Tambah ke selected items
+                    setSelectedItems(prev => {
+                        const exist = prev.find(v => v.id === id);
+
+                        if (exist) {
+                            return prev.map(v =>
+                                v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
+                            );
+                        } else {
+                            if (selectedBarang) {
+                                // Simpan flag scanned
+                                return [...prev, { ...selectedBarang, qty: 1, scanned }];
+                            }
+                            return prev;
+                        }
+                    });
+                } else {
+                    showAlertModal(
+                        'Error',
+                        response.data.message || 'Gagal mengurangi stok',
+                        'error'
+                    );
+                }
+            })
+            .catch((error) => {
+                showAlertModal(
+                    'Error',
+                    error.response?.data?.message || 'Gagal memproses stok',
+                    'error'
+                );
+            });
 
         inputRef.current?.focus();
-    }, [items]);
+    }, [items, searchResults]);
 
     const resetAll = useCallback(() => {
         setSelectedItems([]);
@@ -244,6 +324,20 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const handleSaveQty = () => {
         if (editingItem && qtyInput) {
             const newQty = parseInt(qtyInput);
+
+            // Jika dari search (bukan scan), validasi stok
+            if (!editingItem.scanned) {
+                const currentItem = items.find(v => v.id === editingItem.id);
+                if (currentItem && newQty > currentItem.stock) {
+                    showAlertModal(
+                        'Stok Tidak Cukup',
+                        `Stok hanya tersedia ${currentItem.stock} unit. Anda mencoba edit ${newQty} unit.`,
+                        'warning'
+                    );
+                    return;
+                }
+            }
+
             if (!isNaN(newQty) && newQty > 0) {
                 setSelectedItems(prev =>
                     prev.map(v =>
@@ -518,7 +612,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         },
         onEnter: () => {
             if (canSelectSearchResultRef.current && selectedResult) {
-                selectItemJual(selectedResult.id);
+                handleSelectItemJual(selectedResult.id);
                 setShowSearchResults(false);
                 setSearchQuery('');
                 inputRef.current?.focus();
@@ -594,6 +688,8 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                         placeholder="Scan barcode..."
                                         value={searchQuery}
                                         onChange={(e) => handleSearchInput(e.target.value)}
+                                        onKeyDown={handleSearchKeydown}
+                                        autoFocus
                                         className="w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm sm:text-base placeholder-slate-400
                                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-inner"
                                     />
@@ -614,24 +710,44 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                         </div>
                     </div>
 
-                    {/* Search Results Modal */}
+                                    {/* Search Results Modal */}
                     {showSearchResults && (
-                        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-                            <div className="bg-slate-800 border border-slate-600 shadow-2xl rounded-xl overflow-hidden h-[70vh] w-full max-w-4xl">
-                                <div className="overflow-y-auto h-full">
+                        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4" onClick={() => {
+                            setShowSearchResults(false);
+                            inputRef.current?.focus();
+                        }}>
+                            <div className="bg-slate-800 border border-slate-600 shadow-2xl rounded-xl overflow-hidden h-[70vh] w-full max-w-4xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                {/* Modal Header with Close Button */}
+                                <div className="flex items-center justify-between bg-linear-to-br from-slate-700 to-slate-600 px-4 py-3 border-b border-slate-600 shrink-0">
+                                    <h3 className="text-white font-semibold text-sm sm:text-base">Hasil Pencarian Barang</h3>
+                                    <button
+                                        onClick={() => {
+                                            setShowSearchResults(false);
+                                            inputRef.current?.focus();
+                                        }}
+                                        className="text-slate-300 hover:text-white transition-colors p-1 hover:bg-slate-700 rounded"
+                                        title="Close (ESC)"
+                                    >
+                                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="overflow-y-auto h-full flex-1">
                                     <table className="w-full">
                                         <thead className="sticky top-0 bg-linear-to-br from-slate-700 to-slate-600 shadow-md">
                                             <tr className="text-slate-200">
                                                 <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Barcode</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Deskripsi</th>
                                                 <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Satuan</th>
+                                                <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Stok</th>
                                                 <th className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wider">Harga</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-700">
                                             {searchResults.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={4} className="px-4 py-12 text-center text-slate-400">
+                                                    <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
                                                         <svg className="mx-auto h-12 w-12 text-slate-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                                         </svg>
@@ -639,26 +755,40 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                searchResults.map((item) => (
-                                                    <tr
-                                                        key={item.id}
-                                                        onClick={() => {
-                                                            selectItemJual(item.id);
-                                                            setShowSearchResults(false);
-                                                            setSearchQuery('');
-                                                        }}
-                                                        className={`cursor-pointer transition-all duration-150 ${
-                                                            selectedResult?.id === item.id
-                                                                ? 'bg-blue-600 text-white shadow-lg'
-                                                                : 'bg-slate-800/50 hover:bg-slate-700 text-slate-200'
-                                                        }`}
-                                                    >
-                                                        <td className="px-4 py-3 text-center font-mono text-sm">{item.barcode}</td>
-                                                        <td className="px-4 py-3 font-medium">{item.deskripsi}</td>
-                                                        <td className="px-4 py-3 text-center text-sm">{item.volume}</td>
-                                                        <td className="px-4 py-3 text-right font-semibold">Rp {formatNumber(item.harga_jual1)}</td>
-                                                    </tr>
-                                                ))
+                                                searchResults.map((item) => {
+                                                    const isOutOfStock = item.stock <= 0 && !item.allow_sold_zero_stock;
+                                                    return (
+                                                        <tr
+                                                            key={item.id}
+                                                            onClick={() => {
+                                                                if (!isOutOfStock) {
+                                                                    handleSelectItemJual(item.id, false); // scanned=false karena search nama
+                                                                    setShowSearchResults(false);
+                                                                    setSearchQuery('');
+                                                                }
+                                                            }}
+                                                            className={`transition-all duration-150 ${
+                                                                isOutOfStock ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50' :
+                                                                selectedResult?.id === item.id
+                                                                    ? 'bg-blue-600 text-white shadow-lg cursor-pointer'
+                                                                    : 'bg-slate-800/50 hover:bg-slate-700 text-slate-200 cursor-pointer'
+                                                            }`}
+                                                        >
+                                                            <td className="px-4 py-3 text-center font-mono text-sm">{item.barcode}</td>
+                                                            <td className="px-4 py-3 font-medium flex items-center gap-2">
+                                                                {item.deskripsi}
+                                                                {isOutOfStock && (
+                                                                    <span className="text-xs bg-red-500/30 text-red-300 px-2 py-1 rounded">Stok Habis</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center text-sm">{item.volume}</td>
+                                                            <td className={`px-4 py-3 text-center font-semibold ${isOutOfStock ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                                {item.stock} {item.satuan}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-semibold">Rp {formatNumber(item.harga_jual1)}</td>
+                                                        </tr>
+                                                    );
+                                                })
                                             )}
                                         </tbody>
                                     </table>

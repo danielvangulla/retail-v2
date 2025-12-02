@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'supervisor'])->group(function () {
     // Dashboard
     Route::get('/back', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/back/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
 
     // Barang management
     Route::resource('/back/barang', BarangController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

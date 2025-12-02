@@ -15,12 +15,12 @@ class ExpireController extends Controller
     public function index()
     {
         $data = BarangExpire::with('user')->with('details')->orderBy('created_at', 'desc')->get();
-        return Inertia::render('Expire/Index', compact('data'));
+        return Inertia::render('back/Expire/Index', compact('data'));
     }
 
     public function create()
     {
-        return Inertia::render('Expire/Create');
+        return Inertia::render('back/Expire/Create');
     }
 
     public function store(Request $r)

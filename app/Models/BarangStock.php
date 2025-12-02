@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ManageStok;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class BarangStock extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, ManageStok;
 
     protected $primaryKey = 'id';
     public $incrementing = false;

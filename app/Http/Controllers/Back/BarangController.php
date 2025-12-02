@@ -123,7 +123,6 @@ class BarangController extends Controller
 
             $saved = Barang::BulkInsert($data);
 
-            Barang::setCache();
 
             if ($saved) {
                 return response()->json([
@@ -184,7 +183,6 @@ class BarangController extends Controller
 
         $saved = Barang::BulkInsert($dataRows);
 
-        Barang::setCache();
 
         if ($saved) {
             return response()->json([
@@ -227,7 +225,6 @@ class BarangController extends Controller
         ];
         BarangPrice::create($data);
 
-        Barang::setCache();
 
         return response()->json([
             'status' => 'ok',
@@ -239,7 +236,6 @@ class BarangController extends Controller
     {
         BarangPrice::where('id', $r->id)->delete();
 
-        Barang::setCache();
 
         return response()->json([
             'status' => 'ok',
@@ -267,7 +263,6 @@ class BarangController extends Controller
             }
         }
 
-        Barang::setCache();
 
         return response()->json([
             'status' => 'ok',
@@ -290,7 +285,6 @@ class BarangController extends Controller
 
     public function cekLowStock()
     {
-        Barang::setCache();
         $barang = Barang::getAllBarang(true);
 
         $barangIds = $barang->map(function ($v) {
@@ -315,9 +309,10 @@ class BarangController extends Controller
 
     public function barangList(Request $r)
     {
-        $barang = Barang::getAllBarang($r->show);
+        // Real-time barang list untuk search/scan kasir
+        $barang = Barang::getBarangList();
 
-        if (!$barang) {
+        if ($barang->isEmpty()) {
             return response()->json([
                 'status' => 'error',
                 'msg' => 'Data barang jual belum ada !',
@@ -327,7 +322,25 @@ class BarangController extends Controller
         return response()->json([
             'status' => 'ok',
             'msg' => '-',
-            'data' => $barang,
+            'data' => $barang->values(),
+        ], 200);
+    }
+
+    /**
+     * Search barang on-demand (dipanggil saat user search)
+     * Max 20 hasil dengan realtime stok
+     */
+    public function barangSearch(Request $r)
+    {
+        $r->validate([
+            'q' => 'required|string|min:2',
+        ]);
+
+        $results = Barang::searchBarang($r->q);
+
+        return response()->json([
+            'status' => 'ok',
+            'data' => $results->values(),
         ], 200);
     }
 
@@ -388,7 +401,6 @@ class BarangController extends Controller
         if ($r->state === 'barang-delete') {
             Barang::where('id', $r->id)->update(['st_aktif' => 0]);
 
-            Barang::setCache();
 
             return response()->json([
                 'status' => 'ok',
@@ -399,7 +411,6 @@ class BarangController extends Controller
         if ($r->state === 'barang-restore') {
             Barang::where('id', $r->id)->update(['st_aktif' => 1]);
 
-            Barang::setCache();
 
             return response()->json([
                 'status' => 'ok',
@@ -412,7 +423,6 @@ class BarangController extends Controller
         if ($r->state === 'barang-create') {
             Barang::create($data);
 
-            Barang::setCache();
 
             return response()->json([
                 'status' => 'ok',
@@ -423,7 +433,6 @@ class BarangController extends Controller
         if ($r->state === 'barang-edit') {
             Barang::where('id', $r->id)->update($data);
 
-            Barang::setCache();
 
             return response()->json([
                 'status' => 'ok',
@@ -454,6 +463,7 @@ class BarangController extends Controller
             'harga_jual2' => 'required | numeric',
             'multiplier' => 'required',
             'min_stock' => 'required | numeric',
+            'allow_sold_zero_stock' => 'nullable | boolean',
         ], Helpers::customErrorMsg());
     }
 }

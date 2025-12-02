@@ -6,7 +6,6 @@ use App\Events\BarangCreated;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class Barang extends Model
@@ -28,7 +27,9 @@ class Barang extends Model
         'updated_at',
     ];
 
-    protected $casts = [];
+    protected $casts = [
+        'allow_sold_zero_stock' => 'boolean',
+    ];
 
     protected $dispatchesEvents = [
         'created' => BarangCreated::class,
@@ -54,19 +55,24 @@ class Barang extends Model
     public static function getBarangList()
     {
         return self::select(
-            'id',
-            'sku',
-            'barcode',
-            'deskripsi',
-            'alias',
-            'satuan',
-            'isi',
-            'volume',
-            'harga_jual1',
-            'harga_jual2',
-            'multiplier',
-            'st_aktif',
-        )->with([
+            'barang.id',
+            'barang.sku',
+            'barang.barcode',
+            'barang.deskripsi',
+            'barang.alias',
+            'barang.satuan',
+            'barang.isi',
+            'barang.volume',
+            'barang.harga_jual1',
+            'barang.harga_jual2',
+            'barang.multiplier',
+            'barang.st_aktif',
+            'barang.allow_sold_zero_stock',
+            DB::raw('COALESCE(barang_stock.quantity, 0) as quantity'),
+            DB::raw('COALESCE(barang_stock.reserved, 0) as reserved'),
+            DB::raw('GREATEST(0, COALESCE(barang_stock.quantity, 0) - COALESCE(barang_stock.reserved, 0)) as stock')
+        )->leftJoin('barang_stock', 'barang.id', '=', 'barang_stock.barang_id')
+        ->with([
             'prices' => function ($q) {
                 $q->select('id', 'barang_id', 'qty', 'harga1', 'harga2', 'multiplier')
                     ->orderBy('qty');
@@ -78,41 +84,65 @@ class Barang extends Model
                     ->where('tgl_to', '>=', $date)
                     ->where('is_aktif', 1);
             },
-        ])->where('st_aktif', 1)
-        ->orderBy('sku')
+        ])->where('barang.st_aktif', 1)
+        ->groupBy('barang.id', 'barang.sku', 'barang.barcode', 'barang.deskripsi', 'barang.alias', 'barang.satuan', 'barang.isi', 'barang.volume', 'barang.harga_jual1', 'barang.harga_jual2', 'barang.multiplier', 'barang.st_aktif', 'barang.allow_sold_zero_stock', 'barang_stock.quantity', 'barang_stock.reserved')
+        ->orderBy('barang.sku')
         ->get();
     }
 
-    public static function setCache()
+    /**
+     * Search barang on-demand dengan realtime stok
+     * Dipanggil saat user search, limit 20 hasil
+     */
+    public static function searchBarang($query)
     {
-        // Cache::forget('barangList');
-        Cache::forever('barangList', self::getBarangList(), now()->addHour());
+        $searchTerm = '%' . $query . '%';
+
+        return self::select(
+            'barang.id',
+            'barang.sku',
+            'barang.barcode',
+            'barang.deskripsi',
+            'barang.alias',
+            'barang.satuan',
+            'barang.isi',
+            'barang.volume',
+            'barang.harga_jual1',
+            'barang.harga_jual2',
+            'barang.multiplier',
+            'barang.st_aktif',
+            'barang.allow_sold_zero_stock',
+            DB::raw('COALESCE(barang_stock.quantity, 0) as quantity'),
+            DB::raw('COALESCE(barang_stock.reserved, 0) as reserved'),
+            DB::raw('GREATEST(0, COALESCE(barang_stock.quantity, 0) - COALESCE(barang_stock.reserved, 0)) as stock')
+        )->leftJoin('barang_stock', 'barang.id', '=', 'barang_stock.barang_id')
+        ->where('barang.st_aktif', 1)
+        ->where(function ($q) use ($searchTerm) {
+            $q->where('barang.barcode', 'LIKE', $searchTerm)
+              ->orWhere('barang.deskripsi', 'LIKE', $searchTerm)
+              ->orWhere('barang.sku', 'LIKE', $searchTerm)
+              ->orWhere('barang.alias', 'LIKE', $searchTerm);
+        })
+        ->groupBy('barang.id', 'barang.sku', 'barang.barcode', 'barang.deskripsi', 'barang.alias', 'barang.satuan', 'barang.isi', 'barang.volume', 'barang.harga_jual1', 'barang.harga_jual2', 'barang.multiplier', 'barang.st_aktif', 'barang.allow_sold_zero_stock', 'barang_stock.quantity', 'barang_stock.reserved')
+        ->orderBy('barang.deskripsi')
+        ->limit(20)
+        ->get();
     }
+
+
 
     public static function getAllBarang($show)
     {
-        if (!Cache::has('barangList'))
-            self::setCache();
-
-        $barangList = Cache::get('barangList');
-
-        // Sudah di-filter st_aktif=1 di query, langsung return
-        return $barangList->values();
+        // Real-time query tanpa cache untuk stok terkini
+        return self::getBarangList()->values();
     }
 
     public static function getHargaBeli($id)
     {
-        if (!Cache::has('barangList'))
-            self::setCache();
-
-        $barangList = Cache::get('barangList');
-
-        $barang = $barangList->first(function ($v) use ($id) {
-            return $v->id == $id;
-        });
+        $barang = self::find($id);
 
         if ($barang) {
-            return $barang->harga_beli;
+            return $barang->harga_beli ?? 0;
         }
 
         return 0;

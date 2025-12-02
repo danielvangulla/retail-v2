@@ -20,6 +20,7 @@ use App\Http\Controllers\Front\ReportController;
 use App\Http\Controllers\FrontRetail\KasirController;
 use App\Http\Controllers\FrontRetail\KomplemenController;
 use App\Http\Controllers\FrontRetail\ReportRetailController;
+use App\Http\Controllers\FrontRetail\BarangController as FrontRetailBarangController;
 use Illuminate\Support\Facades\Route;
 
 if (env('APP_TYPE') === 'retail') {
@@ -33,6 +34,7 @@ if (env('APP_TYPE') === 'retail') {
 
         Route::post('/proses-bayar', [KasirController::class, 'store']);
         Route::post('/update-bayar', [KasirController::class, 'update']);
+        Route::post('/reduce-stock', [KasirController::class, 'reduceStock']);
 
         Route::get('/print-bill', [KasirController::class, 'printBill']);
         Route::get('/print-bill/{trxId}', [KasirController::class, 'printBill']);
@@ -60,7 +62,8 @@ if (env('APP_TYPE') === 'retail') {
         Route::resource('/kategorisub', KategorisubController::class)->only(['index', 'store']);
 
         Route::resource('/barang', BarangController::class)->only(['index', 'create', 'edit', 'store']);
-        Route::post('/barang-list', [BarangController::class, 'barangList']);
+        Route::post('/barang-list', [FrontRetailBarangController::class, 'barangList']);
+        Route::post('/barang-search', [FrontRetailBarangController::class, 'barangSearch']);
 
         Route::post('/barang-from-csv', [BarangController::class, 'importCsv']);
         Route::post('/barang-from-excel', [BarangController::class, 'importExcel']);

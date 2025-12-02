@@ -71,10 +71,11 @@ trait ManageStok
                 ->where('barang_id', $barangId)
                 ->firstOrFail();
 
+            $barang = Barang::find($barangId);
             $available = $stock->quantity - $stock->reserved;
 
-            // Validasi stok cukup
-            if ($available < $qty) {
+            // Validasi stok cukup - tapi izinkan jika allow_sold_zero_stock = true
+            if ($available < $qty && !($barang && $barang->allow_sold_zero_stock)) {
                 return [
                     'success' => false,
                     'message' => "Stok tidak mencukupi. Available: {$available}, Requested: {$qty}",

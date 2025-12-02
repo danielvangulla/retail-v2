@@ -45,7 +45,7 @@ class PiutangBayarController extends Controller
 
     public function index()
     {
-        return Inertia::render('Piutang/PiutangBayar/Index');
+        return Inertia::render('back/Piutang/PiutangBayar/Index');
     }
 
     public function store(Request $r)

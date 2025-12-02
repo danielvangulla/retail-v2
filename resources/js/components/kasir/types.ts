@@ -15,10 +15,13 @@ export interface BarangItem {
     harga_jual1: number;
     harga_jual2: number;
     stock: number;
+    quantity?: number;
+    reserved?: number;
     prices?: any[];
     promo?: any;
     trx_details?: any[];
     multiplier?: boolean;
+    allow_sold_zero_stock?: boolean; // Izinkan penjualan saat stok habis
     qty?: number;
     disc_spv?: number;
     disc_promo?: number;
@@ -27,4 +30,5 @@ export interface BarangItem {
     hargaJual?: number;
     hargaPromo?: number;
     total?: number;
+    scanned?: boolean; // true=scan barcode, false=search nama. Scan boleh minus stok, search tidak.
 }
