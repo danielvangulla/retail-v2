@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Back\PembelianController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,4 +54,8 @@ Route::middleware(['auth', 'supervisor'])->group(function () {
 
     // Pembelian management
     Route::resource('/back/pembelian', PembelianController::class)->only(['index', 'create', 'store', 'show']);
+
+    // Setup / Basic Settings
+    Route::get('/back/setup', [SetupController::class, 'index'])->name('setup.index');
+    Route::post('/back/setup', [SetupController::class, 'store'])->name('setup.store');
 });

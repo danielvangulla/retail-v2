@@ -33,6 +33,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             label: 'Setup',
             icon: Settings,
             submenu: [
+                { label: 'Basic Settings', href: '/back/setup' },
                 { label: 'Kategori', href: '/back/kategori' },
                 { label: 'Sub-Kategori', href: '/back/kategorisub' },
                 { label: 'Barang', href: '/back/barang' },
