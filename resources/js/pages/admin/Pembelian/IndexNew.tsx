@@ -110,22 +110,22 @@ export default function PembelianIndexNew({ pembelians = { data: [], current_pag
                         <table className="w-full">
                             <thead className="bg-linear-to-r from-gray-50 to-blue-50 border-b border-gray-200/50">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                         Tanggal
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                                        User
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                        Input by
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                         Jumlah Item
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                         Total
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                         Status
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
                                         Aksi
                                     </th>
                                 </tr>
@@ -143,36 +143,35 @@ export default function PembelianIndexNew({ pembelians = { data: [], current_pag
                                 ) : (
                                     pembelians.data.map((item) => (
                                         <tr key={item.id} className="hover:bg-blue-50/50 transition-colors duration-150">
-                                            <td className="px-6 py-4 text-sm">
-                                                <div className="flex items-center gap-2">
+                                            <td className="px-6 py-4 text-sm text-center">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <Calendar className="h-4 w-4 text-gray-400" />
                                                     <span className="font-semibold text-gray-900">
                                                         {formatTgl(item.tgl_faktur || item.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm">
-                                                <div className="flex items-center gap-2">
+                                            <td className="px-6 py-4 text-sm text-center">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <User className="h-4 w-4 text-gray-400" />
                                                     <span className="text-gray-700">{item.user?.name || '-'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200/50">
-                                                    📦 {item.details?.length || 0} item
+                                            <td className="px-6 py-4 text-sm text-center">
+                                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200/50">
+                                                    <span className='font-bold mr-1'>{item.details?.length || 0}</span> item(s)
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <DollarSign className="h-4 w-4 text-green-600" />
+                                                <div className="flex items-center justify-center gap-2">
                                                     <span className="font-bold text-green-700">
                                                         Rp {formatDigit(item.grand_total)}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm">
+                                            <td className="px-6 py-4 text-sm text-center">
                                                 {item.is_lunas ? (
-                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200/50">
+                                                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200/50">
                                                         ✓ Lunas
                                                     </span>
                                                 ) : (
@@ -181,7 +180,7 @@ export default function PembelianIndexNew({ pembelians = { data: [], current_pag
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm">
+                                            <td className="px-6 py-4 text-sm text-center">
                                                 <button
                                                     onClick={() => handleView(item.id)}
                                                     className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-all cursor-pointer"
