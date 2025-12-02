@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\User;
 use App\Models\Transaksi;
+use App\Models\BarangStock;
+use App\Traits\ManageStok;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,7 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    use ManageStok;
     public function index(): Response
     {
         // Get today's sales (only completed transactions, not cancelled)
@@ -30,7 +33,9 @@ class DashboardController extends Controller
 
         // Get total inventory value
         $totalItems = Barang::where('st_aktif', 1)->count();
-        $lowStockItems = Barang::where('st_aktif', 1)->count();
+        $lowStockItems = BarangStock::join('barang', 'barang_stock.barang_id', '=', 'barang.id')
+            ->whereRaw('barang_stock.quantity - barang_stock.reserved < barang.min_stock')
+            ->count();
 
         // Get total users
         $totalUsers = User::count();
@@ -59,6 +64,30 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Get low stock items with monthly sales
+        $lowStockList = DB::table('barang_stock')
+            ->join('barang', 'barang_stock.barang_id', '=', 'barang.id')
+            ->leftJoin(
+                DB::raw('(SELECT td.sku, SUM(td.qty) as monthly_sold FROM transaksi_dets td INNER JOIN transaksis t ON td.transaksi_id = t.id WHERE t.is_cancel = 0 AND t.status != 0 AND t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY td.sku) as sales'),
+                'barang.id',
+                '=',
+                'sales.sku'
+            )
+            ->whereRaw('barang_stock.quantity - barang_stock.reserved < barang.min_stock')
+            ->select([
+                'barang.id',
+                'barang.deskripsi',
+                'barang.satuan',
+                'barang.min_stock',
+                'barang_stock.quantity',
+                'barang_stock.reserved',
+                DB::raw('(barang_stock.quantity - barang_stock.reserved) as available'),
+                DB::raw('COALESCE(sales.monthly_sold, 0) as monthly_sold'),
+            ])
+            ->orderBy('available', 'asc')
+            ->limit(10)
+            ->get();
+
         return Inertia::render('admin/Dashboard', [
             'todaySales' => (int) $todaySales,
             'monthSales' => (int) $monthSales,
@@ -72,6 +101,7 @@ class DashboardController extends Controller
                 'total' => (int) $item->total,
             ]),
             'topProducts' => $topProducts,
+            'lowStockList' => $lowStockList,
         ]);
     }
 }
