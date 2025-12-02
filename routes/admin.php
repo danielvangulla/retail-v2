@@ -49,6 +49,7 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::get('/pembelian-create', [PembelianController::class, 'create'])->name('pembelian.create');
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
     Route::get('/pembelian/{id}', [PembelianController::class, 'show'])->name('pembelian.show');
+    Route::get('/pembelian/{id}/print', [PembelianController::class, 'print'])->name('pembelian.print');
 
     // User management
     Route::resource('/user', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

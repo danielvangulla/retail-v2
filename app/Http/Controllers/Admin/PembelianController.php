@@ -82,4 +82,10 @@ class PembelianController extends Controller
         $data = Pembelian::with('details', 'details.barang', 'user')->find($id);
         return Inertia::render('admin/Pembelian/ShowNew', ['data' => $data]);
     }
+
+    public function print($id)
+    {
+        $data = Pembelian::with('details', 'details.barang', 'user')->find($id);
+        return Inertia::render('admin/Pembelian/Print', ['data' => $data]);
+    }
 }
