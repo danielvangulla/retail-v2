@@ -9,6 +9,7 @@ use App\Models\PembelianDet;
 use App\Traits\ManageStok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PembelianController extends Controller
@@ -70,11 +71,20 @@ class PembelianController extends Controller
                 ]);
 
                 // Add stock and capture movement ID
-                $movementId = ManageStok::addStok($barang->id, $qty, 'in', 'pembelian', $pembelian->id, 'Pembelian #' . $pembelian->id, Auth::id());
-                $detail->update([
-                    'stok_processed' => true,
-                    'kartu_stok_id' => $movementId,
-                ]);
+                try {
+                    $movementId = ManageStok::addStok($barang->id, $qty, 'in', 'pembelian', $pembelian->id, 'Pembelian #' . $pembelian->id, Auth::id());
+                    $detail->update([
+                        'stok_processed' => true,
+                        'kartu_stok_id' => $movementId,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to process stock for pembelian', [
+                        'barang_id' => $barang->id,
+                        'qty' => $qty,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Leave stok_processed as false for reprocessing
+                }
 
                 $pembelian->grand_total += $v->total;
             }

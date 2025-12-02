@@ -9,6 +9,7 @@ use App\Models\BarangReturDetail;
 use App\Traits\ManageStok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ReturController extends Controller
@@ -61,12 +62,21 @@ class ReturController extends Controller
                 ]);
 
                 // Reduce stock and capture movement ID
-                $result = ManageStok::reduceStok($barang->id, $v->qtyRetur, 'out', 'retur', $retur->id, 'Retur #' . $retur->id, Auth::id());
-                if ($result['success']) {
-                    $detail->update([
-                        'stok_processed' => true,
-                        'kartu_stok_id' => $result['movement_id'],
+                try {
+                    $result = ManageStok::reduceStok($barang->id, $v->qtyRetur, 'out', 'retur', $retur->id, 'Retur #' . $retur->id, Auth::id());
+                    if ($result['success']) {
+                        $detail->update([
+                            'stok_processed' => true,
+                            'kartu_stok_id' => $result['movement_id'],
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to process stock for retur', [
+                        'barang_id' => $barang->id,
+                        'qty' => $v->qtyRetur,
+                        'error' => $e->getMessage()
                     ]);
+                    // Leave stok_processed as false for reprocessing
                 }
             }
         }

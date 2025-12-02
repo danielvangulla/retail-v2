@@ -1,0 +1,15 @@
+{
+  "apps": [
+    {
+      "name": "laravel-echo-server",
+      "script": "laravel-echo-server",
+      "args": "start",
+      "autorestart": true,
+      "watch": false,
+      "max_memory_restart": "512M",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}

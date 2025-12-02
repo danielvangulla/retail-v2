@@ -10,16 +10,20 @@
       "password": ""
     }
   },
-  "devMode": false,
-  "host": "127.0.0.1",
+  "devMode": true,
+  "host": "0.0.0.0",
   "port": "9999",
   "protocol": "http",
   "socketio": {
     "cors": {
-      "origin": "https://retail.cloudapp.my.id",
+      "origin": "*",
       "methods": ["GET", "POST"],
-      "credentials": true
-    }
+      "credentials": true,
+      "allowEIO3": true
+    },
+    "transports": ["websocket", "polling"],
+    "pingInterval": 25000,
+    "pingTimeout": 60000
   },
   "secureOptions": 67108864,
   "sslCertPath": "",
@@ -29,11 +33,11 @@
   "subscribers": {
     "http": true,
     "redis": true,
-    "log": false
+    "log": true
   },
   "apiOriginAllow": {
     "allowCors": true,
-    "allowOrigin": "https://retail.cloudapp.my.id",
+    "allowOrigin": "*",
     "allowMethods": "GET, POST, PUT, PATCH, OPTIONS",
     "allowHeaders": "Origin, Content-Type, X-Auth-Token, X-Requested-With, Accept, Authorization, X-CSRF-TOKEN, X-Socket-Id"
   }

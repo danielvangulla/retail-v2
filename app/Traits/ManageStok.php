@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\Barang;
 use App\Models\BarangStock;
 use App\Models\BarangStockMovement;
+use App\Events\StockUpdated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -57,6 +58,9 @@ trait ManageStok
                 'reference_id' => $referenceId,
                 'movement_id' => $movement->id,
             ]);
+
+            // Broadcast stock update event
+            event(new StockUpdated($barangId, $quantityAfter, 'in'));
 
             return $movement->id;
         }, attempts: 3); // Retry 3x jika terjadi deadlock
@@ -120,6 +124,9 @@ trait ManageStok
                 'reference_id' => $referenceId,
                 'movement_id' => $movement->id,
             ]);
+
+            // Broadcast stock update event
+            event(new StockUpdated($barangId, max(0, $quantityAfter), 'out'));
 
             return [
                 'success' => true,

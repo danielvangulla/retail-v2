@@ -616,7 +616,7 @@ class KasirController extends Controller
                 $qty,
                 'out',
                 'penjualan_kasir',
-                null,
+                '',
                 'Penjualan manual di kasir',
                 Auth::id()
             );
@@ -682,7 +682,7 @@ class KasirController extends Controller
                 $qty,
                 'in',
                 'cancellation_kasir',
-                null,
+                '',
                 'Pembatalan item dari kasir',
                 Auth::id()
             );

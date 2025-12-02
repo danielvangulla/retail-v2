@@ -138,7 +138,7 @@ class DummySalesSeeder extends Seeder
                         'out',
                         'penjualan',
                         $transaksi->id,
-                        null,
+                        '',
                         $kasir->id
                     );
 

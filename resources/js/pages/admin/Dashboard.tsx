@@ -1,5 +1,7 @@
 import AdminLayout from './Layout';
 import { DollarSign, Package, Users, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
 
 interface DashboardProps {
     todaySales: number;
@@ -32,17 +34,37 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
-    todaySales,
-    monthSales,
+    todaySales: initialTodaySales,
+    monthSales: initialMonthSales,
     totalItems,
-    lowStockItems,
+    lowStockItems: initialLowStockItems,
     totalUsers,
     supervisors,
     kasirs,
-    salesTrend,
-    topProducts,
-    lowStockList,
+    salesTrend: initialSalesTrend,
+    topProducts: initialTopProducts,
+    lowStockList: initialLowStockList,
 }: DashboardProps) {
+    // State for real-time data
+    const [todaySales, setTodaySales] = useState(initialTodaySales);
+    const [monthSales, setMonthSales] = useState(initialMonthSales);
+    const [lowStockItems, setLowStockItems] = useState(initialLowStockItems);
+    const [salesTrend, setSalesTrend] = useState(initialSalesTrend);
+    const [topProducts, setTopProducts] = useState(initialTopProducts);
+    const [lowStockList, setLowStockList] = useState(initialLowStockList);
+
+    // Setup real-time updates
+    const { isConnected } = useDashboardRealtime((data) => {
+        if (data.todaySales !== undefined) setTodaySales(data.todaySales);
+        if (data.monthSales !== undefined) setMonthSales(data.monthSales);
+        if (data.salesTrend) setSalesTrend(data.salesTrend);
+        if (data.topProducts) setTopProducts(data.topProducts);
+        if (data.lowStockList) {
+            setLowStockList(data.lowStockList);
+            setLowStockItems(data.lowStockList.length);
+        }
+    });
+
     // Calculate daily average and growth
     const dailyAverage = Math.round(monthSales / 30);
     const monthGrowth = ((todaySales - dailyAverage) / dailyAverage * 100).toFixed(1);
@@ -260,7 +282,7 @@ export default function Dashboard({
                                     <thead>
                                         <tr className="border-b border-gray-200">
                                             <th className="text-left py-3 px-2 text-gray-600 font-semibold">Produk</th>
-                                            <th className="text-center py-3 px-2 text-gray-600 font-semibold">Stok Skg</th>
+                                            <th className="text-center py-3 px-2 text-gray-600 font-semibold">Stok</th>
                                             <th className="text-center py-3 px-2 text-gray-600 font-semibold">Min Stok</th>
                                             <th className="text-center py-3 px-2 text-gray-600 font-semibold">Penjualan/Bln</th>
                                         </tr>
