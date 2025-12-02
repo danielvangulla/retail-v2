@@ -1,3 +1,179 @@
+# Retail-v2 Project Intelligence
+
+## Project Overview
+**retail-v2** is a modern rewrite of a legacy retail management system from **Laravel 10 + Blade/jQuery** to **Laravel 12 + Inertia + React + TypeScript + Fortify**. It's a comprehensive **Point-of-Sale (POS) + Backend Admin** system for retail/restaurant businesses featuring inventory management, transactions, payments, receivables, and real-time updates.
+
+## Core Domain Architecture
+
+### Primary Models & Relationships
+- **Transaksi** → **TransaksiDetail** (sales transactions with line items)
+- **Barang** (inventory) ← **BarangStock** + **BarangStockMovement** (stock tracking with reserved stock pattern)
+- **Pembelian** → **PembelianDet** (purchase orders)
+- **Piutang** (receivables) + **PiutangBayar** (receivable payments)
+- **User** + **UserPermission** (role-based access control)
+- **Printer**, **Setup**, **Promo**, **Kategori**, **Kategorisub** (supporting config/reference data)
+
+### Critical Business Logic: Reserved Stock Pattern
+The app prevents race conditions in concurrent kasir scenarios using reserved stock:
+- **Quantity**: Physical stock in warehouse
+- **Reserved**: Items in shopping carts (not yet paid)
+- **Available** = Quantity - Reserved
+
+**Flow**: Scan → reserve stock → add to cart → checkout (deduct quantity, clear reserved) OR cancel → release reserved. See `STOCK_MANAGEMENT_FLOW.md` for detailed implementation.
+
+## Entry Points & User Flows
+
+### Kasir (Point of Sale)
+- **Route**: `/home-space` → `KasirController::index()`
+- **Page**: `resources/js/pages/Kasir/Index.tsx`
+- **Flow**: Barcode scan → search/select items → adjust quantities → apply discounts → process payment → print receipt
+- **Key Action**: `proses-bayar` (POST) → `KasirController::store()` → reduces stock, creates transaction record, broadcasts event
+
+### Admin Pages
+- Inventory: `/barang` (create, edit, pricing, low-stock alerts)
+- Purchasing: `/pembelian` (purchase orders)
+- Receivables: `/piutang`, `/piutang-bayar` (credit system)
+- Reports: `/sales-by-user`, `/sales-by-tgl`, `/omset-by-tgl` (analytics)
+- Settings: `/pengaturan` (store setup, user permissions)
+
+### Real-Time Updates
+- Broadcasting channels: `ChangeStatusMeja`, `SyncBarang`, `DashboardUpdated`
+- Frontend subscribes using `useDashboardRealtime` hook (see `Dashboard.tsx`)
+- Laravel Echo Server (Redis-backed WebSocket)
+
+## Tech Stack & Key Decisions
+
+### Frontend Architecture
+- **Framework**: Inertia.js v2 + React 19 + TypeScript (SSR-like experience without SSR)
+- **Styling**: Tailwind CSS v4 (CSS-first, no `tailwind.config.js` needed, use `@import "tailwindcss"`)
+- **Type Safety**: Wayfinder (`laravel/wayfinder` v0.1.12) generates TS functions from backend routes
+- **Build**: Vite with `vite.config.ts`
+- **Icons**: Lucide React
+- **Page Structure**: `resources/js/pages/{Kasir,admin,auth}/` → routed to controllers via `Inertia::render('PageName', $data)`
+
+### Backend Architecture
+- **Framework**: Laravel 12 (streamlined file structure, no `Kernel.php`, auto-registered commands)
+- **Authentication**: Fortify v1.32 (not Sanctum for this app)
+- **Authorization**: spatie/permission for role-based middleware
+- **Broadcasting**: Laravel Echo Server (Redis, `broadcasting.php`)
+- **Queues**: Redis-backed for printer jobs (`PrinterBillServices`, `PrinterCOServices`, etc.)
+- **Database**: MySQL with Eloquent ORM
+
+### Route Organization
+1. `routes/web.php`: Auth redirect, profile, settings (public routes)
+2. `routes/retail.php`: 130+ retail-specific routes (conditional on `APP_TYPE=retail`)
+3. `routes/auth.php`: Fortify authentication endpoints
+4. `routes/admin.php`: Admin dashboard
+5. `routes/api.php`: Lightweight sync endpoints for external integrations
+
+## Common Development Patterns
+
+### Controller → View Flow
+```php
+// app/Http/Controllers/Back/BarangController.php
+public function index(): Response {
+    return Inertia::render('back/Barang/Index', [
+        'barangs' => Barang::where('st_aktif', 1)->get(),
+        'categories' => Kategori::all(),
+    ]);
+}
+```
+
+```tsx
+// resources/js/pages/admin/Barang/Index.tsx
+export default function BarangIndex({ barangs, categories }: Props) {
+    // Use Wayfinder for form actions
+    const form = useForm({ sku: '' });
+    form.submit(store()); // store() from @/actions/Back/BarangController
+}
+```
+
+### Real-Time Dashboard Updates
+```tsx
+// resources/js/pages/admin/Dashboard.tsx
+const { isConnected } = useDashboardRealtime((data) => {
+    setTodaySales(data.todaySales);
+    setSalesTrend(data.salesTrend);
+});
+```
+
+### Service Classes & Queued Jobs
+```php
+// app/Http/Controllers/Services/PrinterBillServices.php
+class PrinterBillServices extends BasePrinter implements ShouldQueue {
+    public function __construct(Object $requestData, int $copy) { ... }
+    public function handle(): void { ... } // Executes in queue
+}
+```
+
+## Environment Configuration
+
+### Required .env Variables
+```
+APP_TYPE=retail                    # Must be 'retail' for routes to load
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_DATABASE=retail_v2
+DB_USERNAME=root
+BROADCAST_DRIVER=redis             # For Echo/WebSocket
+QUEUE_CONNECTION=redis             # For print jobs
+PRINTER_IP=192.168.x.x            # Network thermal printer
+PRINTER_PORT=9100
+OPENAI_API_KEY=...                 # Optional, for AI features
+SERVER_VPN_IP=...                  # For external API sync
+```
+
+### Key Config Files
+- `config/app.php`, `config/database.php`, `config/broadcasting.php`, `config/queue.php`
+- `bootstrap/app.php`: Register middleware (replaces `Kernel.php`)
+- `bootstrap/providers.php`: Service provider registration
+
+## Developer Workflows
+
+### Setup & Running
+```bash
+# Backend
+composer install
+php artisan key:generate
+php artisan migrate
+php artisan serve
+
+# Frontend
+npm install
+npm run dev        # Watch mode
+npm run build      # Production
+
+# Combined
+composer run dev
+```
+
+### Testing & Quality
+- Tests: `tests/Feature/`, `tests/Unit/`, `tests/Browser/` (Pest v4)
+- Create: `php artisan make:test --pest FeatureName`
+- Run: `php artisan test` or `php artisan test --filter=testName`
+- Format: `vendor/bin/pint --dirty` (required before finalizing)
+
+### Printing System
+- Printer services send ESC/POS commands to thermal printers via network
+- Jobs queued in Redis: `PrinterBillServices`, `PrinterCOServices`, `PrinterKomplemenServices`
+- Triggered at checkout, refunds, shift reports
+
+## File Structure Reference
+- **Models**: `app/Models/` (35+ domain models: Barang, Transaksi, Pembelian, etc.)
+- **Controllers**: `app/Http/Controllers/{Back,FrontRetail,Front,Services,Auth}/`
+- **Routes**: `routes/{web,retail,auth,admin,api}.php` (retail.php is the main POS hub)
+- **Pages**: `resources/js/pages/{Kasir,admin,auth}/` (130+ route → page mappings)
+- **Hooks**: `resources/js/hooks/` (useKasirKeyboard, useDashboardRealtime, etc.)
+
+## Important Notes
+1. **Stock Management**: Always use the reserved stock pattern for concurrent operations
+2. **Page Routing**: Match Inertia page paths to controller route names (e.g., `KasirController::index()` → `Kasir/Index.tsx`)
+3. **Frontend Build**: If changes don't appear in UI, run `npm run build` or `npm run dev`
+4. **Type Safety**: Leverage Wayfinder for route/controller imports in React
+5. **Real-Time**: Use Echo for broadcasting stock, transaction, and dashboard updates
+
+---
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
