@@ -49,8 +49,6 @@ class ExpireController extends Controller
             BarangExpireDetail::create($arr);
         }
 
-        Barang::setCache();
-
         return response()->json([
             'status' => 'ok',
             'msg' => 'Barang Expire berhasil disimpan !'

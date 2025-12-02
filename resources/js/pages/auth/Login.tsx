@@ -1,17 +1,14 @@
 import { Head, usePage, router } from '@inertiajs/react';
 import { Lock, User, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
-import axios from '@/lib/axios';
 
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
-    csrf_token?: string;
 }
 
-export default function Login({ status, csrf_token }: LoginProps) {
-    const { props } = usePage();
+export default function Login({ status }: LoginProps) {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -22,24 +19,21 @@ export default function Login({ status, csrf_token }: LoginProps) {
         try {
             setIsLoading(true);
             setErrors({});
-            const response = await axios.post('/login', {
-                ...formData,
-                _token: csrf_token || (props as any)?.csrf_token
-            });
 
-            // If successful, check response for redirect URL
-            if (response.status === 200 && response.data?.redirect) {
-                setTimeout(() => {
-                    window.location.href = response.data.redirect;
-                }, 300);
-            }
+            // Use Inertia router.post() instead of axios
+            router.post('/login', formData, {
+                onSuccess: () => {
+                    // Success - redirect will be handled by Inertia
+                },
+                onError: (errors: any) => {
+                    console.error('Login error:', errors);
+                    setErrors(errors || {});
+                    setIsLoading(false);
+                },
+                preserveScroll: true,
+            });
         } catch (error: any) {
             console.error('Login error:', error);
-            if (error.response?.status === 422) {
-                setErrors(error.response.data.errors || {});
-            } else if (error.response?.data?.errors) {
-                setErrors(error.response.data.errors);
-            }
             setIsLoading(false);
         }
     }

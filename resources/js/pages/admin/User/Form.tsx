@@ -55,9 +55,9 @@ export default function UserForm({ user, mode }: UserFormProps) {
         }
 
         if (mode === 'create') {
-            router.post('/back/user', data);
+            router.post('/admin/user', data);
         } else if (user) {
-            router.put(`/back/user/${user.id}`, data);
+            router.put(`/admin/user/${user.id}`, data);
         }
     };
 
@@ -209,7 +209,7 @@ export default function UserForm({ user, mode }: UserFormProps) {
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/user')}
+                            onClick={() => router.visit('/admin/user')}
                             className="flex-1 bg-gray-300 hover:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition"
                         >
                             Batal

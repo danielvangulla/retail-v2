@@ -74,17 +74,12 @@ class CustomLoginController extends Controller
 
         $request->session()->regenerate();
 
-        Barang::setCache();
-
-        // Return JSON response with redirect URL
+        // Redirect based on user level
         // Level 1 = Supervisor, redirect to login-choice
         // Level 2+ = Kasir, redirect to kasir page
         $redirectUrl = $user->level == 1 ? '/login-choice' : '/kasir';
-        
-        return response()->json([
-            'status' => 'ok',
-            'redirect' => $redirectUrl,
-        ]);
+
+        return redirect($redirectUrl);
     }
 
     private function throttleKey($user, $request): string

@@ -36,12 +36,11 @@ Route::middleware('guest')->group(function () {
     //     ->name('password.store');
 });
 
-Route::middleware(['auth', 'supervisor'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
     // Route::post('register', [CustomLoginController::class, 'register']);
 
     Route::get('login-choice', [LoginChoiceController::class, 'show'])->name('login.choice');
-    Route::post('login-choice', [LoginChoiceController::class, 'redirect'])->name('login.choice.redirect');
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('custom.verification.notice');

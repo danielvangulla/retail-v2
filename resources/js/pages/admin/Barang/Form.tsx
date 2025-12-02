@@ -54,9 +54,9 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
         };
 
         if (mode === 'create') {
-            router.post('/back/barang', data);
+            router.post('/admin/barang', data);
         } else if (barang) {
-            router.put(`/back/barang/${barang.id}`, data);
+            router.put(`/admin/barang/${barang.id}`, data);
         }
     };
 
@@ -227,7 +227,7 @@ export default function BarangForm({ barang, kategoris, mode }: BarangFormProps)
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/barang')}
+                            onClick={() => router.visit('/admin/barang')}
                             className="flex-1 bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition"
                         >
                             Batal

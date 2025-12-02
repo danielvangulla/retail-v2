@@ -49,8 +49,6 @@ class ReturController extends Controller
             BarangReturDetail::create($arr);
         }
 
-        Barang::setCache();
-
         return response()->json([
             'status' => 'ok',
             'msg' => 'Barang Retur berhasil disimpan !'

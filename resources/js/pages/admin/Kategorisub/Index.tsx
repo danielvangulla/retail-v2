@@ -39,18 +39,18 @@ export default function KategorisubIndex({ kategorisub, kategoris }: Kategorisub
 
     const handleSearch = () => {
         setLoading(true);
-        router.get('/back/kategorisub', { search, kategori_id: kategoriFilter });
+        router.get('/admin/kategorisub', { search, kategori_id: kategoriFilter });
     };
 
     const handleDelete = (id: string) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus sub kategori ini?')) {
             setLoading(true);
-            router.delete(`/back/kategorisub/${id}`);
+            router.delete(`/admin/kategorisub/${id}`);
         }
     };
 
     const handleEdit = (id: string) => {
-        router.visit(`/back/kategorisub/${id}/edit`);
+        router.visit(`/admin/kategorisub/${id}/edit`);
     };
 
     return (
@@ -63,7 +63,7 @@ export default function KategorisubIndex({ kategorisub, kategoris }: Kategorisub
                         <p className="text-gray-500 text-sm mt-1">Kelola sub kategori untuk setiap kategori produk</p>
                     </div>
                     <button
-                        onClick={() => router.visit('/back/kategorisub/create')}
+                        onClick={() => router.visit('/admin/kategorisub/create')}
                         className="flex items-center gap-2 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 cursor-pointer"
                     >
                         <Plus className="h-5 w-5" />
@@ -183,7 +183,7 @@ export default function KategorisubIndex({ kategorisub, kategoris }: Kategorisub
                                 {kategorisub.current_page > 1 && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/kategorisub', {
+                                            router.get('/admin/kategorisub', {
                                                 page: kategorisub.current_page - 1,
                                                 search,
                                                 kategori_id: kategoriFilter,
@@ -197,7 +197,7 @@ export default function KategorisubIndex({ kategorisub, kategoris }: Kategorisub
                                 {kategorisub.current_page < kategorisub.last_page && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/kategorisub', {
+                                            router.get('/admin/kategorisub', {
                                                 page: kategorisub.current_page + 1,
                                                 search,
                                                 kategori_id: kategoriFilter,

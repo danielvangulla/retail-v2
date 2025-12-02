@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
-import { LogOut, User, Settings } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 interface KasirMenuBarProps {
     userName?: string;
@@ -8,6 +9,26 @@ interface KasirMenuBarProps {
 }
 
 export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogoutClick }: KasirMenuBarProps) {
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close user menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        };
+
+        if (userMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [userMenuOpen]);
+
     const handleLogout = () => {
         if (onLogoutClick) {
             onLogoutClick();
@@ -18,7 +39,7 @@ export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogo
     };
 
     const handleAdminClick = () => {
-        router.visit('/back');
+        router.visit('/admin');
     };
 
     return (
@@ -37,32 +58,54 @@ export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogo
             </div>
 
             {/* User Info & Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 relative" ref={userMenuRef}>
                 <div className="hidden sm:flex items-center gap-2 bg-slate-700/50 px-3 py-1.5 rounded-lg">
                     <User className="h-4 w-4 text-slate-300" />
                     <span className="text-sm text-slate-200">{userName}</span>
                 </div>
-                
-                {/* Admin Button - Only for Supervisor */}
-                {userLevel === 1 && (
-                    <button
-                        onClick={handleAdminClick}
-                        className="flex items-center gap-1.5 sm:gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-md transition-all duration-200 group hover:cursor-pointer"
-                        title="Ke Halaman Admin"
-                    >
-                        <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover:scale-110 transition-transform" />
-                        <span className="text-xs sm:text-sm font-medium">Admin</span>
-                    </button>
-                )}
 
+                {/* User Badge Button */}
                 <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-1.5 sm:gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-md transition-all duration-200 group"
-                    title="Logout"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-white/50 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 cursor-pointer text-xs sm:text-sm"
                 >
-                    <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs sm:text-sm font-medium">Logout</span>
+                    {userName?.charAt(0).toUpperCase()}
                 </button>
+
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 bg-slate-700 rounded-xl shadow-2xl border border-slate-600 overflow-hidden z-50 w-48">
+
+                        {/* Admin Menu - Only for Supervisor */}
+                        {userLevel === 1 && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        handleAdminClick();
+                                        setUserMenuOpen(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-200 hover:bg-slate-600/50 transition-colors duration-200 cursor-pointer"
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    <span>Halaman Admin</span>
+                                </button>
+
+                                <div className="border-t border-slate-600"></div>
+                            </>
+                        )}
+
+                        <button
+                            onClick={() => {
+                                handleLogout();
+                                setUserMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors duration-200 cursor-pointer"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

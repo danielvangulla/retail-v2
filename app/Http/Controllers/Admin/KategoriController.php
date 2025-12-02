@@ -15,7 +15,7 @@ class KategoriController extends Controller
     public function index(): Response
     {
         $kategoris = Kategori::withCount('barangs')->paginate(20);
-        
+
         return Inertia::render('admin/Kategori/Index', [
             'kategoris' => $kategoris,
         ]);
@@ -50,7 +50,7 @@ class KategoriController extends Controller
 
         Kategori::create($validated);
 
-        return redirect('/back/kategori')->with('message', 'Kategori berhasil ditambahkan');
+        return redirect('/admin/kategori')->with('message', 'Kategori berhasil ditambahkan');
     }
 
     public function edit(string $id): Response
@@ -72,7 +72,7 @@ class KategoriController extends Controller
 
         $kategori->update($validated);
 
-        return redirect('/back/kategori')->with('message', 'Kategori berhasil diupdate');
+        return redirect('/admin/kategori')->with('message', 'Kategori berhasil diupdate');
     }
 
     public function destroy(string $id): RedirectResponse
@@ -80,11 +80,11 @@ class KategoriController extends Controller
         $kategori = Kategori::findOrFail($id);
 
         if ($kategori->barangs()->count() > 0) {
-            return redirect('/back/kategori')->with('error', 'Tidak bisa menghapus kategori yang masih memiliki barang');
+            return redirect('/admin/kategori')->with('error', 'Tidak bisa menghapus kategori yang masih memiliki barang');
         }
 
         $kategori->delete();
 
-        return redirect('/back/kategori')->with('message', 'Kategori berhasil dihapus');
+        return redirect('/admin/kategori')->with('message', 'Kategori berhasil dihapus');
     }
 }

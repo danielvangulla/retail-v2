@@ -31,9 +31,9 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
         setLoading(true);
 
         if (mode === 'create') {
-            router.post('/back/kategori', formData);
+            router.post('/admin/kategori', formData);
         } else if (kategori) {
-            router.put(`/back/kategori/${kategori.id}`, formData);
+            router.put(`/admin/kategori/${kategori.id}`, formData);
         }
     };
 
@@ -80,7 +80,7 @@ export default function KategoriForm({ kategori, mode }: KategoriFormProps) {
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/kategori')}
+                            onClick={() => router.visit('/admin/kategori')}
                             className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-3 rounded-xl font-semibold transition-all cursor-pointer"
                         >
                             Batal

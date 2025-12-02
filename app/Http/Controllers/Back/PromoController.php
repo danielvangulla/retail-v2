@@ -39,8 +39,6 @@ class PromoController extends Controller
             Promo::setPromo((object) $v);
         }
 
-        Barang::setCache();
-
         return response()->json([
             'status' => 'ok',
             'msg' => 'Promo berhasil disimpan !',
@@ -53,8 +51,6 @@ class PromoController extends Controller
         $promo->is_aktif = $r->is_aktif;
         $promo->save();
 
-        Barang::setCache();
-
         return response()->json([
             'status' => 'ok',
             'msg' => '-',
@@ -65,8 +61,6 @@ class PromoController extends Controller
     {
         $promo = Promo::find($r->id);
         $promo->delete();
-
-        Barang::setCache();
 
         return response()->json([
             'status' => 'ok',

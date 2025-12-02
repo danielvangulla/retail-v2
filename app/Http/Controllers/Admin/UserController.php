@@ -62,7 +62,7 @@ class UserController extends Controller
 
         User::create($validated);
 
-        return redirect('/back/user')->with('message', 'User berhasil ditambahkan');
+        return redirect('/admin/user')->with('message', 'User berhasil ditambahkan');
     }
 
     public function edit(string $id): Response
@@ -95,7 +95,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return redirect('/back/user')->with('message', 'User berhasil diupdate');
+        return redirect('/admin/user')->with('message', 'User berhasil diupdate');
     }
 
     public function destroy(string $id): RedirectResponse
@@ -104,11 +104,11 @@ class UserController extends Controller
 
         // Prevent deleting last admin
         if ($user->level == 1 && User::where('level', 1)->count() === 1) {
-            return redirect('/back/user')->with('error', 'Tidak bisa menghapus satu-satunya supervisor');
+            return redirect('/admin/user')->with('error', 'Tidak bisa menghapus satu-satunya supervisor');
         }
 
         $user->delete();
 
-        return redirect('/back/user')->with('message', 'User berhasil dihapus');
+        return redirect('/admin/user')->with('message', 'User berhasil dihapus');
     }
 }

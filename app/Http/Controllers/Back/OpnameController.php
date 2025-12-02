@@ -49,8 +49,6 @@ class OpnameController extends Controller
             Opname::create($opname);
         }
 
-        Barang::setCache();
-
         return response()->json([
             'status' => 'ok',
             'msg' => 'Opname berhasil disimpan !',

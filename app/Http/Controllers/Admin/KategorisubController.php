@@ -17,7 +17,7 @@ class KategorisubController extends Controller
     {
         $kategorisub = Kategorisub::with('kategori')->paginate(20);
         $kategoris = Kategori::all();
-        
+
         return Inertia::render('admin/Kategorisub/Index', [
             'kategorisub' => $kategorisub,
             'kategoris' => $kategoris,
@@ -47,7 +47,7 @@ class KategorisubController extends Controller
     public function create(): Response
     {
         $kategoris = Kategori::all();
-        
+
         return Inertia::render('admin/Kategorisub/Create', [
             'kategoris' => $kategoris,
         ]);
@@ -62,7 +62,7 @@ class KategorisubController extends Controller
 
         Kategorisub::create($validated);
 
-        return redirect('/back/kategorisub')->with('message', 'Sub Kategori berhasil ditambahkan');
+        return redirect('/admin/kategorisub')->with('message', 'Sub Kategori berhasil ditambahkan');
     }
 
     public function edit(string $id): Response
@@ -87,7 +87,7 @@ class KategorisubController extends Controller
 
         $kategorisub->update($validated);
 
-        return redirect('/back/kategorisub')->with('message', 'Sub Kategori berhasil diupdate');
+        return redirect('/admin/kategorisub')->with('message', 'Sub Kategori berhasil diupdate');
     }
 
     public function destroy(string $id): RedirectResponse
@@ -95,11 +95,11 @@ class KategorisubController extends Controller
         $kategorisub = Kategorisub::findOrFail($id);
 
         if ($kategorisub->barangs()->count() > 0) {
-            return redirect('/back/kategorisub')->with('error', 'Tidak bisa menghapus sub kategori yang masih memiliki barang');
+            return redirect('/admin/kategorisub')->with('error', 'Tidak bisa menghapus sub kategori yang masih memiliki barang');
         }
 
         $kategorisub->delete();
 
-        return redirect('/back/kategorisub')->with('message', 'Sub Kategori berhasil dihapus');
+        return redirect('/admin/kategorisub')->with('message', 'Sub Kategori berhasil dihapus');
     }
 }

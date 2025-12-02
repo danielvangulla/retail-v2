@@ -40,7 +40,7 @@ export default function InventoryReport({ barang, summary, search: initialSearch
 
     const handleSearch = () => {
         setLoading(true);
-        router.get('/back/report/inventory', {
+        router.get('/admin/report/inventory', {
             search: filters.search,
             low_stock: filters.low_stock === '1' ? '1' : undefined,
         });

@@ -44,7 +44,7 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <button
-                        onClick={() => router.visit('/back/pembelian')}
+                        onClick={() => router.visit('/admin/pembelian')}
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition cursor-pointer"
                     >
                         <ArrowLeft className="h-5 w-5" />

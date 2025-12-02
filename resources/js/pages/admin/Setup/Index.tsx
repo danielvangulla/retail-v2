@@ -61,7 +61,7 @@ export default function SetupIndex({ setup, setupId }: Props) {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/back/setup', {
+            const response = await fetch('/admin/setup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

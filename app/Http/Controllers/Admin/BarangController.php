@@ -131,7 +131,7 @@ class BarangController extends Controller
             }
         }
 
-        return redirect('/back/barang')->with('message', 'Barang berhasil ditambahkan');
+        return redirect('/admin/barang')->with('message', 'Barang berhasil ditambahkan');
     }
 
     public function edit(string $id): Response
@@ -187,7 +187,7 @@ class BarangController extends Controller
             }
         }
 
-        return redirect('/back/barang')->with('message', 'Barang berhasil diupdate');
+        return redirect('/admin/barang')->with('message', 'Barang berhasil diupdate');
     }
 
     public function destroy(string $id): RedirectResponse
@@ -195,7 +195,7 @@ class BarangController extends Controller
         $barang = Barang::findOrFail($id);
         $barang->delete();
 
-        return redirect('/back/barang')->with('message', 'Barang berhasil dihapus');
+        return redirect('/admin/barang')->with('message', 'Barang berhasil dihapus');
     }
 
     public function lowStock(): Response

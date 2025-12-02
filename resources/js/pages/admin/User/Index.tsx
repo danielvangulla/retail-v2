@@ -37,7 +37,7 @@ export default function UserIndex({ users }: UserIndexProps) {
 
     const handleSearch = () => {
         setLoading(true);
-        router.get('/back/user', {
+        router.get('/admin/user', {
             search,
             level: levelFilter || undefined,
         });
@@ -46,12 +46,12 @@ export default function UserIndex({ users }: UserIndexProps) {
     const handleDelete = (id: string, name: string) => {
         if (window.confirm(`Apakah Anda yakin ingin menghapus user "${name}"?`)) {
             setLoading(true);
-            router.delete(`/back/user/${id}`);
+            router.delete(`/admin/user/${id}`);
         }
     };
 
     const handleEdit = (id: string) => {
-        router.visit(`/back/user/${id}/edit`);
+        router.visit(`/admin/user/${id}/edit`);
     };
 
     return (
@@ -61,7 +61,7 @@ export default function UserIndex({ users }: UserIndexProps) {
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-white">Daftar User</h2>
                     <button
-                        onClick={() => router.visit('/back/user/create')}
+                        onClick={() => router.visit('/admin/user/create')}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
                     >
                         <Plus className="h-5 w-5" />
@@ -193,7 +193,7 @@ export default function UserIndex({ users }: UserIndexProps) {
                                 {users.current_page > 1 && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/user', {
+                                            router.get('/admin/user', {
                                                 page: users.current_page - 1,
                                                 search,
                                                 level: levelFilter || undefined,
@@ -207,7 +207,7 @@ export default function UserIndex({ users }: UserIndexProps) {
                                 {users.current_page < users.last_page && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/user', {
+                                            router.get('/admin/user', {
                                                 page: users.current_page + 1,
                                                 search,
                                                 level: levelFilter || undefined,

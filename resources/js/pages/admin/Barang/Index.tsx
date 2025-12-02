@@ -55,7 +55,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
     const handleSearch = () => {
-        router.get('/back/barang', {
+        router.get('/admin/barang', {
             search: search || undefined,
             kategori_id: kategoriFilter || undefined,
             show: showFilter || undefined,
@@ -67,12 +67,12 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
 
     const handleDelete = (id: string) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
-            router.delete(`/back/barang/${id}`);
+            router.delete(`/admin/barang/${id}`);
         }
     };
 
     const handleEdit = (id: string) => {
-        router.visit(`/back/barang/${id}/edit`);
+        router.visit(`/admin/barang/${id}/edit`);
     };
 
     return (
@@ -85,7 +85,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                         <p className="text-sm text-gray-500 mt-1">Kelola produk dan harga bertingkat</p>
                     </div>
                     <button
-                        onClick={() => router.visit('/back/barang/create')}
+                        onClick={() => router.visit('/admin/barang/create')}
                         className="flex items-center gap-2 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 cursor-pointer"
                     >
                         <Plus className="h-5 w-5" />
@@ -171,7 +171,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                     setSearch('');
                                     setKategoriFilter('');
                                     setShowFilter('');
-                                    router.get('/back/barang');
+                                    router.get('/admin/barang');
                                 }}
                                 className="text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                             >
@@ -426,7 +426,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                 {barang.current_page > 1 && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/barang', {
+                                            router.get('/admin/barang', {
                                                 page: barang.current_page - 1,
                                                 search: search || undefined,
                                                 kategori_id: kategoriFilter || undefined,
@@ -444,7 +444,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                 {barang.current_page < barang.last_page && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/barang', {
+                                            router.get('/admin/barang', {
                                                 page: barang.current_page + 1,
                                                 search: search || undefined,
                                                 kategori_id: kategoriFilter || undefined,

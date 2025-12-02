@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown } from 'lucide-react';
 
@@ -23,32 +23,43 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
     const { props } = usePage();
     const auth = (props as any).auth;
     const currentUrl = (props as any).url || window.location.pathname;
 
     const navigationItems: NavItem[] = [
-        { label: 'Dashboard', href: '/back', icon: Home },
+        { label: 'Dashboard', href: '/admin', icon: Home },
         {
             label: 'Setup',
             icon: Settings,
             submenu: [
-                { label: 'Basic Settings', href: '/back/setup' },
-                { label: 'Kategori', href: '/back/kategori' },
-                { label: 'Sub-Kategori', href: '/back/kategorisub' },
-                { label: 'Barang', href: '/back/barang' },
+                { label: 'Basic Settings', href: '/admin/setup' },
+                { label: 'Kategori', href: '/admin/kategori' },
+                { label: 'Sub-Kategori', href: '/admin/kategorisub' },
+                { label: 'Barang', href: '/admin/barang' },
             ],
         },
         {
             label: 'Pembelian',
             icon: Package,
             submenu: [
-                { label: 'Input Baru', href: '/back/pembelian/create' },
-                { label: 'History', href: '/back/pembelian' },
+                { label: 'Input Baru', href: '/admin/pembelian-create' },
+                { label: 'History', href: '/admin/pembelian' },
+                { label: 'Retur', href: '/admin/pembelian-retur' },
             ],
         },
-        { label: 'User', href: '/back/user', icon: Users },
-        { label: 'Laporan', href: '/back/report/sales', icon: BarChart3 },
+        {
+            label: 'Inventory',
+            icon: Package,
+            submenu: [
+                { label: 'Stok Opname', href: '/admin/opname' },
+                { label: 'Kartu Stok', href: '/admin/kartu-stok' },
+            ],
+        },
+        { label: 'User', href: '/admin/user', icon: Users },
+        { label: 'Laporan', href: '/admin/report/sales', icon: BarChart3 },
     ];
 
     useEffect(() => {
@@ -63,6 +74,23 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             unsubscribeFinish();
         };
     }, []);
+
+    // Close user menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        };
+
+        if (userMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [userMenuOpen]);
 
     // Determine which menu should be expanded based on current URL
     useEffect(() => {
@@ -210,15 +238,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                     </nav>
 
                     {/* Logout - Bottom */}
-                    <div className="absolute bottom-0 w-full border-t border-gray-200/50 p-4 bg-linear-to-t from-gray-50 to-transparent backdrop-blur-sm">
-                        <button
-                            onClick={handleLogout}
-                            className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-red-50 hover:shadow-md text-red-600 transition-all duration-200 cursor-pointer"
-                        >
-                            <LogOut className="h-5 w-5" />
-                            <span>Logout</span>
-                        </button>
-                    </div>
+                    {/* Removed - moved to user badge in top bar */}
                 </aside>
 
                 {/* Mobile overlay */}
@@ -247,16 +267,48 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
 
                             <h1 className="text-3xl font-bold bg-linear-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{title}</h1>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 relative" ref={userMenuRef}>
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
                                     <p className="text-xs text-gray-500 font-medium">
                                         {auth?.user?.level === 1 ? '👑 Supervisor' : '🛒 Kasir'}
                                     </p>
                                 </div>
-                                <div className="w-11 h-11 bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-white/50">
+                                <button
+                                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                    className="w-11 h-11 bg-linear-to-br from-blue-600 via-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-white/50 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-200 cursor-pointer"
+                                >
                                     {auth?.user?.name?.charAt(0).toUpperCase()}
-                                </div>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {userMenuOpen && (
+                                    <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-200/50 overflow-hidden z-50 w-48">
+                                        <button
+                                            onClick={() => {
+                                                router.visit('/kasir');
+                                                setUserMenuOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-blue-50/50 transition-colors duration-200 cursor-pointer"
+                                        >
+                                            <span>🛒</span>
+                                            <span>Halaman Kasir</span>
+                                        </button>
+
+                                        <div className="border-t border-gray-100/50"></div>
+
+                                        <button
+                                            onClick={() => {
+                                                handleLogout();
+                                                setUserMenuOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50/50 transition-colors duration-200 cursor-pointer"
+                                        >
+                                            <LogOut className="h-4 w-4" />
+                                            <span>Logout</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </header>

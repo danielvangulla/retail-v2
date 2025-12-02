@@ -1,53 +1,28 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ShoppingCart, Settings, LogOut } from 'lucide-react';
 import { useState } from 'react';
-import axios from '@/lib/axios';
 
 interface LoginChoiceProps {
     userName: string;
-    csrf_token?: string;
 }
 
-export default function LoginChoice({ userName, csrf_token }: LoginChoiceProps) {
-    const { props } = usePage();
+export default function LoginChoice({ userName }: LoginChoiceProps) {
     const [isLoading, setIsLoading] = useState(false);
 
-    async function handleChoice(destination: 'kasir' | 'admin') {
-        try {
-            setIsLoading(true);
-            const response = await axios.post('/login-choice', { 
-                destination,
-                _token: csrf_token || (props as any)?.csrf_token
-            });
-
-            // If successful, redirect based on response
-            if (response.status === 200 && response.data?.redirect) {
-                setTimeout(() => {
-                    window.location.href = response.data.redirect;
-                }, 300);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setIsLoading(false);
-        }
+    function handleChoice(destination: 'kasir' | 'admin') {
+        setIsLoading(true);
+        // Direct navigation without POST request
+        const targetUrl = destination === 'kasir' ? '/kasir' : '/admin';
+        setTimeout(() => {
+            window.location.href = targetUrl;
+        }, 100);
     }
 
-    async function handleLogout() {
-        try {
-            setIsLoading(true);
-            const response = await axios.post('/logout', {
-                _token: csrf_token || (props as any)?.csrf_token
-            });
-
-            if (response.status === 200 || response.status === 204) {
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 300);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setIsLoading(false);
-        }
+    function handleLogout() {
+        setIsLoading(true);
+        router.post('/logout', {}, {
+            preserveScroll: true,
+        });
     }
 
     return (

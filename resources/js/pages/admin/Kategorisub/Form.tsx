@@ -39,9 +39,9 @@ export default function KategorisubForm({ kategorisub, kategoris, mode }: Katego
         setLoading(true);
 
         if (mode === 'create') {
-            router.post('/back/kategorisub', formData);
+            router.post('/admin/kategorisub', formData);
         } else if (kategorisub) {
-            router.put(`/back/kategorisub/${kategorisub.id}`, formData);
+            router.put(`/admin/kategorisub/${kategorisub.id}`, formData);
         }
     };
 
@@ -114,7 +114,7 @@ export default function KategorisubForm({ kategorisub, kategoris, mode }: Katego
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/kategorisub')}
+                            onClick={() => router.visit('/admin/kategorisub')}
                             className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-3 rounded-xl font-semibold transition-all cursor-pointer"
                         >
                             Batal

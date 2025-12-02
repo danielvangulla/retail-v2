@@ -48,7 +48,7 @@ export default function PembelianCreateNew() {
 
     const fetchBarangList = async () => {
         try {
-            const response = await axios.get('/back/barang-all');
+            const response = await axios.get('/admin/barang-all');
             setBarangList(response.data.data || []);
         } catch (error) {
             console.error('Error fetching barang:', error);
@@ -145,8 +145,8 @@ export default function PembelianCreateNew() {
         };
 
         try {
-            await axios.post('/back/pembelian', data);
-            router.visit('/back/pembelian');
+            await axios.post('/admin/pembelian', data);
+            router.visit('/admin/pembelian');
         } catch (error: any) {
             setLoading(false);
             alert(error.response?.data?.msg || 'Terjadi kesalahan');
@@ -312,7 +312,7 @@ export default function PembelianCreateNew() {
                         {loading ? 'Menyimpan...' : 'Simpan'}
                     </button>
                     <button
-                        onClick={() => router.visit('/back/pembelian')}
+                        onClick={() => router.visit('/admin/pembelian')}
                         className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer"
                     >
                         Batal

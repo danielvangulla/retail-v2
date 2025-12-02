@@ -28,7 +28,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
 
     const handleSearch = () => {
         setLoading(true);
-        router.get('/back/kategori', { search });
+        router.get('/admin/kategori', { search });
     };
 
     const handleDelete = (id: string, barangCount: number) => {
@@ -38,12 +38,12 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
         }
         if (window.confirm('Apakah Anda yakin ingin menghapus kategori ini?')) {
             setLoading(true);
-            router.delete(`/back/kategori/${id}`);
+            router.delete(`/admin/kategori/${id}`);
         }
     };
 
     const handleEdit = (id: string) => {
-        router.visit(`/back/kategori/${id}/edit`);
+        router.visit(`/admin/kategori/${id}/edit`);
     };
 
     return (
@@ -56,7 +56,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                         <p className="text-gray-500 text-sm mt-1">Kelola semua kategori produk dengan mudah</p>
                     </div>
                     <button
-                        onClick={() => router.visit('/back/kategori/create')}
+                        onClick={() => router.visit('/admin/kategori/create')}
                         className="flex items-center gap-2 bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 cursor-pointer"
                     >
                         <Plus className="h-5 w-5" />
@@ -175,7 +175,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                 {kategoris.current_page > 1 && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/kategori', {
+                                            router.get('/admin/kategori', {
                                                 page: kategoris.current_page - 1,
                                                 search,
                                             })
@@ -188,7 +188,7 @@ export default function KategoriIndex({ kategoris }: KategoriIndexProps) {
                                 {kategoris.current_page < kategoris.last_page && (
                                     <button
                                         onClick={() =>
-                                            router.get('/back/kategori', {
+                                            router.get('/admin/kategori', {
                                                 page: kategoris.current_page + 1,
                                                 search,
                                             })

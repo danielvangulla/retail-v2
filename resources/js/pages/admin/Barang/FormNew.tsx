@@ -124,7 +124,7 @@ export default function BarangFormNew({ barang, kategoris, kategoriSubs }: Baran
         };
 
         if (mode === 'create') {
-            router.post('/back/barang', data, {
+            router.post('/admin/barang', data, {
                 onSuccess: () => {
                     setLoading(false);
                 },
@@ -133,7 +133,7 @@ export default function BarangFormNew({ barang, kategoris, kategoriSubs }: Baran
                 }
             });
         } else if (barang) {
-            router.put(`/back/barang/${barang.id}`, data, {
+            router.put(`/admin/barang/${barang.id}`, data, {
                 onSuccess: () => {
                     setLoading(false);
                 },
@@ -713,7 +713,7 @@ export default function BarangFormNew({ barang, kategoris, kategoriSubs }: Baran
 
                         <button
                             type="button"
-                            onClick={() => router.visit('/back/barang')}
+                            onClick={() => router.visit('/admin/barang')}
                             className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all cursor-pointer"
                         >
                             Batal

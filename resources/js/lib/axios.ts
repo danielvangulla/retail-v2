@@ -42,7 +42,19 @@ axios.interceptors.request.use(
 
 // Add response interceptor for comprehensive error handling
 axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Update CSRF token from response header if provided
+        if (response.headers['x-csrf-token']) {
+            const newToken = response.headers['x-csrf-token'];
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            // Also update meta tag
+            const metaTag = document.head.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                metaTag.setAttribute('content', newToken);
+            }
+        }
+        return response;
+    },
     (error) => {
         // Handle specific error codes
         if (error.response) {
@@ -53,12 +65,11 @@ axios.interceptors.response.use(
                     break;
                 case 419:
                     // CSRF token mismatch or session expired
-                    console.error('CSRF token mismatch or session expired.');
-                    // Try to refresh CSRF token from meta tag
-                    const newToken = getCsrfToken();
-                    if (newToken) {
-                        axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-                    }
+                    console.warn('CSRF token expired, reloading page to get fresh token.');
+                    // Reload page to get fresh CSRF token
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                     break;
                 case 429:
                     // Too many requests - rate limiting

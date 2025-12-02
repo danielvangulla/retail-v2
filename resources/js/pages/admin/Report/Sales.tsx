@@ -53,7 +53,7 @@ export default function SalesReport({ transactions, summary, dateFrom, dateTo }:
 
     const handleSearch = () => {
         setLoading(true);
-        router.get('/back/report/sales', filters);
+        router.get('/admin/report/sales', filters);
     };
 
     const handleExport = () => {
