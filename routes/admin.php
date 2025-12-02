@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SetupController;
-use App\Http\Controllers\Back\PembelianController;
+use App\Http\Controllers\Admin\PembelianController;
 use Illuminate\Support\Facades\Route;
 
 // Admin routes - protected by auth + supervisor middleware

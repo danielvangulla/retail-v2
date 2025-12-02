@@ -1,4 +1,4 @@
-import AdminLayout from '../../admin/Layout';
+import AdminLayout from '../Layout';
 import { router } from '@inertiajs/react';
 import { ArrowLeft, Calendar, User, DollarSign, Package, Printer } from 'lucide-react';
 import { formatTgl, formatDigit, formatDateTime } from '../../../lib/formatters';

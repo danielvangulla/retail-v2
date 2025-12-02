@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AdminLayout from '../../admin/Layout';
+import AdminLayout from '../Layout';
 import { router } from '@inertiajs/react';
 import { Plus, Search, ShoppingCart, Calendar, DollarSign, User, Eye, Loader2 } from 'lucide-react';
 import { formatTgl, formatDigit } from '../../../lib/formatters';
@@ -34,7 +34,7 @@ interface PembelianIndexProps {
     pembelians: PaginationData;
 }
 
-export default function PembelianIndexNew({ pembelians }: PembelianIndexProps) {
+export default function PembelianIndexNew({ pembelians = { data: [], current_page: 1, total: 0, per_page: 20, last_page: 1 } }: PembelianIndexProps) {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
 

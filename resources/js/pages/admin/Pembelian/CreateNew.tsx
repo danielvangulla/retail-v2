@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import AdminLayout from '../../admin/Layout';
+import AdminLayout from '../Layout';
 import { router } from '@inertiajs/react';
 import { Plus, Trash2, Save, Search, Package, DollarSign, AlertCircle } from 'lucide-react';
 import { formatDigit } from '../../../lib/formatters';

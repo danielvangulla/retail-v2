@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import AdminLayout from '../Layout';
 import { router } from '@inertiajs/react';
 import { Trash2, Edit2, Plus, Search, Package, TrendingUp, Layers, Tag } from 'lucide-react';
@@ -206,7 +206,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                     </tr>
                                 ) : (
                                     barang.data.map((item) => (
-                                        <>
+                                        <React.Fragment key={item.id}>
                                             <tr
                                                 key={item.id}
                                                 className="hover:bg-blue-50/50 cursor-pointer transition-colors"
@@ -409,7 +409,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                                     </td>
                                                 </tr>
                                             )}
-                                        </>
+                                        </React.Fragment>
                                     ))
                                 )}
                             </tbody>
