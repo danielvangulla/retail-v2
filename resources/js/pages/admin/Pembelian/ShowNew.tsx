@@ -39,7 +39,13 @@ export default function PembelianShowNew({ data }: PembelianShowProps) {
         const height = 600;
         const left = window.screenX + (window.outerWidth - width) / 2;
         const top = window.screenY + (window.outerHeight - height) / 2;
-        window.open(`/admin/pembelian/${data.id}/print`, '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+        const print = window.open(`/admin/pembelian/${data.id}/print`, '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+
+        setTimeout(() => {
+            print?.focus();
+            print?.print();
+            print?.close();
+        }, 1000);
     };
 
     return (

@@ -7,7 +7,6 @@ interface UserFormProps {
     user?: {
         id: string;
         name: string;
-        username: string;
         email: string;
         level: number;
     };
@@ -20,7 +19,6 @@ export default function UserForm({ user, mode }: UserFormProps) {
 
     const [formData, setFormData] = useState({
         name: user?.name || '',
-        username: user?.username || '',
         email: user?.email || '',
         password: '',
         password_confirmation: '',
@@ -31,10 +29,17 @@ export default function UserForm({ user, mode }: UserFormProps) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
+        const newData = {
+            ...formData,
             [name]: name === 'level' ? parseInt(value) : value,
-        }));
+        };
+
+        // Auto-generate email from name (if create mode)
+        if (mode === 'create' && name === 'name') {
+            newData.email = value.toLowerCase().replace(/\s+/g, '') + '@mail.com';
+        }
+
+        setFormData(newData);
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -43,7 +48,6 @@ export default function UserForm({ user, mode }: UserFormProps) {
 
         const data = {
             name: formData.name,
-            username: formData.username,
             email: formData.email,
             level: formData.level,
         } as any;
@@ -66,20 +70,26 @@ export default function UserForm({ user, mode }: UserFormProps) {
 
     return (
         <AdminLayout title={pageTitle}>
-            <div className="max-w-2xl">
-                <form onSubmit={handleSubmit} className="bg-slate-800 rounded-lg shadow-lg p-6 space-y-6">
+            <div className="text-black max-w-2xl space-y-4 sm:space-y-6 bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 -m-4 sm:-m-6 p-4 sm:p-6 rounded-xl">
+                {/* Header */}
+                <h1 className="text-3xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {pageTitle}
+                </h1>
+
+                {/* Form Card */}
+                <form onSubmit={handleSubmit} className="rounded-xl border border-white/60 bg-linear-to-br from-white to-blue-50/40 p-4 sm:p-6 shadow-sm space-y-5">
                     {/* Name */}
                     <div>
-                        <label className="block text-sm font-medium text-white mb-2">Nama</label>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Username</label>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
                             className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.name ? 'border-red-500' : 'border-slate-600'
+                                errors.name ? 'border-red-400' : 'border-gray-200'
                             }`}
-                            placeholder="Masukkan nama"
+                            placeholder="Username (tanpa spasi)"
                             required
                         />
                         {errors.name && (
@@ -89,41 +99,24 @@ export default function UserForm({ user, mode }: UserFormProps) {
                         )}
                     </div>
 
-                    {/* Username */}
-                    <div>
-                        <label className="block text-sm font-medium text-white mb-2">Username</label>
-                        <input
-                            type="text"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.username ? 'border-red-500' : 'border-slate-600'
-                            }`}
-                            placeholder="Masukkan username"
-                            required
-                        />
-                        {errors.username && (
-                            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                <AlertCircle className="h-4 w-4" /> {errors.username}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-medium text-white mb-2">Email</label>
+                    {/* Email (Read-only for create, editable for edit) */}
+                    <div className="hidden">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Email</label>
                         <input
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
+                            readOnly={mode === 'create'}
                             className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.email ? 'border-red-500' : 'border-slate-600'
-                            }`}
-                            placeholder="Masukkan email"
+                                errors.email ? 'border-red-400' : 'border-gray-200'
+                            } ${mode === 'create' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            placeholder="Auto-generated dari nama"
                             required
                         />
+                        {mode === 'create' && (
+                            <p className="text-gray-500 text-xs mt-1">Otomatis dihasilkan dari nama</p>
+                        )}
                         {errors.email && (
                             <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
                                 <AlertCircle className="h-4 w-4" /> {errors.email}
@@ -132,10 +125,10 @@ export default function UserForm({ user, mode }: UserFormProps) {
                     </div>
 
                     {/* Password Grid */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-white mb-2">
-                                Password {!isPasswordRequired && '(Kosongkan jika tidak ingin mengubah)'}
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                Password {!isPasswordRequired && <span className="font-normal text-gray-600">(Kosongkan jika tidak ingin mengubah)</span>}
                             </label>
                             <input
                                 type="password"
@@ -143,7 +136,7 @@ export default function UserForm({ user, mode }: UserFormProps) {
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.password ? 'border-red-500' : 'border-slate-600'
+                                    errors.password ? 'border-red-400' : 'border-gray-200'
                                 }`}
                                 placeholder="Masukkan password"
                                 required={isPasswordRequired}
@@ -155,7 +148,7 @@ export default function UserForm({ user, mode }: UserFormProps) {
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-white mb-2">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
                                 Konfirmasi Password
                             </label>
                             <input
@@ -164,7 +157,7 @@ export default function UserForm({ user, mode }: UserFormProps) {
                                 value={formData.password_confirmation}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.password_confirmation ? 'border-red-500' : 'border-slate-600'
+                                    errors.password_confirmation ? 'border-red-400' : 'border-gray-200'
                                 }`}
                                 placeholder="Konfirmasi password"
                                 required={isPasswordRequired}
@@ -179,17 +172,17 @@ export default function UserForm({ user, mode }: UserFormProps) {
 
                     {/* Level */}
                     <div>
-                        <label className="block text-sm font-medium text-white mb-2">Level</label>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Level</label>
                         <select
                             name="level"
                             value={formData.level}
                             onChange={handleChange}
                             className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.level ? 'border-red-500' : 'border-slate-600'
+                                errors.level ? 'border-red-400' : 'border-gray-200'
                             }`}
                         >
-                            <option value={1}>Supervisor</option>
-                            <option value={2}>Kasir</option>
+                            <option value={1}>👑 Supervisor</option>
+                            <option value={2}>🛒 Kasir</option>
                         </select>
                         {errors.level && (
                             <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
@@ -199,18 +192,18 @@ export default function UserForm({ user, mode }: UserFormProps) {
                     </div>
 
                     {/* Buttons */}
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 pt-4">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition disabled:opacity-50"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition disabled:opacity-50 shadow-sm"
                         >
                             {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah User' : 'Simpan Perubahan'}
                         </button>
                         <button
                             type="button"
                             onClick={() => router.visit('/admin/user')}
-                            className="flex-1 bg-gray-300 hover:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition"
+                            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-2 rounded-lg font-medium transition"
                         >
                             Batal
                         </button>

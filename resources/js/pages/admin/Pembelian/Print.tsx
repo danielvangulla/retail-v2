@@ -32,12 +32,12 @@ interface PembelianPrintProps {
 }
 
 export default function PembelianPrint({ data }: PembelianPrintProps) {
-    useEffect(() => {
-        // Auto print on load setelah data tersedia
-        if (data && data.id) {
-            window.print();
-        }
-    }, [data]);
+    // useEffect(() => {
+    //     // Auto print on load setelah data tersedia
+    //     if (data && data.id) {
+    //         window.print();
+    //     }
+    // }, [data]);
 
     // Validasi data sebelum render
     if (!data || !data.id) {
@@ -264,10 +264,10 @@ export default function PembelianPrint({ data }: PembelianPrintProps) {
                     <div className="signature-box">
                         <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Penerima</div>
                         <div className="signature-line"></div>
-                        <div style={{ fontSize: '9pt' }}>Tanda Tangan</div>
+                        <div style={{ fontSize: '9pt' }}></div>
                     </div>
                     <div className="signature-box">
-                        <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Diketahui</div>
+                        <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Mengetahui,</div>
                         <div className="signature-line"></div>
                         <div style={{ fontSize: '9pt' }}>Manager</div>
                     </div>

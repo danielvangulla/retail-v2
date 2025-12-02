@@ -26,12 +26,12 @@ interface ReturPrintProps {
 }
 
 export default function ReturPrint({ data }: ReturPrintProps) {
-    useEffect(() => {
-        // Auto print on load setelah data tersedia
-        if (data && data.id) {
-            window.print();
-        }
-    }, [data]);
+    // useEffect(() => {
+    //     // Auto print on load setelah data tersedia
+    //     if (data && data.id) {
+    //         window.print();
+    //     }
+    // }, [data]);
 
     // Validasi data sebelum render
     if (!data || !data.id) {
@@ -177,7 +177,7 @@ export default function ReturPrint({ data }: ReturPrintProps) {
             <div className="page">
                 {/* Header */}
                 <div className="header text-center">
-                    <div className="title">RETUR BARANG {formatTgl(data.created_at)}</div>
+                    <div className="title">RETUR PEMBELIAN</div>
                     <div className="subtitle">No. Ref: {data.id}</div>
                 </div>
 
@@ -235,7 +235,7 @@ export default function ReturPrint({ data }: ReturPrintProps) {
                     </tbody>
                     <tfoot>
                         <tr className="total-row">
-                            <td colSpan={4} className="text-right" style={{ borderLeft: 'none', borderTop: '2px solid #000' }}>
+                            <td colSpan={6} className="text-right" style={{ borderLeft: 'none', borderTop: '2px solid #000' }}>
                                 TOTAL:
                             </td>
                             <td className="text-right" style={{ borderRight: 'none', borderTop: '2px solid #000' }}>
@@ -255,10 +255,10 @@ export default function ReturPrint({ data }: ReturPrintProps) {
                     <div className="signature-box">
                         <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Penerima</div>
                         <div className="signature-line"></div>
-                        <div style={{ fontSize: '9pt' }}>Tanda Tangan</div>
+                        <div style={{ fontSize: '9pt' }}></div>
                     </div>
                     <div className="signature-box">
-                        <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Diketahui</div>
+                        <div style={{ fontSize: '9pt', marginBottom: '10px' }}>Mengetahui,</div>
                         <div className="signature-line"></div>
                         <div style={{ fontSize: '9pt' }}>Manager</div>
                     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { Trash2, Eye, Printer } from 'lucide-react';
 import { formatTgl } from '../../../lib/formatters';
 import AdminLayout from '../Layout';
@@ -31,6 +31,24 @@ interface IndexNewProps {
 export default function ReturIndexNew({ returs }: IndexNewProps) {
     const [search, setSearch] = useState('');
 
+    const handleView = (id: string) => {
+        router.visit(`/admin/retur/${id}`);
+    };
+
+    const handlePrint = (id: string) => {
+        const width = 800;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        const print = window.open(`/admin/retur/${id}/print`, '_blank', `width=${width},height=${height},left=${left},top=${top}`);
+
+        setTimeout(() => {
+            print?.focus();
+            print?.print();
+            print?.close();
+        }, 1000);
+    };
+
     const handleDelete = (id: string) => {
         if (confirm('Yakin ingin menghapus retur ini?')) {
             fetch(`/admin/retur/${id}`, {
@@ -40,14 +58,14 @@ export default function ReturIndexNew({ returs }: IndexNewProps) {
                     'Accept': 'application/json',
                 },
             })
-            .then(() => {
-                window.location.reload();
-            });
+                .then(() => {
+                    window.location.reload();
+                });
         }
     };
 
     return (
-        <AdminLayout title="Daftar Retur">
+        <AdminLayout title="Retur Pembelian">
             <div className="max-w-7xl">
                 {/* Search & Create */}
                 <div className="flex gap-4 mb-6">
@@ -98,25 +116,23 @@ export default function ReturIndexNew({ returs }: IndexNewProps) {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex gap-2 justify-center">
-                                                <Link
-                                                    href={`/admin/retur/${retur.id}`}
-                                                    className="text-blue-600 hover:text-blue-800 transition"
+                                                <button
+                                                    onClick={() => handleView(retur.id)}
+                                                    className="text-blue-600 hover:text-blue-700 rounded-full hover:bg-blue-200 transition-all cursor-pointer p-1"
                                                     title="Lihat detail"
                                                 >
-                                                    <Eye size={18} />
-                                                </Link>
-                                                <a
-                                                    href={`/admin/retur/${retur.id}/print`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-purple-600 hover:text-purple-800 transition"
-                                                    title="Print"
+                                                    <Eye className="h-5 w-5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePrint(retur.id)}
+                                                    className="text-purple-600 hover:text-purple-800 transition rounded-full hover:bg-red-200 cursor-pointer p-1"
+                                                    title="Hapus"
                                                 >
                                                     <Printer size={18} />
-                                                </a>
+                                                </button>
                                                 <button
                                                     onClick={() => handleDelete(retur.id)}
-                                                    className="text-red-600 hover:text-red-800 transition"
+                                                    className="text-red-600 hover:text-red-800 transition rounded-full hover:bg-red-200 cursor-pointer p-1"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 size={18} />

@@ -13,9 +13,24 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('admin/User/Index');
+        $query = User::query();
+
+        if ($request->search) {
+            $query->where('name', 'LIKE', "%{$request->search}%")
+                ->orWhere('email', 'LIKE', "%{$request->search}%");
+        }
+
+        if ($request->level !== null && $request->level !== '') {
+            $query->where('level', $request->level);
+        }
+
+        $users = $query->orderBy('level', 'asc')->paginate(20);
+
+        return Inertia::render('admin/User/Index', [
+            'users' => $users,
+        ]);
     }
 
     public function list(Request $request): JsonResponse
@@ -41,20 +56,15 @@ class UserController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/User/Create', [
-            'levels' => [
-                ['id' => 1, 'name' => 'Supervisor'],
-                ['id' => 2, 'name' => 'Kasir'],
-            ],
-        ]);
+        return Inertia::render('admin/User/Create');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|unique:users',
+            'name' => 'required',
             'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
+            'password' => 'required|min:6|confirmed',
             'level' => 'required|in:1,2',
         ]);
 
@@ -67,14 +77,10 @@ class UserController extends Controller
 
     public function edit(string $id): Response
     {
-        $user = User::findOrFail($id);
+        $user = User::select('id', 'name', 'email', 'level')->findOrFail($id);
 
         return Inertia::render('admin/User/Edit', [
             'user' => $user,
-            'levels' => [
-                ['id' => 1, 'name' => 'Supervisor'],
-                ['id' => 2, 'name' => 'Kasir'],
-            ],
         ]);
     }
 
@@ -86,11 +92,14 @@ class UserController extends Controller
             'name' => 'required|unique:users,name,' . $id . ',id',
             'email' => 'required|email|unique:users,email,' . $id . ',id',
             'level' => 'required|in:1,2',
+            'password' => 'nullable|min:6|confirmed',
         ]);
 
         // Only update password if provided
         if ($request->password) {
             $validated['password'] = Hash::make($request->password);
+        } else {
+            unset($validated['password']);
         }
 
         $user->update($validated);

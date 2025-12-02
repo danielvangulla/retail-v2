@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { Printer } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { formatTgl, formatDateTime, formatDigit } from '../../../lib/formatters';
 import AdminLayout from '../Layout';
 
@@ -42,7 +42,15 @@ export default function ReturShowNew({ data }: ReturShowProps) {
         <AdminLayout title="Detail Retur">
             <div className="max-w-4xl">
                 {/* Print Button */}
-                <div className="mb-6 flex justify-end">
+                <div className="flex items-center justify-between mb-4">
+                    <button
+                        onClick={() => router.visit('/admin/retur')}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition cursor-pointer"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="font-medium">Kembali ke Daftar</span>
+                    </button>
+
                     <button
                         onClick={handlePrint}
                         className="flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all"
@@ -105,7 +113,7 @@ export default function ReturShowNew({ data }: ReturShowProps) {
                         </tbody>
                         <tfoot>
                             <tr className="bg-linear-to-r from-blue-100 to-blue-50 border-t-2 border-gray-200">
-                                <td colSpan={4} className="px-6 py-4 text-right font-600 text-gray-900">
+                                <td colSpan={6} className="px-6 py-4 text-right font-600 text-gray-900">
                                     TOTAL:
                                 </td>
                                 <td className="px-6 py-4 text-right font-bold text-lg text-blue-600">
