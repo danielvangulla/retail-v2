@@ -43,7 +43,12 @@ class Helpers extends Controller
     public static function getSetup($config_name)
     {
         $setups = Setup::where('config_name', $config_name)->first();
-        $json = json_decode($setups['config_json']);
+
+        if (!$setups) {
+            return null;
+        }
+
+        $json = json_decode($setups->config_json);
 
         return $json;
     }

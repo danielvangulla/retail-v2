@@ -50,14 +50,29 @@ class KasirController extends Controller
 
             $setup = Helpers::getSetup('perusahaan');
 
+            // Provide fallback setup if null
+            if (!$setup) {
+                $setup = (object) [
+                    'nama' => 'TOKO',
+                    'alamat1' => 'Alamat Toko',
+                    'alamat2' => 'Kota'
+                ];
+            }
+
             return Inertia::render('Kasir/PrintBill', [
                 'trx' => $trx,
                 'setup' => $setup,
             ]);
         } catch (\Throwable $th) {
+            $fallbackSetup = (object) [
+                'nama' => 'TOKO',
+                'alamat1' => 'Alamat Toko',
+                'alamat2' => 'Kota'
+            ];
+
             return Inertia::render('Kasir/PrintBill', [
                 'trx' => null,
-                'setup' => Helpers::getSetup('perusahaan'),
+                'setup' => $fallbackSetup,
             ]);
         }
     }

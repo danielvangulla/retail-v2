@@ -55,8 +55,8 @@ interface Props {
 }
 
 export default function PrintBill({ trx, setup }: Props) {
-    // Handle empty transaction
-    if (!trx || !trx.id) {
+    // Handle empty transaction or setup
+    if (!trx || !trx.id || !setup) {
         return (
             <>
                 <Head title="Print Bill" />
@@ -133,7 +133,14 @@ export default function PrintBill({ trx, setup }: Props) {
                     {/* Total */}
                     <div className="flex justify-between text-xs font-bold my-1">
                         <span>TOTAL</span>
-                        <span>Rp {formatDigit(trx.bayar || 0)}</span>
+                        <div className="font-bold flex flex-row justify-between w-24">
+                            <div>
+                                Rp
+                            </div>
+                            <div>
+                                {formatDigit(trx.bayar || 0)}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="border-t border-black my-0.5"></div>
@@ -144,15 +151,25 @@ export default function PrintBill({ trx, setup }: Props) {
                             trx.piutang.is_staff ? (
                                 <div className="text-center">
                                     <div>Sisa Deposit {trx.piutang.name}</div>
-                                    <div className="font-bold">
-                                        Rp {formatDigit(trx.piutang.deposit_sisa || 0)}
+                                    <div className="font-bold flex flex-row justify-between w-24">
+                                        <div>
+                                            Rp
+                                        </div>
+                                        <div>
+                                            {formatDigit(trx.piutang.deposit_sisa || 0)}
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="text-center">
                                     <div>Piutang {trx.piutang.name}</div>
-                                    <div className="font-bold">
-                                        Rp {formatDigit(trx.bayar || 0)}
+                                    <div className="font-bold flex flex-row justify-between w-24">
+                                        <div>
+                                            Rp
+                                        </div>
+                                        <div>
+                                            {formatDigit(trx.bayar || 0)}
+                                        </div>
                                     </div>
                                 </div>
                             )
@@ -163,18 +180,28 @@ export default function PrintBill({ trx, setup }: Props) {
                         ) : (
                             <>
                                 {trx.payments?.map((v, index) => (
-                                    <div key={index} className="flex justify-between my-px">
+                                    <div key={index} className="flex justify-between my-px py-0.5">
                                         <span>Bayar {v.type?.ket}</span>
-                                        <span className="font-bold">
-                                            Rp {formatDigit(trx.payment || 0)}
-                                        </span>
+                                        <div className="font-bold flex flex-row justify-between w-24">
+                                            <div>
+                                                Rp
+                                            </div>
+                                            <div>
+                                                {formatDigit(trx.payment || 0)}
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
-                                <div className="flex justify-between my-px">
+                                <div className="flex justify-between my-px mt-2">
                                     <span>Kembali</span>
-                                    <span className="font-bold">
-                                        Rp {formatDigit(trx.kembali || 0)}
-                                    </span>
+                                    <div className="font-bold flex flex-row justify-between w-24">
+                                        <div>
+                                            Rp
+                                        </div>
+                                        <div>
+                                            -{formatDigit(trx.kembali || 0)}
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}
