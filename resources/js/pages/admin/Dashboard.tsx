@@ -2,6 +2,7 @@ import AdminLayout from './Layout';
 import { DollarSign, Package, Users, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
+import { formatDigit } from '@/lib/formatters';
 
 interface DashboardProps {
     todaySales: number;
@@ -79,7 +80,7 @@ export default function Dashboard({
                         <Icon className="h-5 w-5" />
                     </div>
                     {trend && (
-                        <div className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${trendUp ? 'text-emerald-600 bg-emerald-100' : 'text-rose-600 bg-rose-100'}`}>
+                        <div className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${trendUp ? 'text-emerald-600 bg-emerald-200' : 'text-rose-600 bg-rose-200'}`}>
                             <TrendingUp className="h-3 w-3" style={{ transform: trendUp ? 'none' : 'rotate(180deg)' }} />
                             {trend}
                         </div>
@@ -98,13 +99,13 @@ export default function Dashboard({
         <AdminLayout title="Dashboard">
             <div className="space-y-4 sm:space-y-6 bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 -m-4 sm:-m-6 p-4 sm:p-6 rounded-xl">
                 {/* Header */}
-                <div className="space-y-1">
-                    <h1 className="text-3xl sm:text-4xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Dashboard</h1>
-                    <p className="text-sm text-gray-600">Pantau performa bisnis Anda dengan gaya yang lebih ceria ✨</p>
+                <div className="flex flex-col justify-center items-center text-center">
+                    <div className="text-3xl sm:text-4xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">Dashboard</div>
+                    <div className="w-fit text-sm text-white bg-blue-500 py-1 px-2 rounded-lg">✨ Pantau performa bisnis Anda ✨</div>
                 </div>
 
                 {/* Main Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <StatCard
                         icon={DollarSign}
                         title="Penjualan Hari Ini"
@@ -132,20 +133,20 @@ export default function Dashboard({
                         bgColor="bg-linear-to-br from-pink-100 to-pink-50"
                         iconColor="#EC4899"
                     />
-                    <StatCard
+                    {/* <StatCard
                         icon={Users}
                         title="Total User"
                         value={totalUsers}
                         subtitle={`${supervisors} SPV, ${kasirs} kasir`}
                         bgColor="bg-linear-to-br from-amber-100 to-amber-50"
                         iconColor="#F59E0B"
-                    />
+                    /> */}
                 </div>
 
                 {/* Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                     {/* Sales Trend Chart */}
-                    <div className="lg:col-span-2 rounded-xl border border-white/60 bg-linear-to-br from-white to-blue-50/40 p-4 sm:p-6 shadow-sm">
+                    <div className="lg:col-span-2 rounded-xl border border-green-500 bg-linear-to-br from-white to-blue-50/40 p-4 sm:p-6 shadow-sm">
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -167,9 +168,9 @@ export default function Dashboard({
                                             <div key={`${day.date}-${idx}`} className="group">
                                                 <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5">
                                                     <span className="text-gray-600 font-medium">{day.date}</span>
-                                                    <span className="text-gray-900 font-semibold">Rp {day.total.toLocaleString('id-ID')}</span>
+                                                    <span className="text-gray-900 font-semibold">{formatDigit(day.total)}</span>
                                                 </div>
-                                                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="h-3 bg-gray-300 rounded-full overflow-hidden">
                                                     <div
                                                         className="h-full bg-linear-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full transition-all duration-300 group-hover:shadow-md"
                                                         style={{ width: `${Math.max(percentage, 5)}%` }}
@@ -188,7 +189,7 @@ export default function Dashboard({
                     {/* Quick Stats Sidebar */}
                     <div className="space-y-4 sm:space-y-6">
                         {/* Info Cards */}
-                        <div className="rounded-xl border border-white/60 bg-linear-to-br from-white to-purple-50/40 p-4 sm:p-5 shadow-sm">
+                        <div className="rounded-xl border border-green-500 bg-linear-to-br from-white to-purple-50/40 p-4 sm:p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg bg-purple-100">
                                     <BarChart3 className="h-4 w-4 text-purple-600" />
@@ -198,15 +199,15 @@ export default function Dashboard({
                             <div className="space-y-2.5 text-xs sm:text-sm">
                                 <div className="flex justify-between items-center p-2.5 rounded-lg bg-linear-to-r from-blue-100 to-blue-50">
                                     <span className="text-gray-600">Penjualan Hari Ini</span>
-                                    <span className="font-bold text-blue-600">Rp {todaySales.toLocaleString('id-ID')}</span>
+                                    <span className="font-bold text-blue-600">{formatDigit(todaySales)}</span>
                                 </div>
                                 <div className="flex justify-between items-center p-2.5 rounded-lg bg-linear-to-r from-emerald-100 to-emerald-50">
                                     <span className="text-gray-600">Rata-rata/Hari</span>
-                                    <span className="font-bold text-emerald-600">Rp {dailyAverage.toLocaleString('id-ID')}</span>
+                                    <span className="font-bold text-emerald-600">{formatDigit(dailyAverage)}</span>
                                 </div>
                                 <div className="flex justify-between items-center p-2.5 rounded-lg bg-linear-to-r from-purple-100 to-purple-50">
                                     <span className="text-gray-600">Bulan Ini</span>
-                                    <span className="font-bold text-purple-600">Rp {monthSales.toLocaleString('id-ID')}</span>
+                                    <span className="font-bold text-purple-600">{formatDigit(monthSales)}</span>
                                 </div>
                             </div>
                         </div>
@@ -227,10 +228,10 @@ export default function Dashboard({
                 </div>
 
                 {/* Top Products */}
-                <div className="rounded-xl border border-white/60 bg-linear-to-br from-white to-pink-50/40 p-4 sm:p-6 shadow-sm">
+                <div className="rounded-xl border border-green-500 bg-linear-to-br from-white to-pink-50/40 p-4 sm:p-6 shadow-sm">
                     <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <div className="p-2 rounded-lg bg-pink-100">
-                            <TrendingUp className="h-5 w-5 text-pink-600" />
+                        <div className="p-2 rounded-lg bg-green-200">
+                            <TrendingUp className="h-5 w-5 text-green-600" />
                         </div>
                         Produk Terlaris 30 Hari
                     </h2>
@@ -247,15 +248,15 @@ export default function Dashboard({
                                     </thead>
                                     <tbody>
                                         {topProducts.map((product, idx) => (
-                                            <tr key={product.id} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                                            <tr key={product.id} className="border-b border-gray-300 hover:bg-blue-50/90 transition-colors">
                                                 <td className="py-3 px-2 text-gray-700">
                                                     <span className="inline-block w-6 h-6 rounded-full bg-linear-to-r from-blue-400 to-purple-400 text-center text-xs text-white font-semibold mr-2 leading-6">
                                                         {idx + 1}
                                                     </span>
                                                     {product.deskripsi}
                                                 </td>
-                                                <td className="text-right py-3 px-2 text-gray-700 font-medium">{product.total_sold}x</td>
-                                                <td className="text-right py-3 px-2 font-bold text-emerald-600">Rp {product.total_revenue.toLocaleString('id-ID')}</td>
+                                                <td className="text-right py-3 px-2 text-gray-700 font-medium">{formatDigit(product.total_sold)}</td>
+                                                <td className="text-right py-3 px-2 font-bold text-emerald-600">{formatDigit(product.total_revenue)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -268,7 +269,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Low Stock Items */}
-                <div className="rounded-xl border border-white/60 bg-linear-to-br from-white to-rose-50/40 p-4 sm:p-6 shadow-sm">
+                <div className="rounded-xl border border-red-500 bg-linear-to-br from-white to-rose-50/40 p-4 sm:p-6 shadow-sm">
                     <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                         <div className="p-2 rounded-lg bg-rose-100">
                             <AlertTriangle className="h-5 w-5 text-rose-600" />
@@ -282,6 +283,7 @@ export default function Dashboard({
                                     <thead>
                                         <tr className="border-b border-gray-200">
                                             <th className="text-left py-3 px-2 text-gray-600 font-semibold">Produk</th>
+                                            <th className="text-center py-3 px-2 text-gray-600 font-semibold">Satuan</th>
                                             <th className="text-center py-3 px-2 text-gray-600 font-semibold">Stok</th>
                                             <th className="text-center py-3 px-2 text-gray-600 font-semibold">Min Stok</th>
                                             <th className="text-center py-3 px-2 text-gray-600 font-semibold">Penjualan/Bln</th>
@@ -289,10 +291,11 @@ export default function Dashboard({
                                     </thead>
                                     <tbody>
                                         {lowStockList.map((item) => (
-                                            <tr key={item.id} className="border-b border-gray-100 hover:bg-rose-50/50 transition-colors">
+                                            <tr key={item.id} className="border-b border-gray-300 hover:bg-rose-50/90 transition-colors">
                                                 <td className="py-3 px-2 text-gray-700">
                                                     <span className="text-sm font-medium">{item.deskripsi}</span>
                                                 </td>
+                                                <td className="text-center py-3 px-2 text-gray-700 font-medium">{item.satuan}</td>
                                                 <td className="text-center py-3 px-2">
                                                     <span className={`inline-block px-3 py-1 rounded-full font-bold text-xs ${
                                                         item.available === 0
@@ -301,11 +304,11 @@ export default function Dashboard({
                                                             ? 'bg-amber-100 text-amber-700'
                                                             : 'bg-yellow-100 text-yellow-700'
                                                     }`}>
-                                                        {item.available} {item.satuan}
+                                                        {formatDigit(item.available)}
                                                     </span>
                                                 </td>
-                                                <td className="text-center py-3 px-2 text-gray-700 font-medium">{item.min_stock} {item.satuan}</td>
-                                                <td className="text-center py-3 px-2 text-gray-700 font-semibold">{item.monthly_sold} {item.satuan}</td>
+                                                <td className="text-center py-3 px-2 text-gray-700 font-medium">{formatDigit(item.min_stock)}</td>
+                                                <td className="text-center py-3 px-2 text-gray-700 font-semibold">{formatDigit(item.monthly_sold)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
