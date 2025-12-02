@@ -51,6 +51,31 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
             }
         };
 
+        // Start polling as backup
+        const startPolling = () => {
+            // Jangan start polling jika sudah ada
+            if (pollInterval) return;
+
+            console.log('📡 Starting polling fallback (every 30s)...');
+            setUsePolling(true);
+            pollInterval = setInterval(async () => {
+                const data = await fetchDashboardData();
+                if (data) {
+                    onUpdate(data);
+                }
+            }, 30000);
+        };
+
+        // Stop polling
+        const stopPolling = () => {
+            if (pollInterval) {
+                console.log('🛑 Stopping polling (WebSocket active)');
+                clearInterval(pollInterval);
+                pollInterval = null;
+                setUsePolling(false);
+            }
+        };
+
         // Setup WebSocket dengan retry logic
         const setupWebSocket = async () => {
             try {
@@ -67,65 +92,61 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
                     transports: ['websocket', 'polling'],
                 });
 
-                // Wait for connection - with timeout
+                // Listen to stock updates immediately
+                echoInstance.channel('stock').listen('StockUpdated', (data: any) => {
+                    console.log('📦 Stock updated event received:', data);
+                    fetchDashboardData().then((updatedData) => {
+                        if (updatedData) {
+                            console.log('✅ Dashboard data updated from broadcast');
+                            onUpdate(updatedData);
+                        }
+                    });
+                });
+
+                // Setup socket event handlers
+                echoInstance.connector.socket.on('connect', () => {
+                    console.log('✅ WebSocket connected!');
+                    setIsConnected(true);
+                    stopPolling(); // Stop polling ketika WebSocket konek
+                });
+
+                echoInstance.connector.socket.on('connect_error', (error: any) => {
+                    console.warn('⚠️ Connection error:', error);
+                });
+
+                echoInstance.connector.socket.on('disconnect', (reason: string) => {
+                    console.warn('⚠️ WebSocket disconnected:', reason);
+                    setIsConnected(false);
+                    startPolling(); // Auto fallback ke polling ketika disconnect
+                });
+
+                // Wait for initial connection with timeout
                 const connectTimeout = new Promise((_, reject) => {
                     setTimeout(() => reject(new Error('WebSocket timeout')), 8000);
                 });
 
                 await Promise.race([
                     new Promise((resolve) => {
-                        echoInstance.connector.socket.on('connect', () => {
-                            console.log('✅ WebSocket connected!');
-                            setIsConnected(true);
-                            resolve(true);
-
-                            // Listen to stock updates
-                            echoInstance.channel('stock').listen('StockUpdated', (data: any) => {
-                                console.log('📦 Stock updated:', data);
-                                fetchDashboardData().then((updatedData) => {
-                                    if (updatedData) onUpdate(updatedData);
-                                });
-                            });
-                        });
-
-                        echoInstance.connector.socket.on('connect_error', (error: any) => {
-                            console.warn('⚠️ Connection error:', error);
-                        });
-
-                        echoInstance.connector.socket.on('disconnect', (reason: string) => {
-                            console.warn('⚠️ WebSocket disconnected:', reason);
-                            setIsConnected(false);
-                        });
+                        echoInstance.connector.socket.on('connect', resolve);
                     }),
                     connectTimeout,
                 ]);
             } catch (error) {
                 console.warn('⚠️ WebSocket setup failed:', error);
                 setIsConnected(false);
-                setUsePolling(true);
+                startPolling(); // Fallback ke polling jika WebSocket gagal
             }
-        };
-
-        // Start polling as backup
-        const startPolling = () => {
-            console.log('📡 Starting polling as backup (every 30s)...');
-            pollInterval = setInterval(async () => {
-                const data = await fetchDashboardData();
-                if (data) {
-                    onUpdate(data);
-                }
-            }, 30000);
         };
 
         // Initial setup
         setupWebSocket();
 
-        // Start polling after 2 seconds if WebSocket not connected
+        // Start polling after 5 seconds if WebSocket gagal connect
         const pollingTimer = setTimeout(() => {
             if (!isConnected) {
                 startPolling();
             }
-        }, 2000);
+        }, 5000);
 
         return () => {
             clearTimeout(pollingTimer);
