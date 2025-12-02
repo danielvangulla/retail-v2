@@ -16,6 +16,10 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
+    Route::post('/process-stok', function() {
+        $result = \App\Services\StokProcessingService::processAll();
+        return response()->json(['status' => 'ok', 'data' => $result]);
+    })->name('admin.process-stok');
 
     // Setup / Basic Settings
     Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');

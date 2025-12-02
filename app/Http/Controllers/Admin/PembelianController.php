@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\Pembelian;
 use App\Models\PembelianDet;
+use App\Traits\ManageStok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -55,14 +56,24 @@ class PembelianController extends Controller
                 $barang->harga_beli = $v->hargaBeli / $barang->isi;
                 $barang->save();
 
-                PembelianDet::create([
+                $qty = $v->qtyBeli * $barang->isi;
+
+                $detail = PembelianDet::create([
                     'pembelian_id' => $pembelian->id,
                     'sku' => $v->sku,
                     'barcode' => $v->barcode,
-                    'qty' => $v->qtyBeli * $barang->isi,
+                    'qty' => $qty,
                     'satuan_beli' => $barang->volume,
                     'harga_beli' => $v->hargaBeli,
                     'total' => $v->total,
+                    'stok_processed' => false,
+                ]);
+
+                // Add stock and capture movement ID
+                $movementId = ManageStok::addStok($barang->id, $qty, 'in', 'pembelian', $pembelian->id, 'Pembelian #' . $pembelian->id, Auth::id());
+                $detail->update([
+                    'stok_processed' => true,
+                    'kartu_stok_id' => $movementId,
                 ]);
 
                 $pembelian->grand_total += $v->total;

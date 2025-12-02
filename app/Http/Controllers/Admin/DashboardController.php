@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Transaksi;
 use App\Models\BarangStock;
 use App\Traits\ManageStok;
+use App\Services\StokProcessingService;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,8 @@ class DashboardController extends Controller
     use ManageStok;
     public function index(): Response
     {
+        // Process any unprocessed stok items first
+        StokProcessingService::processAll();
         // Get today's sales (only completed transactions, not cancelled)
         $todaySales = Transaksi::whereDate('created_at', today())
             ->where('is_cancel', 0)
@@ -111,6 +114,8 @@ class DashboardController extends Controller
      */
     public function getData(): JsonResponse
     {
+        // Process any unprocessed stok items first
+        StokProcessingService::processAll();
         // Get today's sales
         $todaySales = Transaksi::whereDate('created_at', today())
             ->where('is_cancel', 0)

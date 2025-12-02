@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\BarangRetur;
 use App\Models\BarangReturDetail;
+use App\Traits\ManageStok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -49,14 +50,24 @@ class ReturController extends Controller
 
             $barang = Barang::where('sku', $v->sku)->first();
             if ($barang) {
-                BarangReturDetail::create([
+                $detail = BarangReturDetail::create([
                     'barang_retur_id' => $retur->id,
                     'barang_id' => $barang->id,
                     'qty' => $v->qtyRetur,
                     'volume' => $barang->volume,
                     'harga_beli' => $v->hargaBeli,
                     'total' => $v->total,
+                    'stok_processed' => false,
                 ]);
+
+                // Reduce stock and capture movement ID
+                $result = ManageStok::reduceStok($barang->id, $v->qtyRetur, 'out', 'retur', $retur->id, 'Retur #' . $retur->id, Auth::id());
+                if ($result['success']) {
+                    $detail->update([
+                        'stok_processed' => true,
+                        'kartu_stok_id' => $result['movement_id'],
+                    ]);
+                }
             }
         }
 

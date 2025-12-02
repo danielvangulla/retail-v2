@@ -14,8 +14,9 @@ trait ManageStok
     /**
      * Tambah stok masuk (pembelian, retur dari pelanggan, dll)
      * Dengan transaction dan lock untuk mencegah race condition
+     * @return string|bool Movement ID jika sukses, false jika gagal
      */
-    public static function addStok($barangId, int $qty, string $type = 'in', string $referenceType = null, string $referenceId = null, string $notes = null, $userId = null): bool
+    public static function addStok($barangId, int $qty, string $type = 'in', string $referenceType = '', string $referenceId = '', string $notes = '', $userId = null)
     {
         return DB::transaction(function () use ($barangId, $qty, $type, $referenceType, $referenceId, $notes, $userId) {
             // Lock row untuk mencegah race condition
@@ -33,7 +34,7 @@ trait ManageStok
             ]);
 
             // Catat movement history
-            BarangStockMovement::create([
+            $movement = BarangStockMovement::create([
                 'barang_id' => $barangId,
                 'type' => $type,
                 'quantity' => $qty,
@@ -54,9 +55,10 @@ trait ManageStok
                 'qty' => $qty,
                 'type' => $type,
                 'reference_id' => $referenceId,
+                'movement_id' => $movement->id,
             ]);
 
-            return true;
+            return $movement->id;
         }, attempts: 3); // Retry 3x jika terjadi deadlock
     }
 
@@ -64,7 +66,7 @@ trait ManageStok
      * Kurangi stok keluar (penjualan, expire, dll)
      * Dengan validasi stok cukup dan lock untuk mencegah overselling
      */
-    public static function reduceStok($barangId, int $qty, string $type = 'out', string $referenceType = null, string $referenceId = null, string $notes = null, $userId = null): array
+    public static function reduceStok($barangId, int $qty, string $type = 'out', string $referenceType = '', string $referenceId = '', string $notes = '', $userId = null): array
     {
         return DB::transaction(function () use ($barangId, $qty, $type, $referenceType, $referenceId, $notes, $userId) {
             // Lock row untuk mencegah race condition
@@ -95,7 +97,7 @@ trait ManageStok
             ]);
 
             // Catat movement history
-            BarangStockMovement::create([
+            $movement = BarangStockMovement::create([
                 'barang_id' => $barangId,
                 'type' => $type,
                 'quantity' => $qty,
@@ -116,12 +118,14 @@ trait ManageStok
                 'qty' => $qty,
                 'type' => $type,
                 'reference_id' => $referenceId,
+                'movement_id' => $movement->id,
             ]);
 
             return [
                 'success' => true,
                 'message' => 'Stok berhasil dikurangi',
                 'remaining' => max(0, $quantityAfter),
+                'movement_id' => $movement->id,
             ];
         }, attempts: 3);
     }
@@ -182,7 +186,7 @@ trait ManageStok
     /**
      * Adjustment stok (opname, dll)
      */
-    public static function adjustStok($barangId, int $newQuantity, string $notes = null, $userId = null): bool
+    public static function adjustStok($barangId, int $newQuantity, string $notes = '', $userId = null): bool
     {
         return DB::transaction(function () use ($barangId, $newQuantity, $notes, $userId) {
             $stock = BarangStock::lockForUpdate()
