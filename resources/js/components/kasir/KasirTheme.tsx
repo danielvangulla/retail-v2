@@ -19,9 +19,9 @@
 export const kasirTheme = {
     // Background colors
     background: {
-        main: 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900',
-        card: 'bg-gradient-to-br from-slate-800 to-slate-700',
-        header: 'bg-gradient-to-br from-slate-700 to-slate-600',
+        main: 'bg-linear-to-br from-slate-900 via-slate-800 to-slate-900',
+        card: 'bg-linear-to-br from-slate-800 to-slate-700',
+        header: 'bg-linear-to-br from-slate-700 to-slate-600',
         input: 'bg-slate-700/50',
         modal: 'bg-slate-800',
     },
@@ -42,12 +42,12 @@ export const kasirTheme = {
 
     // Button variants
     button: {
-        primary: 'bg-gradient-to-br from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white',
-        success: 'bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white',
-        warning: 'bg-gradient-to-br from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white',
-        danger: 'bg-gradient-to-br from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white',
-        secondary: 'bg-gradient-to-br from-slate-600 to-slate-500 hover:from-slate-500 hover:to-slate-400 text-white',
-        orange: 'bg-gradient-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white',
+        primary: 'bg-linear-to-br from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white',
+        success: 'bg-linear-to-br from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white',
+        warning: 'bg-linear-to-br from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white',
+        danger: 'bg-linear-to-br from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white',
+        secondary: 'bg-linear-to-br from-slate-600 to-slate-500 hover:from-slate-500 hover:to-slate-400 text-white',
+        orange: 'bg-linear-to-br from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white',
     },
 
     // Common styles
@@ -68,7 +68,7 @@ export const kasirTheme = {
 
     // Table styles
     table: {
-        header: 'sticky top-0 bg-gradient-to-br from-slate-700 to-slate-600 shadow-md',
+        header: 'sticky top-0 bg-linear-to-br from-slate-700 to-slate-600 shadow-md',
         headerCell: 'px-3 py-3 text-sm font-semibold uppercase tracking-wider text-slate-200',
         row: 'bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-slate-200',
         cell: 'px-3 py-2.5',
