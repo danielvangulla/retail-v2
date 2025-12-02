@@ -2,11 +2,15 @@
   "apps": [
     {
       "name": "laravel-echo-server",
-      "script": "laravel-echo-server",
+      "script": "./node_modules/.bin/laravel-echo-server",
       "args": "start",
       "autorestart": true,
+      "max_restarts": 10,
+      "min_uptime": "10s",
       "watch": false,
       "max_memory_restart": "512M",
+      "error_file": "./storage/logs/pm2-echo-error.log",
+      "out_file": "./storage/logs/pm2-echo-out.log",
       "env": {
         "NODE_ENV": "production"
       }

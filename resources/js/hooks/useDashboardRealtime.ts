@@ -32,10 +32,10 @@ interface DashboardData {
 export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
     const [isConnected, setIsConnected] = useState(false);
     const [usePolling, setUsePolling] = useState(false);
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
     useEffect(() => {
         let echoInstance: any = null;
-        let pollInterval: ReturnType<typeof setInterval> | null = null;
 
         // Fetch dashboard data dari API
         const fetchDashboardData = async (): Promise<DashboardData | void> => {
@@ -95,7 +95,7 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
 
                 // Listen to stock updates immediately
                 echoInstance.channel('stock').listen('StockUpdated', (data: any) => {
-                    // console.log('📦 Stock updated event received:', data);
+                    console.log('📦 Stock updated event received:', data);
                     fetchDashboardData().then((updatedData) => {
                         if (updatedData) {
                             console.log('✅ Dashboard data updated from broadcast');
@@ -106,17 +106,17 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
 
                 // Setup socket event handlers
                 echoInstance.connector.socket.on('connect', () => {
-                    // console.log('✅ WebSocket connected!');
+                    console.log('✅ WebSocket connected!');
                     setIsConnected(true);
                     stopPolling(); // Stop polling ketika WebSocket konek
                 });
 
                 echoInstance.connector.socket.on('connect_error', (error: any) => {
-                    // console.warn('⚠️ Connection error:', error);
+                    console.warn('⚠️ Connection error:', error);
                 });
 
                 echoInstance.connector.socket.on('disconnect', (reason: string) => {
-                    // console.warn('⚠️ WebSocket disconnected:', reason);
+                    console.warn('⚠️ WebSocket disconnected:', reason);
                     setIsConnected(false);
                     startPolling(); // Auto fallback ke polling ketika disconnect
                 });
@@ -133,7 +133,7 @@ export function useDashboardRealtime(onUpdate: (data: DashboardData) => void) {
                     connectTimeout,
                 ]);
             } catch (error) {
-                // console.warn('⚠️ WebSocket setup failed:', error);
+                console.warn('⚠️ WebSocket setup failed:', error);
                 setIsConnected(false);
                 startPolling(); // Fallback ke polling jika WebSocket gagal
             }
