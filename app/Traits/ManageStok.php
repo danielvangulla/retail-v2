@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\Barang;
 use App\Models\BarangStock;
 use App\Models\BarangStockMovement;
 use Illuminate\Support\Facades\DB;

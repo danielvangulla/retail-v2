@@ -15,6 +15,7 @@ import ConfirmModal from './components/ConfirmModal';
 import LoadingModal from './components/LoadingModal';
 import useKasirKeyboard from './hooks/useKasirKeyboard';
 import useKasirCalculations from './hooks/useKasirCalculations';
+import { formatDigit } from '@/lib/formatters';
 
 interface Props {
     paymentTypes: PaymentType[];
@@ -200,40 +201,53 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const handleSearchKeydown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
         if (!showSearchResults || searchResults.length === 0) return;
 
-        switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault();
-                setSelectedResult(prev => {
-                    const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : -1;
-                    const nextIndex = Math.min(currentIndex + 1, searchResults.length - 1);
-                    return searchResults[nextIndex] || searchResults[0];
-                });
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                setSelectedResult(prev => {
-                    const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : searchResults.length;
-                    const prevIndex = Math.max(currentIndex - 1, 0);
-                    return searchResults[prevIndex] || null;
-                });
-                break;
-            case 'Enter':
-                e.preventDefault();
-                if (selectedResult) {
-                    // Allow select if stock > 0 OR allow_sold_zero_stock is true
-                    if (selectedResult.stock > 0 || selectedResult.allow_sold_zero_stock) {
-                        handleSelectItemJual(selectedResult.id, false);
-                        setShowSearchResults(false);
-                        setSearchQuery('');
-                        inputRef.current?.focus();
+        // Jangan allow karakter lain ketika modal search aktif
+        // Hanya allow: ArrowUp, ArrowDown, Enter, Escape, Backspace, dan karakter yang untuk search
+        const isNavigationKey = ['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key);
+        const isEditingKey = ['Backspace', 'Delete'].includes(e.key);
+        const isModifierKey = e.ctrlKey || e.metaKey || e.altKey;
+
+        // Jika keyboard navigation, handle khusus
+        if (isNavigationKey) {
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    setSelectedResult(prev => {
+                        const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : -1;
+                        const nextIndex = Math.min(currentIndex + 1, searchResults.length - 1);
+                        return searchResults[nextIndex] || searchResults[0];
+                    });
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    setSelectedResult(prev => {
+                        const currentIndex = prev ? searchResults.findIndex(item => item.id === prev.id) : searchResults.length;
+                        const prevIndex = Math.max(currentIndex - 1, 0);
+                        return searchResults[prevIndex] || null;
+                    });
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedResult) {
+                        // Allow select if stock > 0 OR allow_sold_zero_stock is true
+                        if (selectedResult.stock > 0 || selectedResult.allow_sold_zero_stock) {
+                            handleSelectItemJual(selectedResult.id, false);
+                            setShowSearchResults(false);
+                            setSearchQuery('');
+                            inputRef.current?.focus();
+                        }
                     }
-                }
-                break;
-            case 'Escape':
-                e.preventDefault();
-                setShowSearchResults(false);
-                inputRef.current?.focus();
-                break;
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    setShowSearchResults(false);
+                    inputRef.current?.focus();
+                    break;
+            }
+        } else if (!isEditingKey && !isModifierKey && e.key.length === 1) {
+            // Jika key adalah karakter tunggal (bukan modifier, bukan editing key)
+            // Masukkan ke search input (jangan prevent, biarkan natural flow)
+            // Ini memungkinkan user terus mengetik untuk refine search
         }
     }, [showSearchResults, searchResults, selectedResult]);
 
@@ -766,8 +780,8 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                             <tr className="text-slate-200">
                                                 <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Barcode</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-wider">Deskripsi</th>
-                                                <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Satuan</th>
                                                 <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Stok</th>
+                                                <th className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider">Satuan</th>
                                                 <th className="px-4 py-3 text-right text-sm font-semibold uppercase tracking-wider">Harga</th>
                                             </tr>
                                         </thead>
@@ -808,11 +822,11 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                                                     <span className="text-xs bg-red-500/30 text-red-300 px-2 py-1 rounded">Stok Habis</span>
                                                                 )}
                                                             </td>
-                                                            <td className="px-4 py-3 text-center text-sm">{item.volume}</td>
                                                             <td className={`px-4 py-3 text-center font-semibold ${isOutOfStock ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                                {item.stock} {item.satuan}
+                                                                {item.stock}
                                                             </td>
-                                                            <td className="px-4 py-3 text-right font-semibold">Rp {formatNumber(item.harga_jual1)}</td>
+                                                            <td className="px-4 py-3 text-center text-sm">{item.satuan}</td>
+                                                            <td className="px-4 py-3 text-right font-semibold">{formatDigit(item.harga_jual1)}</td>
                                                         </tr>
                                                     );
                                                 })

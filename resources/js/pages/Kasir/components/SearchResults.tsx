@@ -1,4 +1,5 @@
 import { BarangItem } from '@/components/kasir/types';
+import { formatDigit } from '@/lib/formatters';
 
 interface SearchResultsProps {
     show: boolean;
@@ -13,7 +14,6 @@ export default function SearchResults({
     results,
     selectedResult,
     onSelect,
-    formatNumber,
 }: SearchResultsProps) {
     if (!show || results.length === 0) return null;
 
@@ -38,7 +38,7 @@ export default function SearchResults({
                         </div>
                         <div className="text-right ml-4">
                             <div className="font-semibold text-sm">
-                                Rp {formatNumber(item.harga_jual1)}
+                                Rp {formatDigit(item.harga_jual1)}
                             </div>
                             <div className="text-xs opacity-75">
                                 Stok: {item.stock}

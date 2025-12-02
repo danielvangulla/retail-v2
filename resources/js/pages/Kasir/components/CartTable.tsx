@@ -1,4 +1,5 @@
 import { BarangItem } from '@/components/kasir/types';
+import { formatDigit } from '@/lib/formatters';
 
 interface CartTableProps {
     items: BarangItem[];
@@ -23,13 +24,13 @@ export default function CartTable({
                         <tr className="text-slate-200">
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">No</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold uppercase tracking-wider">Nama</th>
-                            <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-16 sm:w-24 hidden md:table-cell">Satuan</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-14 sm:w-20">Qty</th>
+                            <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-16 sm:w-24 hidden md:table-cell">Satuan</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-32">Harga</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-28 hidden lg:table-cell">Charge</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-28 hidden lg:table-cell">Disc</th>
                             <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-24 sm:w-36">Total</th>
-                            <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">Del</th>
+                            <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">Act.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -55,13 +56,13 @@ export default function CartTable({
                     <tr className="text-slate-200">
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">No</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold uppercase tracking-wider">Nama</th>
-                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-16 sm:w-24 hidden md:table-cell">Satuan</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-14 sm:w-20">Qty</th>
+                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-16 sm:w-24 hidden md:table-cell">Satuan</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-32">Harga</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-28 hidden lg:table-cell">Charge</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-20 sm:w-28 hidden lg:table-cell">Disc</th>
                         <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-24 sm:w-36">Total</th>
-                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">Del</th>
+                        <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-sm font-semibold uppercase tracking-wider w-10 sm:w-16">Act.</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700">
@@ -74,19 +75,19 @@ export default function CartTable({
                         >
                             <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center text-slate-400 text-[10px] sm:text-sm font-medium">{idx + 1}</td>
                             <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-[10px] sm:text-sm font-medium">{item.deskripsi}</td>
-                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center text-[10px] sm:text-sm text-slate-300 hidden md:table-cell">{item.volume}</td>
                             <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center">
                                 <span
                                     onClick={() => onQtyClick(item)}
-                                    className="inline-flex items-center justify-center min-w-8 sm:min-w-12 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-600 hover:bg-blue-500 rounded text-[10px] sm:text-sm font-semibold cursor-pointer transition-colors"
+                                    className="inline-flex items-center justify-center min-w-8 sm:min-w-12 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-blue-600/70 hover:bg-blue-500 rounded text-[10px] sm:text-sm font-semibold cursor-pointer transition-colors"
                                 >
                                     {formatNumber(item.qty || 0)}
                                 </span>
                             </td>
-                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm">Rp {formatNumber(item.hargaJual || 0)}</td>
-                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm text-amber-400 hidden lg:table-cell">{item.charge ? `Rp ${formatNumber(item.charge)}` : '-'}</td>
-                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm text-green-400 hidden lg:table-cell">{(item.disc_spv || 0) + (item.disc_promo || 0) > 0 ? `Rp ${formatNumber((item.disc_spv || 0) + (item.disc_promo || 0))}` : '-'}</td>
-                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-bold text-xs sm:text-lg">Rp {formatNumber(item.total || 0)}</td>
+                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center text-[10px] sm:text-sm text-slate-300 hidden md:table-cell">{item.satuan}</td>
+                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm">{formatDigit(item.hargaJual || 0)}</td>
+                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm text-amber-400 hidden lg:table-cell">{item.charge ? `Rp ${formatDigit(item.charge)}` : '-'}</td>
+                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-mono text-[10px] sm:text-sm text-green-400 hidden lg:table-cell">{(item.disc_spv || 0) + (item.disc_promo || 0) > 0 ? `Rp ${formatDigit((item.disc_spv || 0) + (item.disc_promo || 0))}` : '-'}</td>
+                            <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-bold text-xs sm:text-lg">{formatDigit(item.total || 0)}</td>
                             <td className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center">
                                 <button
                                     onClick={() => onDeleteClick(item.id)}
