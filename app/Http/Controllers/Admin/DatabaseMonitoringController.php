@@ -6,6 +6,7 @@ use App\Events\DatabaseConnectionUpdated;
 use App\Services\DatabaseConnectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -91,8 +92,8 @@ class DatabaseMonitoringController
         ]);
 
         // Verify password
-        $user = auth()->user();
-        if (!\Hash::check($request->password, $user->password)) {
+        $user = Auth::user();
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Password salah',

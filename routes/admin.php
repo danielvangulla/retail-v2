@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseMonitoringController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
+use App\Http\Controllers\Admin\KartuStokController;
 use App\Http\Controllers\Admin\PembelianController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReturController;
@@ -92,6 +93,11 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::resource('/opname', OpnameController::class);
     Route::post('/opname-list', [OpnameController::class, 'opnameJson'])->name('opname.list');
     Route::get('/opname-summary', [OpnameController::class, 'summary'])->name('opname.summary');
+
+    // Kartu Stok (Stock Card / History)
+    Route::get('/kartu-stok', [KartuStokController::class, 'index'])->name('kartu-stok.index');
+    Route::post('/kartu-stok/history', [KartuStokController::class, 'getHistory'])->name('kartu-stok.history');
+    Route::post('/kartu-stok/barang-list', [KartuStokController::class, 'barangList'])->name('kartu-stok.barang-list');
 
     // Database Monitoring
     Route::get('/database-monitoring', [DatabaseMonitoringController::class, 'index'])->name('database-monitoring.index');
