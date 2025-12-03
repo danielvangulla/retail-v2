@@ -58,6 +58,11 @@ class OpnameController extends Controller
 
             foreach ($data as $item) {
                 try {
+                    $barang = Barang::find($item['id']);
+                    if (!$barang) {
+                        throw new \Exception('Barang not found');
+                    }
+
                     $opname = Opname::create([
                         'user_id' => Auth::user()->id,
                         'barang_id' => $item['id'],
@@ -70,6 +75,7 @@ class OpnameController extends Controller
 
                     // Update stok fisik jika ada selisih (gunakan ManageStok)
                     if ($item['qtySelisih'] !== 0) {
+                        $hargaBeli = (int) $barang->harga_beli;
                         if ($item['qtySelisih'] > 0) {
                             // Fisik lebih banyak = barang masuk
                             ManageStok::addStok(
@@ -79,7 +85,8 @@ class OpnameController extends Controller
                                 'opname',
                                 $opname->id,
                                 'Opname stok: '.($item['keterangan'] ?? 'Penyesuaian stok'),
-                                Auth::user()->id
+                                Auth::user()->id,
+                                $hargaBeli
                             );
                         } else {
                             // Fisik lebih sedikit = barang keluar
@@ -90,7 +97,8 @@ class OpnameController extends Controller
                                 'opname',
                                 $opname->id,
                                 'Opname stok: '.($item['keterangan'] ?? 'Penyesuaian stok'),
-                                Auth::user()->id
+                                Auth::user()->id,
+                                $hargaBeli
                             );
                         }
                     }
@@ -177,6 +185,8 @@ class OpnameController extends Controller
             // Jika selisih berubah, update stok
             if ($oldSelisih !== $newSelisih) {
                 $diff = $newSelisih - $oldSelisih;
+                $barang = Barang::find($opname->barang_id);
+                $hargaBeli = (int) $barang?->harga_beli;
 
                 if ($diff > 0) {
                     ManageStok::addStok(
@@ -186,7 +196,8 @@ class OpnameController extends Controller
                         'opname_update',
                         $opname->id,
                         'Update opname',
-                        Auth::user()->id
+                        Auth::user()->id,
+                        $hargaBeli
                     );
                 } else {
                     ManageStok::reduceStok(
@@ -196,7 +207,8 @@ class OpnameController extends Controller
                         'opname_update',
                         $opname->id,
                         'Update opname',
-                        Auth::user()->id
+                        Auth::user()->id,
+                        $hargaBeli
                     );
                 }
             }
@@ -223,6 +235,9 @@ class OpnameController extends Controller
 
             // Reverse stok adjustment
             if ($opname->selisih !== 0) {
+                $barang = Barang::find($opname->barang_id);
+                $hargaBeli = (int) $barang?->harga_beli;
+
                 if ($opname->selisih > 0) {
                     ManageStok::reduceStok(
                         $opname->barang_id,
@@ -231,7 +246,8 @@ class OpnameController extends Controller
                         'opname_cancel',
                         $opname->id,
                         'Pembatalan opname',
-                        Auth::user()->id
+                        Auth::user()->id,
+                        $hargaBeli
                     );
                 } else {
                     ManageStok::addStok(
@@ -241,7 +257,8 @@ class OpnameController extends Controller
                         'opname_cancel',
                         $opname->id,
                         'Pembatalan opname',
-                        Auth::user()->id
+                        Auth::user()->id,
+                        $hargaBeli
                     );
                 }
             }

@@ -39,8 +39,12 @@ class ProfitAnalysisService
                 foreach ($trx->details as $detail) {
                     $itemCount += $detail->qty;
                     $revenue = $detail->bayar ?? 0;
-                    $cogs = ($detail->barang?->harga_beli ?? 0) * $detail->qty;
                     $discount = ($detail->disc_spv ?? 0) + ($detail->disc_promo ?? 0);
+
+                    // Use weighted average cost from barang_stock_movements if available
+                    $movement = $detail->barangStockMovement ?? null;
+                    $hpp = ($movement?->harga_beli ?? 0);
+                    $cogs = $hpp * $detail->qty;
 
                     $totalRevenue += $revenue;
                     $totalCOGS += $cogs;

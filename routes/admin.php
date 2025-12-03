@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BarangController;
+use App\Http\Controllers\Admin\CostHistoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseMonitoringController;
 use App\Http\Controllers\Admin\KategoriController;
@@ -98,6 +99,12 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::get('/kartu-stok', [KartuStokController::class, 'index'])->name('kartu-stok.index');
     Route::post('/kartu-stok/history', [KartuStokController::class, 'getHistory'])->name('kartu-stok.history');
     Route::post('/kartu-stok/barang-list', [KartuStokController::class, 'barangList'])->name('kartu-stok.barang-list');
+
+    // Cost History (Average Perpetual Cost Tracking)
+    Route::get('/cost-history', [CostHistoryController::class, 'index'])->name('cost-history.index');
+    Route::post('/cost-history/history', [CostHistoryController::class, 'getHistory'])->name('cost-history.history');
+    Route::post('/cost-history/summary', [CostHistoryController::class, 'getSummary'])->name('cost-history.summary');
+    Route::post('/cost-history/barang-list', [CostHistoryController::class, 'barangList'])->name('cost-history.barang-list');
 
     // Database Monitoring
     Route::get('/database-monitoring', [DatabaseMonitoringController::class, 'index'])->name('database-monitoring.index');

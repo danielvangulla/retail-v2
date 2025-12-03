@@ -72,7 +72,8 @@ class PembelianController extends Controller
 
                 // Add stock and capture movement ID
                 try {
-                    $movementId = ManageStok::addStok($barang->id, $qty, 'in', 'pembelian', $pembelian->id, 'Pembelian #' . $pembelian->id, Auth::id());
+                    $hargaBeli = (int) ($v->hargaBeli / $barang->isi);
+                    $movementId = ManageStok::addStok($barang->id, $qty, 'in', 'pembelian', $pembelian->id, 'Pembelian #' . $pembelian->id, Auth::id(), $hargaBeli);
                     $detail->update([
                         'stok_processed' => true,
                         'kartu_stok_id' => $movementId,

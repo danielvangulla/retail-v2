@@ -21,6 +21,8 @@ class BarangStock extends Model
         'quantity',
         'reserved',
         'available',
+        'harga_rata_rata',
+        'harga_rata_rata_updated_at',
         'last_updated_at',
     ];
 
@@ -28,6 +30,8 @@ class BarangStock extends Model
         'quantity' => 'integer',
         'reserved' => 'integer',
         'available' => 'integer',
+        'harga_rata_rata' => 'integer',
+        'harga_rata_rata_updated_at' => 'datetime',
         'last_updated_at' => 'datetime',
     ];
 
