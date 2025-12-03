@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BarangController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DatabaseMonitoringController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\PembelianController;
@@ -91,4 +92,11 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::resource('/opname', OpnameController::class);
     Route::post('/opname-list', [OpnameController::class, 'opnameJson'])->name('opname.list');
     Route::get('/opname-summary', [OpnameController::class, 'summary'])->name('opname.summary');
+
+    // Database Monitoring
+    Route::get('/database-monitoring', [DatabaseMonitoringController::class, 'index'])->name('database-monitoring.index');
+    Route::get('/database-monitoring/stats', [DatabaseMonitoringController::class, 'getStats'])->name('database-monitoring.stats');
+    Route::post('/database-monitoring/toggle-pooling', [DatabaseMonitoringController::class, 'togglePooling'])->name('database-monitoring.toggle');
+    Route::get('/database-monitoring/config', [DatabaseMonitoringController::class, 'getConfig'])->name('database-monitoring.config');
+    Route::post('/database-monitoring/config', [DatabaseMonitoringController::class, 'updateConfig'])->name('database-monitoring.update-config');
 });
