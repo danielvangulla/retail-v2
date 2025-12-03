@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck } from 'lucide-react';
+import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, Database } from 'lucide-react';
 
 interface AdminLayoutProps {
     title: string;
@@ -66,6 +66,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             icon: MonitorCheck,
             submenu: [
                 { label: 'Monitoring', href: '/admin/database-monitoring' },
+                { label: 'Data Management', href: '/admin/data-management' },
             ],
         },
     ];

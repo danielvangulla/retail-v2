@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\Pembelian;
 use App\Models\PembelianDet;
+use App\Traits\ManageStok;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -51,18 +52,38 @@ class PembelianController extends Controller
 
             $barang = Barang::where('sku', $v->sku)->first();
             if ($barang) {
-                // Update harga beli barang
-                $barang->harga_beli = $v->hargaBeli / $barang->isi;
-                $barang->save();
+                $qty = (int) ($v->qtyBeli * $barang->isi);
+                $hargaBeli = (int) $v->hargaBeli;
 
-                PembelianDet::create([
+                // Calculate harga per unit for weighted average cost
+                $hargaBeliPerUnit = (int) ($hargaBeli / $qty);
+
+                // Create pembelian detail
+                $detail = PembelianDet::create([
                     'pembelian_id' => $pembelian->id,
                     'sku' => $v->sku,
                     'barcode' => $v->barcode,
-                    'qty' => $v->qtyBeli * $barang->isi,
+                    'qty' => $qty,
                     'satuan_beli' => $barang->volume,
-                    'harga_beli' => $v->hargaBeli,
+                    'harga_beli' => $hargaBeli,
                     'total' => $v->total,
+                ]);
+
+                // Add stock using ManageStok trait for weighted average calculation
+                $movementId = ManageStok::addStok(
+                    $barang->id,
+                    $qty,
+                    'in',
+                    'pembelian',
+                    $pembelian->id,
+                    'Pembelian #' . $pembelian->id,
+                    Auth::user()->id,
+                    $hargaBeliPerUnit
+                );
+
+                // Update harga_beli barang dengan harga terbaru
+                $barang->update([
+                    'harga_beli' => $hargaBeliPerUnit,
                 ]);
 
                 $pembelian->grand_total += $v->total;

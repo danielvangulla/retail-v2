@@ -4,6 +4,58 @@ import AdminLayout from '../Layout';
 import { Search, ChevronDown, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { formatTgl, formatDigit, formatDateTime, formatTime } from '@/lib/formatters';
 
+// Animation styles
+const animationStyles = `
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes gradientShift {
+        0%, 100% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+    }
+
+    @keyframes glowPulse {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.5), 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    }
+
+    .animate-fade-in-scale {
+        animation: fadeInScale 0.6s ease-out forwards;
+    }
+
+    .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+    }
+
+    .animate-glow-pulse {
+        animation: glowPulse 2s ease-in-out infinite;
+    }
+`;
+
+// Add styles to document
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.textContent = animationStyles;
+    document.head.appendChild(style);
+}
+
 interface BarangOption {
     id: string;
     sku: string;
@@ -273,26 +325,24 @@ export default function CostHistoryIndex() {
 
                                             {/* Selisih Cost (Tertinggi - Terendah) */}
                                             <div
-                                                className={`bg-linear-to-br ${
-                                                    summary.cost_tertinggi > summary.cost_terendah
-                                                        ? 'from-orange-100 to-orange-50'
-                                                        : 'from-cyan-100 to-cyan-50'
-                                                } rounded-lg p-4 border border-white/60`}
+                                                className={`bg-linear-to-br from-indigo-200 via-indigo-100 to-indigo-50 rounded-xl p-4 border-2 border-indigo-300/80 animate-fade-in-scale animate-glow-pulse transition-all duration-300 hover:shadow-lg hover:-translate-y-1 shadow-lg`}
                                             >
-                                                <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                                                <div className="text-xs text-indigo-700 font-bold flex items-center gap-1 uppercase tracking-wide">
                                                     {summary.cost_tertinggi > summary.cost_terendah ? (
                                                         <>
-                                                            <TrendingUp className="w-3 h-3" />
+                                                            <TrendingUp className="w-4 h-4 animate-bounce" />
                                                             Selisih Cost
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <TrendingDown className="w-3 h-3" />
+                                                            <TrendingDown className="w-4 h-4" />
                                                             Selisih Cost
                                                         </>
                                                     )}
                                                 </div>
-                                                <div className={`text-lg font-bold mt-2 ${summary.cost_tertinggi > summary.cost_terendah ? 'text-orange-700' : 'text-cyan-700'}`}>
+                                                <div className="text-2xl font-black mt-3 drop-shadow-sm" style={{
+                                                    color: summary.cost_tertinggi > summary.cost_terendah ? '#DC2626' : '#16A34A'
+                                                }}>
                                                     Rp {formatDigit(Math.abs(summary.cost_tertinggi - summary.cost_terendah))}
                                                 </div>
                                             </div>
@@ -318,26 +368,24 @@ export default function CostHistoryIndex() {
 
                                             {/* Total Change */}
                                             <div
-                                                className={`bg-linear-to-br ${
-                                                    summary.total_change > 0
-                                                        ? 'from-orange-100 to-orange-50'
-                                                        : 'from-cyan-100 to-cyan-50'
-                                                } rounded-lg p-4 border border-white/60`}
+                                                className={`bg-linear-to-br from-purple-200 via-purple-100 to-purple-50 rounded-xl p-4 border-2 border-purple-300/80 animate-fade-in-scale animate-glow-pulse transition-all duration-300 hover:shadow-lg hover:-translate-y-1 shadow-lg`}
                                             >
-                                                <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                                                <div className="text-xs text-purple-700 font-bold flex items-center gap-1 uppercase tracking-wide">
                                                     {summary.total_change > 0 ? (
                                                         <>
-                                                            <TrendingUp className="w-3 h-3" />
+                                                            <TrendingUp className="w-4 h-4 animate-bounce" />
                                                             Total Naik
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <TrendingDown className="w-3 h-3" />
+                                                            <TrendingDown className="w-4 h-4" />
                                                             Total Turun
                                                         </>
                                                     )}
                                                 </div>
-                                                <div className={`text-lg font-bold mt-2 ${summary.total_change > 0 ? 'text-orange-700' : 'text-cyan-700'}`}>
+                                                <div className="text-2xl font-black mt-3 drop-shadow-sm" style={{
+                                                    color: summary.total_change > 0 ? '#DC2626' : '#16A34A'
+                                                }}>
                                                     Rp {formatDigit(Math.abs(summary.total_change))}
                                                 </div>
                                             </div>

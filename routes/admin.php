@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\BarangController;
 use App\Http\Controllers\Admin\CostHistoryController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DataManagementController;
 use App\Http\Controllers\Admin\DatabaseMonitoringController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
@@ -112,4 +113,8 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::post('/database-monitoring/toggle-pooling', [DatabaseMonitoringController::class, 'togglePooling'])->name('database-monitoring.toggle');
     Route::get('/database-monitoring/config', [DatabaseMonitoringController::class, 'getConfig'])->name('database-monitoring.config');
     Route::post('/database-monitoring/config', [DatabaseMonitoringController::class, 'updateConfig'])->name('database-monitoring.update-config');
+
+    // Data Management (Recount Stock & Cost)
+    Route::get('/data-management', [DataManagementController::class, 'index'])->name('data-management.index');
+    Route::post('/data-management/recount', [DataManagementController::class, 'recount'])->name('data-management.recount');
 });

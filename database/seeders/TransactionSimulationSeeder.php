@@ -66,12 +66,15 @@ class TransactionSimulationSeeder extends Seeder
 
             $purchaseData1 = [];
             foreach ($barangs as $idx => $barang) {
+                $unitPrice = 10000 + (5000 * $idx); // Different unit price per product
+                $qty = 10;
                 $purchaseData1[] = [
                     'sku' => $barang->sku,
                     'barcode' => $barang->barcode,
                     'qtyBeli' => 10,
-                    'hargaBeli' => 50000 * ($idx + 1), // Different price per product
-                    'total' => 10 * 50000 * ($idx + 1),
+                    'unitPrice' => $unitPrice, // Price per unit
+                    'hargaBeli' => $qty * $unitPrice, // Total price
+                    'total' => $qty * $unitPrice,
                 ];
             }
 
@@ -88,12 +91,15 @@ class TransactionSimulationSeeder extends Seeder
 
             $purchaseData2 = [];
             foreach ($barangs as $idx => $barang) {
+                $unitPrice = 15000 + (5000 * $idx); // Higher unit price
+                $qty = 5;
                 $purchaseData2[] = [
                     'sku' => $barang->sku,
                     'barcode' => $barang->barcode,
                     'qtyBeli' => 5,
-                    'hargaBeli' => 60000 * ($idx + 1), // Higher price
-                    'total' => 5 * 60000 * ($idx + 1),
+                    'unitPrice' => $unitPrice, // Price per unit
+                    'hargaBeli' => $qty * $unitPrice, // Total price
+                    'total' => $qty * $unitPrice,
                 ];
             }
 
@@ -254,7 +260,8 @@ class TransactionSimulationSeeder extends Seeder
                 ]);
 
                 // Add stock using ManageStok trait
-                $hargaBeliPerUnit = (int) ($hargaBeli / $barang->isi);
+                // hargaBeliPerUnit = (total harga beli / total qty items)
+                $hargaBeliPerUnit = (int) ($hargaBeli / $qty);
                 $movementId = \App\Traits\ManageStok::addStok(
                     $barang->id,
                     $qty,

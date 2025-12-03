@@ -104,7 +104,7 @@ trait ManageStok
             ]);
 
             // Record cost history jika ada perubahan
-            if ($type === 'in' && $quantityBefore > 0) {
+            if ($type === 'in' && $hargaRatarataBaruCalculated !== $hargaRatarataLama) {
                 self::recordCostHistory(
                     $barangId,
                     $hargaRatarataLama,
