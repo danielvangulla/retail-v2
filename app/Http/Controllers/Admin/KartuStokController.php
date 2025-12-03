@@ -28,20 +28,32 @@ class KartuStokController
             'barang_id' => 'required|uuid|exists:barang,id',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:5|max:100',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
         ]);
 
         $barangId = $request->get('barang_id');
         $perPage = $request->get('per_page', 50);
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
 
         // Get barang info
         $barang = Barang::select('id', 'sku', 'barcode', 'deskripsi', 'harga_beli', 'harga_jual1', 'satuan')
             ->findOrFail($barangId);
 
-        // Get movements dengan pagination
-        $movements = BarangStockMovement::where('barang_id', $barangId)
+        // Get movements dengan filter tanggal dan pagination
+        $query = BarangStockMovement::where('barang_id', $barangId)
             ->with(['user:id,name'])
-            ->orderBy('movement_date', 'desc')
-            ->paginate($perPage);
+            ->select('id', 'barang_id', 'type', 'quantity', 'movement_date', 'reference_type', 'reference_id', 'notes', 'user_id', 'harga_beli', 'harga_jual');
+
+        if ($dateFrom) {
+            $query->whereDate('movement_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('movement_date', '<=', $dateTo);
+        }
+
+        $movements = $query->orderBy('movement_date', 'asc')->paginate($perPage);
 
         return response()->json([
             'status' => 'ok',

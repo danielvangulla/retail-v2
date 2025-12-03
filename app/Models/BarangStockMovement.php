@@ -26,12 +26,16 @@ class BarangStockMovement extends Model
         'notes',
         'user_id',
         'movement_date',
+        'harga_beli',
+        'harga_jual',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'quantity_before' => 'integer',
         'quantity_after' => 'integer',
+        'harga_beli' => 'decimal:2',
+        'harga_jual' => 'decimal:2',
         'movement_date' => 'datetime',
     ];
 
