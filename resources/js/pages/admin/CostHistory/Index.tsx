@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import AdminLayout from '../Layout';
 import { Search, ChevronDown, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
-import { formatTgl, formatDigit } from '@/lib/formatters';
+import { formatTgl, formatDigit, formatDateTime, formatTime } from '@/lib/formatters';
 
 interface BarangOption {
     id: string;
@@ -28,8 +28,10 @@ interface CostHistoryItem {
 }
 
 interface CostSummary {
-    initial_cost: number;
+    cost_sebelumnya: number;
     current_cost: number;
+    cost_terendah: number;
+    cost_tertinggi: number;
     total_changes: number;
     first_change_at: string | null;
     last_change_at: string | null;
@@ -250,52 +252,94 @@ export default function CostHistoryIndex() {
 
                                 {/* Summary Cards */}
                                 {summary && (
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                                        {/* Initial Cost */}
-                                        <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60 text-center">
-                                            <div className="text-xs text-gray-600 font-semibold">Cost Sebelumnya</div>
-                                            <div className="text-lg font-bold text-blue-700 mt-1">
-                                                Rp {formatDigit(summary.initial_cost)}
+                                    <div className="space-y-3 mt-6">
+                                        {/* Row 1 */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Cost Terendah */}
+                                            <div className="bg-linear-to-br from-emerald-100 to-emerald-50 rounded-lg p-4 border border-white/60">
+                                                <div className="text-xs text-gray-600 font-semibold">Cost Terendah</div>
+                                                <div className="text-lg font-bold text-emerald-700 mt-2">
+                                                    Rp {formatDigit(summary.cost_terendah)}
+                                                </div>
+                                            </div>
+
+                                            {/* Cost Tertinggi */}
+                                            <div className="bg-linear-to-br from-rose-100 to-rose-50 rounded-lg p-4 border border-white/60">
+                                                <div className="text-xs text-gray-600 font-semibold">Cost Tertinggi</div>
+                                                <div className="text-lg font-bold text-rose-700 mt-2">
+                                                    Rp {formatDigit(summary.cost_tertinggi)}
+                                                </div>
+                                            </div>
+
+                                            {/* Selisih Cost (Tertinggi - Terendah) */}
+                                            <div
+                                                className={`bg-linear-to-br ${
+                                                    summary.cost_tertinggi > summary.cost_terendah
+                                                        ? 'from-orange-100 to-orange-50'
+                                                        : 'from-cyan-100 to-cyan-50'
+                                                } rounded-lg p-4 border border-white/60`}
+                                            >
+                                                <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                                                    {summary.cost_tertinggi > summary.cost_terendah ? (
+                                                        <>
+                                                            <TrendingUp className="w-3 h-3" />
+                                                            Selisih Cost
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <TrendingDown className="w-3 h-3" />
+                                                            Selisih Cost
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className={`text-lg font-bold mt-2 ${summary.cost_tertinggi > summary.cost_terendah ? 'text-orange-700' : 'text-cyan-700'}`}>
+                                                    Rp {formatDigit(Math.abs(summary.cost_tertinggi - summary.cost_terendah))}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Current Cost */}
-                                        <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60 text-center">
-                                            <div className="text-xs text-gray-600 font-semibold">Cost Sekarang</div>
-                                            <div className="text-lg font-bold text-purple-700 mt-1">
-                                                Rp {formatDigit(summary.current_cost)}
+                                        {/* Row 2 */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Cost Sebelumnya */}
+                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                <div className="text-xs text-gray-600 font-semibold">Cost Sebelumnya</div>
+                                                <div className="text-lg font-bold text-blue-700 mt-2">
+                                                    Rp {formatDigit(summary.cost_sebelumnya)}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        {/* Total Changes */}
-                                        <div className="bg-linear-to-br from-pink-100 to-pink-50 rounded-lg p-4 border border-white/60 text-center">
-                                            <div className="text-xs text-gray-600 font-semibold">Total Perubahan</div>
-                                            <div className="text-lg font-bold text-pink-700 mt-1">{summary.total_changes}</div>
-                                        </div>
-
-                                        {/* Change Amount */}
-                                        <div
-                                            className={`bg-linear-to-br ${
-                                                summary.total_change < 0
-                                                    ? 'from-emerald-100 to-emerald-50'
-                                                    : 'from-rose-100 to-rose-50'
-                                            } rounded-lg p-4 border border-white/60 text-center`}
-                                        >
-                                            <div className="text-xs text-gray-600 font-semibold flex items-center justify-center gap-1">
-                                                {summary.total_change >= 0 ? (
-                                                    <>
-                                                        <TrendingUp className="w-3 h-3" />
-                                                        Cost Naik (↑)
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <TrendingDown className="w-3 h-3" />
-                                                        Cost Turun (↓)
-                                                    </>
-                                                )}
+                                            {/* Current Cost */}
+                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                <div className="text-xs text-gray-600 font-semibold">Cost Sekarang</div>
+                                                <div className="text-lg font-bold text-purple-700 mt-2">
+                                                    Rp {formatDigit(summary.current_cost)}
+                                                </div>
                                             </div>
-                                            <div className={`text-lg font-bold mt-1 ${summary.total_change < 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                                Rp {formatDigit(Math.abs(summary.total_change))}
+
+                                            {/* Total Change */}
+                                            <div
+                                                className={`bg-linear-to-br ${
+                                                    summary.total_change > 0
+                                                        ? 'from-orange-100 to-orange-50'
+                                                        : 'from-cyan-100 to-cyan-50'
+                                                } rounded-lg p-4 border border-white/60`}
+                                            >
+                                                <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                                                    {summary.total_change > 0 ? (
+                                                        <>
+                                                            <TrendingUp className="w-3 h-3" />
+                                                            Total Naik
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <TrendingDown className="w-3 h-3" />
+                                                            Total Turun
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className={`text-lg font-bold mt-2 ${summary.total_change > 0 ? 'text-orange-700' : 'text-cyan-700'}`}>
+                                                    Rp {formatDigit(Math.abs(summary.total_change))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -314,12 +358,11 @@ export default function CostHistoryIndex() {
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-200 bg-gray-50">
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Date</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Old Cost</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">New Cost</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Change</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Trigger</th>
-                                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">By</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">Tanggal</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">Old Cost</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">New Cost</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">Change</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700">Trigger</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -328,28 +371,30 @@ export default function CostHistoryIndex() {
                                                         const isIncrease = change > 0;
 
                                                         return (
-                                                            <tr key={item.id} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-blue-50/50`}>
-                                                                <td className="px-6 py-3 text-sm text-gray-900">
-                                                                    {formatTgl(new Date(item.created_at).toLocaleDateString('id-ID'))}
+                                                            <tr key={item.id} className={`border-b border-gray-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-blue-50/50 text-center`}>
+                                                                <td className="p-2 text-sm text-gray-900">
+                                                                    {formatTgl(item.created_at)}
+                                                                    <br />
+                                                                    {formatTime(item.created_at)}
                                                                 </td>
-                                                                <td className="px-6 py-3 text-sm font-mono text-gray-700">
+                                                                <td className="p-2 text-sm font-mono text-gray-700 text-center">
                                                                     Rp {formatDigit(item.harga_rata_rata_lama)}
                                                                 </td>
-                                                                <td className="px-6 py-3 text-sm font-mono text-gray-700">
+                                                                <td className="p-2 text-sm font-mono text-gray-700 text-center">
                                                                     Rp {formatDigit(item.harga_rata_rata_baru)}
                                                                 </td>
-                                                                <td className="px-6 py-3 text-sm">
-                                                                    <div className={`flex items-center gap-1 font-semibold ${isIncrease ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                <td className="p-2 text-sm text-center">
+                                                                    <div className={`flex items-center justify-center gap-1 font-semibold ${!isIncrease ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                         {isIncrease ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                                                         Rp {formatDigit(Math.abs(change))}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-3 text-sm">
+                                                                <td className="-2 text-sm text-center text-black">
                                                                     <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
                                                                         {getTriggerLabel(item.trigger_type)}
                                                                     </span>
+                                                                    <br />by {item.user?.name || 'System'}
                                                                 </td>
-                                                                <td className="px-6 py-3 text-sm text-gray-700">{item.user?.name || 'System'}</td>
                                                             </tr>
                                                         );
                                                     })}

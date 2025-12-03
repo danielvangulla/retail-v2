@@ -34,7 +34,7 @@ class CostHistoryController
 
         $barangId = $request->get('barang_id');
         $page = $request->get('page', 1);
-        $perPage = $request->get('per_page', 50);
+        $perPage = 50; // Always 50, max 50 latest records
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
 
@@ -43,6 +43,7 @@ class CostHistoryController
             ->findOrFail($barangId);
 
         // Get cost history dengan filter tanggal dan pagination
+        // Order by created_at DESC untuk data terbaru
         $query = BarangCostHistory::where('barang_id', $barangId)
             ->with(['user:id,name']);
 
@@ -53,7 +54,7 @@ class CostHistoryController
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $history = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+        $history = $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'status' => 'ok',
@@ -82,31 +83,69 @@ class CostHistoryController
 
         $barangId = $request->get('barang_id');
 
-        // Get first and last cost record
-        $first = BarangCostHistory::where('barang_id', $barangId)
-            ->orderBy('created_at', 'asc')
-            ->first();
-
-        $last = BarangCostHistory::where('barang_id', $barangId)
+        // Get all cost records ordered by created_at DESC to get latest first
+        $allRecords = BarangCostHistory::where('barang_id', $barangId)
             ->orderBy('created_at', 'desc')
-            ->first();
-
-        // Count changes
-        $changeCount = BarangCostHistory::where('barang_id', $barangId)->count();
+            ->orderBy('id', 'desc')
+            ->get();
 
         // Get current cost from barang_stock
         $barangStock = \App\Models\BarangStock::where('barang_id', $barangId)->first();
-        $currentCost = $barangStock?->harga_rata_rata ?? 0;
+        $currentCost = (int) ($barangStock?->harga_rata_rata ?? 0);
+
+        if ($allRecords->isEmpty()) {
+            // Jika tidak ada history, gunakan current cost sebagai cost sebelumnya dan terendah/tertinggi
+            return response()->json([
+                'status' => 'ok',
+                'data' => [
+                    'cost_sebelumnya' => $currentCost,
+                    'current_cost' => $currentCost,
+                    'cost_terendah' => $currentCost,
+                    'cost_tertinggi' => $currentCost,
+                    'total_changes' => 0,
+                    'first_change_at' => null,
+                    'last_change_at' => null,
+                    'total_change' => 0,
+                ],
+            ]);
+        }
+
+        // Get latest and oldest cost record
+        $latest = $allRecords->first();  // Latest because ordered DESC
+        $oldest = $allRecords->last();   // Oldest because ordered DESC
+
+        // Get min and max cost from ALL values (lama + baru)
+        $allCostValues = [];
+        foreach ($allRecords as $record) {
+            if ($record->harga_rata_rata_lama > 0) {
+                $allCostValues[] = $record->harga_rata_rata_lama;
+            }
+            if ($record->harga_rata_rata_baru > 0) {
+                $allCostValues[] = $record->harga_rata_rata_baru;
+            }
+        }
+
+        $minCost = !empty($allCostValues) ? (int) min($allCostValues) : $currentCost;
+        $maxCost = !empty($allCostValues) ? (int) max($allCostValues) : $currentCost;
+
+        // Count changes
+        $changeCount = $allRecords->count();
+
+        // cost_sebelumnya = harga_baru dari oldest record (cost sebelum semua perubahan terjadi)
+        $costSebelumnya = (int) ($oldest?->harga_rata_rata_baru ?? 0);
+        $totalChange = $currentCost - $costSebelumnya;
 
         return response()->json([
             'status' => 'ok',
             'data' => [
-                'initial_cost' => $first?->harga_rata_rata_lama ?? 0,
-                'current_cost' => (int) $currentCost,
+                'cost_sebelumnya' => $costSebelumnya,
+                'current_cost' => $currentCost,
+                'cost_terendah' => $minCost,
+                'cost_tertinggi' => $maxCost,
                 'total_changes' => $changeCount,
-                'first_change_at' => $first?->created_at,
-                'last_change_at' => $last?->created_at,
-                'total_change' => ($last?->harga_rata_rata_baru ?? 0) - ($first?->harga_rata_rata_lama ?? 0),
+                'first_change_at' => $oldest?->created_at,
+                'last_change_at' => $latest?->created_at,
+                'total_change' => $totalChange,
             ],
         ]);
     }
