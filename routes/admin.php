@@ -1,33 +1,35 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BarangController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Admin\PembelianController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReturController;
+use App\Http\Controllers\Admin\SetupController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Back\OpnameController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Admin routes - protected by auth + supervisor middleware
 Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
-    Route::get('/', function() {
+    Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     });
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
-    Route::post('/process-stok', function() {
+    Route::post('/process-stok', function () {
         $result = \App\Services\StokProcessingService::processAll();
+
         return response()->json(['status' => 'ok', 'data' => $result]);
     })->name('admin.process-stok');
 
     // Profit Analysis Dashboard
-    Route::get('/profit', function() {
+    Route::get('/profit', function () {
         return Inertia::render('admin/ProfitDashboard');
     })->name('profit.dashboard');
 
@@ -39,6 +41,7 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::resource('/barang', BarangController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::post('/barang-list', [BarangController::class, 'list'])->name('barang.list');
     Route::post('/barang-low-stock', [BarangController::class, 'lowStock'])->name('barang.lowStock');
+    Route::get('/barang-stock/{barangId}', [BarangController::class, 'getStock'])->name('barang.stock');
     Route::get('/barang-all', function () {
         $barangs = \App\Models\Barang::select('id', 'sku', 'barcode', 'deskripsi', 'alias', 'satuan', 'isi', 'volume', 'harga_beli', 'harga_jual1')
             ->where('st_aktif', 1)
@@ -47,7 +50,7 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
 
         return response()->json([
             'status' => 'ok',
-            'data' => $barangs
+            'data' => $barangs,
         ]);
     });
 
@@ -83,5 +86,9 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::post('/report/sales-data', [ReportController::class, 'salesData'])->name('report.sales-data');
     Route::get('/report/inventory', [ReportController::class, 'inventory'])->name('report.inventory');
     Route::post('/report/inventory-data', [ReportController::class, 'inventoryData'])->name('report.inventory-data');
-});
 
+    // Opname (Stock Audit)
+    Route::resource('/opname', OpnameController::class);
+    Route::post('/opname-list', [OpnameController::class, 'opnameJson'])->name('opname.list');
+    Route::get('/opname-summary', [OpnameController::class, 'summary'])->name('opname.summary');
+});
