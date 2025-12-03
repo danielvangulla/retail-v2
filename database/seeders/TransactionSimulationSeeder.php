@@ -336,7 +336,7 @@ class TransactionSimulationSeeder extends Seeder
     /**
      * Simulate Opname (Stock Audit)
      */
-    private function simulateOpname($data, $user): Opname
+    private function simulateOpname($data, $user)
     {
         foreach ($data as $item) {
             $opname = Opname::create([

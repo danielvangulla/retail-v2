@@ -33,6 +33,7 @@ class CostHistoryController
         ]);
 
         $barangId = $request->get('barang_id');
+        $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 50);
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
@@ -52,7 +53,7 @@ class CostHistoryController
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $history = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $history = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'status' => 'ok',

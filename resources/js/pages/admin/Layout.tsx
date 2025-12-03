@@ -50,6 +50,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 { label: 'Retur Pembelian', href: '/admin/retur' },
                 { label: 'Stok Opname', href: '/admin/opname' },
                 { label: 'Kartu Stok', href: '/admin/kartu-stok' },
+                { label: 'History COGS', href: '/admin/cost-history' },
             ],
         },
         {
