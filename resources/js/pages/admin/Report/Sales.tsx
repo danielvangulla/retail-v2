@@ -431,9 +431,9 @@ export default function SalesReport() {
                             {activeTab === 'by-category' && !loading && (
                                 <div className="space-y-4">
                                     {categorySales.length > 0 && (() => {
-                                        // Calculate summary from category sales data
+                                        // Calculate summary from category sales data (current page only)
                                         const summary = {
-                                            total_transactions: categorySales.reduce((sum, row) => sum + (row.total_transactions || 0), 0),
+                                            total_items: categorySales.reduce((sum, row) => sum + (+row.total_items || 0), 0),
                                             total_sales: Math.round(categorySales.reduce((sum, row) => sum + +row.net_sales, 0)),
                                             total_cost: Math.round(categorySales.reduce((sum, row) => sum + +row.total_cost, 0)),
                                             total_profit: 0,
@@ -447,8 +447,8 @@ export default function SalesReport() {
                                         return (
                                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                                 <div className="text-center bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
-                                                    <p className="text-gray-600 text-sm">Total Transaksi</p>
-                                                    <p className="font-mono text-2xl font-bold text-purple-700 mt-1">{summary.total_transactions}</p>
+                                                    <p className="text-gray-600 text-sm">Total Barang</p>
+                                                    <p className="font-mono text-2xl font-bold text-purple-700 mt-1">{summary.total_items}</p>
                                                 </div>
                                                 <div className="text-center bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
                                                     <p className="text-gray-600 text-sm">Total Penjualan</p>
@@ -501,12 +501,12 @@ export default function SalesReport() {
                                                             <tr key={row.kategori_id} className="border-b border-gray-100 hover:bg-gray-50">
                                                                 <td className="p-3 text-sm font-medium text-gray-900">{row.kategori_name}</td>
                                                                 <td className="p-3 text-right text-sm text-gray-700">{row.total_transactions}</td>
-                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">Rp {formatDigit(row.total_sales)}</td>
-                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">Rp {formatDigit(row.total_discount)}</td>
-                                                                <td className="p-3 text-right text-sm font-bold text-green-600">Rp {formatDigit(row.net_sales)}</td>
-                                                                <td className="p-3 text-right text-sm text-gray-700">Rp {formatDigit(row.total_cost)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">{formatDigit(row.total_sales)}</td>
+                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">{formatDigit(row.total_discount)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-black">{formatDigit(row.net_sales)}</td>
+                                                                <td className="p-3 text-right text-sm text-gray-700">{formatDigit(row.total_cost)}</td>
                                                                 <td className="p-3 text-right text-sm font-bold" style={{color: row.profit >= 0 ? '#059669' : '#dc2626'}}>
-                                                                    Rp {formatDigit(row.profit)}
+                                                                    {formatDigit(row.profit)}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -561,7 +561,7 @@ export default function SalesReport() {
                                         return (
                                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                                                 <div className="text-center bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
-                                                    <p className="text-center text-gray-600 text-sm">Total Qty</p>
+                                                    <p className="text-center text-gray-600 text-sm">Total Qty Barang</p>
                                                     <p className="font-mono text-2xl font-bold text-purple-700 mt-1">{summary.total_qty}</p>
                                                 </div>
                                                 <div className="text-center bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
@@ -617,12 +617,12 @@ export default function SalesReport() {
                                                                 <td className="p-3 text-sm font-mono text-gray-700">{row.sku}</td>
                                                                 <td className="p-3 text-sm font-medium text-gray-900">{row.deskripsi}</td>
                                                                 <td className="p-3 text-right text-sm text-gray-700">{row.total_qty}</td>
-                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">Rp {formatDigit(row.total_sales)}</td>
-                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">Rp {formatDigit(row.total_discount)}</td>
-                                                                <td className="p-3 text-right text-sm font-bold text-green-600">Rp {formatDigit(row.net_sales)}</td>
-                                                                <td className="p-3 text-right text-sm text-gray-700">Rp {formatDigit(row.total_cost)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">{formatDigit(row.total_sales)}</td>
+                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">{formatDigit(row.total_discount)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-black">{formatDigit(row.net_sales)}</td>
+                                                                <td className="p-3 text-right text-sm text-gray-700">{formatDigit(row.total_cost)}</td>
                                                                 <td className="p-3 text-right text-sm font-bold" style={{color: row.profit >= 0 ? '#059669' : '#dc2626'}}>
-                                                                    Rp {formatDigit(row.profit)}
+                                                                    {formatDigit(row.profit)}
                                                                 </td>
                                                             </tr>
                                                         ))}
