@@ -5,7 +5,7 @@ use App\Models\Barang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/sync-getter', [SyncController::class, 'getter']);
+// Route::post('/sync-getter', [SyncController::class, 'getter']);
 
 // API for getting barang list (requires authentication)
 Route::middleware('auth')->group(function () {

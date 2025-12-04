@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\KartuStokController;
 use App\Http\Controllers\Admin\OpnameController;
 use App\Http\Controllers\Admin\PembelianController;
+use App\Http\Controllers\Admin\ProfitAnalysisController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReturController;
 use App\Http\Controllers\Admin\SetupController;
@@ -36,6 +37,13 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::get('/profit', function () {
         return Inertia::render('admin/ProfitDashboard');
     })->name('profit.dashboard');
+
+    // Profit Analysis API
+    Route::get('/api/profit-analysis/daily', [ProfitAnalysisController::class, 'dailyAnalysis']);
+    Route::get('/api/profit-analysis/trend', [ProfitAnalysisController::class, 'trendAnalysis']);
+    Route::get('/api/profit-analysis/products', [ProfitAnalysisController::class, 'productProfitability']);
+    Route::get('/api/profit-analysis/product/{barangId}/margin', [ProfitAnalysisController::class, 'productMargin']);
+    Route::get('/api/profit-analysis/inventory-value', [ProfitAnalysisController::class, 'inventoryValue']);
 
     // Setup / Basic Settings
     Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');

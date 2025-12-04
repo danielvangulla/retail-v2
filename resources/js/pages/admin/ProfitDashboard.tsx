@@ -70,34 +70,54 @@ export default function ProfitDashboard() {
     const [topProducts, setTopProducts] = useState<ProductData[]>([]);
     const [inventoryValue, setInventoryValue] = useState<InventoryValue | null>(null);
 
+    // Date range state - default 7 days ago to today
+    const [startDate, setStartDate] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        return date.toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [activeButton, setActiveButton] = useState<'7days' | 'month' | 'year'>('7days');
+
+    // Helper function to check if a button is active
+    const isButtonActive = (buttonType: '7days' | 'month' | 'year'): boolean => {
+        return activeButton === buttonType;
+    };
+
+    // Helper function to get button classes
+    const getButtonClasses = (buttonType: '7days' | 'month' | 'year', baseColor: string): string => {
+        const isActive = isButtonActive(buttonType);
+        return isActive
+            ? `px-4 py-2 w-24 bg-gray-300 text-white rounded-lg font-semibold shadow-lg ring-2 ring-offset-2 ring-${baseColor.split('-')[1]}-600 cursor-not-allowed opacity-100 transition-all`
+            : `px-4 py-2 w-24 ${baseColor} text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all cursor-pointer`;
+    };
+
+    const fetchData = async (start: string, end: string) => {
+        try {
+            setLoading(true);
+
+            // Fetch all data in parallel
+            const [todayRes, trendRes, productsRes, inventoryRes] = await Promise.all([
+                axios.get('/admin/api/profit-analysis/daily?date=' + end),
+                axios.get('/admin/api/profit-analysis/trend?start=' + start + '&end=' + end),
+                axios.get('/admin/api/profit-analysis/products?limit=10'),
+                axios.get('/admin/api/profit-analysis/inventory-value'),
+            ]);
+
+            setTodayData(todayRes.data.data);
+            setTrendData(trendRes.data.data || []);
+            setTopProducts(productsRes.data.data || []);
+            setInventoryValue(inventoryRes.data.data);
+        } catch (error) {
+            console.error('Error fetching profit data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-
-                // Fetch all data in parallel
-                const [todayRes, trendRes, productsRes, inventoryRes] = await Promise.all([
-                    axios.get('/api/profit-analysis/daily'),
-                    axios.get('/api/profit-analysis/trend?start=' +
-                        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] +
-                        '&end=' + new Date().toISOString().split('T')[0]),
-                    axios.get('/api/profit-analysis/products?limit=10'),
-                    axios.get('/api/profit-analysis/inventory-value'),
-                ]);
-
-                setTodayData(todayRes.data.data);
-                setTrendData(trendRes.data.data || []);
-                setTopProducts(productsRes.data.data || []);
-                setInventoryValue(inventoryRes.data.data);
-            } catch (error) {
-                console.error('Error fetching profit data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, []);
+        fetchData(startDate, endDate);
+    }, [startDate, endDate]);
 
     if (loading) {
         return (
@@ -120,6 +140,75 @@ export default function ProfitDashboard() {
                             📊 Profit Analysis Dashboard
                         </h1>
                         <p className="text-gray-600 mt-2">{formatTgl(new Date().toISOString())}</p>
+                    </div>
+
+                    {/* Date Range Filter */}
+                    <div className="bg-white text-black rounded-xl p-4 border border-gray-200 shadow-sm mb-6">
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className='hidden'>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className='hidden'>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (!isButtonActive('7days')) {
+                                        const date = new Date();
+                                        date.setDate(date.getDate() - 7);
+                                        setStartDate(date.toISOString().split('T')[0]);
+                                        setEndDate(new Date().toISOString().split('T')[0]);
+                                        setActiveButton('7days');
+                                    }
+                                }}
+                                disabled={isButtonActive('7days')}
+                                className={getButtonClasses('7days', 'bg-blue-600')}
+                            >
+                                7 Hari
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!isButtonActive('month')) {
+                                        const date = new Date();
+                                        date.setMonth(date.getMonth() - 1);
+                                        setStartDate(date.toISOString().split('T')[0]);
+                                        setEndDate(new Date().toISOString().split('T')[0]);
+                                        setActiveButton('month');
+                                    }
+                                }}
+                                disabled={isButtonActive('month')}
+                                className={getButtonClasses('month', 'bg-purple-600')}
+                            >
+                                1 Bulan
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!isButtonActive('year')) {
+                                        const date = new Date();
+                                        date.setFullYear(date.getFullYear() - 1);
+                                        setStartDate(date.toISOString().split('T')[0]);
+                                        setEndDate(new Date().toISOString().split('T')[0]);
+                                        setActiveButton('year');
+                                    }
+                                }}
+                                disabled={isButtonActive('year')}
+                                className={getButtonClasses('year', 'bg-pink-600')}
+                            >
+                                1 Tahun
+                            </button>
+                        </div>
                     </div>
 
                     {/* Summary Stats */}
@@ -189,7 +278,7 @@ export default function ProfitDashboard() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                         {/* Trend Chart */}
                         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                            <h2 className="text-lg font-bold text-gray-900 mb-4">💹 30-Day Profit Trend</h2>
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">💹 7-Day Profit Trend</h2>
                             <ResponsiveContainer width="100%" height={300}>
                                 <LineChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
