@@ -139,6 +139,11 @@ class Barang extends Model
             return [];
         }
 
+        $barangs = self::whereIn('id', $barangIds)
+            ->select('id', 'allow_sold_zero_stock')
+            ->keyBy('id')
+            ->get();
+
         $stocks = BarangStock::whereIn('barang_id', $barangIds)
             ->select('barang_id', 'quantity', 'reserved')
             ->get()
@@ -148,10 +153,12 @@ class Barang extends Model
         foreach ($barangIds as $id) {
             $stock = $stocks->get($id);
             $available = $stock ? max(0, $stock->quantity - $stock->reserved) : 0;
+            $barang = $barangs->get($id);
             $result[$id] = [
                 'available' => $available,
                 'quantity' => $stock?->quantity ?? 0,
                 'reserved' => $stock?->reserved ?? 0,
+                'allow_sold_zero_stock' => $barang?->allow_sold_zero_stock ?? false,
             ];
         }
 

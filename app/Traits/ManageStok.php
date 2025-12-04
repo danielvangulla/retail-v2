@@ -214,17 +214,19 @@ trait ManageStok
 
     /**
      * Reserve stok untuk pending order (belum final)
+     * Jika allow_sold_zero_stock=true, izinkan reserve meskipun available < qty
      */
-    public static function reserveStok($barangId, int $qty, string $referenceId = null): array
+    public static function reserveStok($barangId, int $qty, string $referenceId = null, $allowSoldZeroStock = false): array
     {
-        return DB::transaction(function () use ($barangId, $qty, $referenceId) {
+        return DB::transaction(function () use ($barangId, $qty, $referenceId, $allowSoldZeroStock) {
             $stock = BarangStock::lockForUpdate()
                 ->where('barang_id', $barangId)
                 ->firstOrFail();
 
             $available = $stock->quantity - $stock->reserved;
 
-            if ($available < $qty) {
+            // Validasi hanya jika allow_sold_zero_stock = false
+            if ($available < $qty && !$allowSoldZeroStock) {
                 return [
                     'success' => false,
                     'message' => "Tidak bisa reserve. Available: {$available}, Requested: {$qty}",

@@ -8,12 +8,12 @@ use App\Http\Controllers\Admin\DatabaseMonitoringController;
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\KategorisubController;
 use App\Http\Controllers\Admin\KartuStokController;
+use App\Http\Controllers\Admin\OpnameController;
 use App\Http\Controllers\Admin\PembelianController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReturController;
 use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Back\OpnameController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 

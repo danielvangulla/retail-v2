@@ -780,6 +780,7 @@ class KasirController extends Controller
                     'available' => $available,
                     'quantity' => $stock?->quantity ?? 0,
                     'reserved' => $stock?->reserved ?? 0,
+                    'allow_sold_zero_stock' => $barang->allow_sold_zero_stock,
                 ];
             });
 
@@ -790,13 +791,15 @@ class KasirController extends Controller
                 ], 404);
             }
 
-            $isAvailable = $stockData['available'] >= $qty;
+            // Check if stock is available: either qty sufficient OR allow_sold_zero_stock is true
+            $isAvailable = ($stockData['available'] >= $qty) || $stockData['allow_sold_zero_stock'];
 
             return response()->json([
                 'status' => 'ok',
                 'available' => $stockData['available'],
                 'requested' => $qty,
                 'is_available' => $isAvailable,
+                'allow_sold_zero_stock' => $stockData['allow_sold_zero_stock'],
                 'message' => $isAvailable ? 'Stok tersedia' : "Stok tidak cukup. Available: {$stockData['available']}",
             ], 200);
         } catch (\Throwable $th) {
@@ -847,14 +850,16 @@ class KasirController extends Controller
             foreach ($items as $item) {
                 $id = $item['id'] ?? $item['barang_id'];
                 $qty = $item['qty'] ?? $item['quantity'] ?? 1;
-                $stock = $stockData[$id] ?? ['available' => 0, 'quantity' => 0, 'reserved' => 0];
-                $isAvailable = $stock['available'] >= $qty;
+                $stock = $stockData[$id] ?? ['available' => 0, 'quantity' => 0, 'reserved' => 0, 'allow_sold_zero_stock' => false];
+                // Check if available: either qty sufficient OR allow_sold_zero_stock is true
+                $isAvailable = ($stock['available'] >= $qty) || $stock['allow_sold_zero_stock'];
 
                 $results[] = [
                     'barang_id' => $id,
                     'requested' => $qty,
                     'available' => $stock['available'],
                     'is_available' => $isAvailable,
+                    'allow_sold_zero_stock' => $stock['allow_sold_zero_stock'],
                 ];
 
                 if (!$isAvailable) {
@@ -903,10 +908,12 @@ class KasirController extends Controller
             }
 
             // Reserve stock menggunakan ManageStok trait
+            // Pass allow_sold_zero_stock flag sehingga reserve bisa dilakukan meskipun stok habis
             $result = \App\Models\BarangStock::reserveStok(
                 $barangId,
                 $qty,
-                Auth::id()
+                Auth::id(),
+                $barang->allow_sold_zero_stock ?? false
             );
 
             if (!$result['success']) {
