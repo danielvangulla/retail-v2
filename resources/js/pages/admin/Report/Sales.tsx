@@ -430,22 +430,43 @@ export default function SalesReport() {
                             {/* By Category Tab */}
                             {activeTab === 'by-category' && !loading && (
                                 <div className="space-y-4">
-                                    {categorySummary && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Total Penjualan</p>
-                                                <p className="text-2xl font-bold text-blue-700 mt-1">Rp {formatDigit(categorySummary.total_sales || 0)}</p>
+                                    {categorySales.length > 0 && (() => {
+                                        // Calculate summary from category sales data
+                                        const summary = {
+                                            total_transactions: categorySales.reduce((sum, row) => sum + (row.total_transactions || 0), 0),
+                                            total_sales: Math.round(categorySales.reduce((sum, row) => sum + +row.net_sales, 0)),
+                                            total_cost: Math.round(categorySales.reduce((sum, row) => sum + +row.total_cost, 0)),
+                                            total_profit: 0,
+                                        };
+
+                                        summary.total_profit = Math.round(categorySales.reduce((sum, row) => {
+                                            const profit = +row.net_sales - +row.total_cost;
+                                            return sum + profit;
+                                        }, 0));
+
+                                        return (
+                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                                <div className="text-center bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-gray-600 text-sm">Total Transaksi</p>
+                                                    <p className="font-mono text-2xl font-bold text-purple-700 mt-1">{summary.total_transactions}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-gray-600 text-sm">Total Penjualan</p>
+                                                    <p className="font-mono text-2xl font-bold text-blue-700 mt-1">{formatDigit(summary.total_sales || 0)}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-orange-100 to-orange-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-gray-600 text-sm">Total Cost</p>
+                                                    <p className="font-mono text-2xl font-bold text-orange-700 mt-1">{formatDigit(summary.total_cost || 0)}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-green-100 to-green-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-gray-600 text-sm">Total Profit</p>
+                                                    <p className={`font-mono text-2xl font-bold mt-1 ${summary.total_profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                                        {formatDigit(summary.total_profit || 0)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Kategori Terjual</p>
-                                                <p className="text-2xl font-bold text-purple-700 mt-1">{categorySales.length}</p>
-                                            </div>
-                                            <div className="bg-linear-to-br from-pink-100 to-pink-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Total Item</p>
-                                                <p className="text-2xl font-bold text-pink-700 mt-1">{categorySummary.total_transactions}</p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     <div className="flex justify-end mb-4">
                                         <button
@@ -523,22 +544,43 @@ export default function SalesReport() {
                             {/* By Item Tab */}
                             {activeTab === 'by-item' && !loading && (
                                 <div className="space-y-4">
-                                    {itemSummary && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Total Penjualan</p>
-                                                <p className="text-2xl font-bold text-blue-700 mt-1">Rp {formatDigit(itemSummary.total_sales || 0)}</p>
+                                    {itemSales.length > 0 && (() => {
+                                        // Calculate summary from item sales data
+                                        const summary = {
+                                            total_qty: itemSales.reduce((sum, row) => sum + +row.total_qty, 0),
+                                            total_sales: Math.round(itemSales.reduce((sum, row) => sum + +row.net_sales, 0)),
+                                            total_cost: Math.round(itemSales.reduce((sum, row) => sum + +row.total_cost, 0)),
+                                            total_profit: 0,
+                                        };
+
+                                        summary.total_profit = Math.round(itemSales.reduce((sum, row) => {
+                                            const profit = +row.net_sales - +row.total_cost;
+                                            return sum + profit;
+                                        }, 0));
+
+                                        return (
+                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                                <div className="text-center bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-center text-gray-600 text-sm">Total Qty</p>
+                                                    <p className="font-mono text-2xl font-bold text-purple-700 mt-1">{summary.total_qty}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-center text-gray-600 text-sm">Total Penjualan</p>
+                                                    <p className="font-mono text-2xl font-bold text-blue-700 mt-1">{formatDigit(summary.total_sales || 0)}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-orange-100 to-orange-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-center text-gray-600 text-sm">Total Cost</p>
+                                                    <p className="font-mono text-2xl font-bold text-orange-700 mt-1">{formatDigit(summary.total_cost || 0)}</p>
+                                                </div>
+                                                <div className="text-center bg-linear-to-br from-green-100 to-green-50 rounded-lg p-4 border border-white/60">
+                                                    <p className="text-center text-gray-600 text-sm">Total Profit</p>
+                                                    <p className={`font-mono text-2xl font-bold mt-1 ${summary.total_profit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                                        {formatDigit(summary.total_profit || 0)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Item Terjual</p>
-                                                <p className="text-2xl font-bold text-purple-700 mt-1">{itemSales.length}</p>
-                                            </div>
-                                            <div className="bg-linear-to-br from-pink-100 to-pink-50 rounded-lg p-4 border border-white/60">
-                                                <p className="text-gray-600 text-sm">Total Qty</p>
-                                                <p className="text-2xl font-bold text-pink-700 mt-1">{itemSummary.total_transactions}</p>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     <div className="flex justify-end mb-4">
                                         <button
