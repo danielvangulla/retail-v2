@@ -96,6 +96,9 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     // Reports
     Route::get('/report/sales', [ReportController::class, 'sales'])->name('report.sales');
     Route::post('/report/sales-data', [ReportController::class, 'salesData'])->name('report.sales-data');
+    Route::post('/report/sales-by-date', [ReportController::class, 'salesByDate'])->name('report.sales-by-date');
+    Route::post('/report/sales-by-category', [ReportController::class, 'salesByCategory'])->name('report.sales-by-category');
+    Route::post('/report/sales-by-item', [ReportController::class, 'salesByItem'])->name('report.sales-by-item');
     Route::get('/report/inventory', [ReportController::class, 'inventory'])->name('report.inventory');
     Route::post('/report/inventory-data', [ReportController::class, 'inventoryData'])->name('report.inventory-data');
 

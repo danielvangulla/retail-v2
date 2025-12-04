@@ -1,237 +1,571 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from '@/lib/axios';
+import { formatDigit, formatTgl } from '@/lib/formatters';
+import { Download, Search, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
 import AdminLayout from '../Layout';
-import { router } from '@inertiajs/react';
-import { Calendar, Download } from 'lucide-react';
 
-interface TransaksiDetail {
+interface TransactionDetail {
     id: string;
+    barang_id: string;
     qty: number;
-    harga: number;
-    diskon: number;
+    harga_satuan: number;
+    subtotal: number;
     barang: {
         deskripsi: string;
-        barcode: string;
+        sku: string;
     };
 }
 
-interface TransaksiItem {
+interface Transaction {
     id: string;
+    ref_kasir: string;
     bayar: number;
-    tax: number;
-    service: number;
-    status: number;
+    diskon: number;
     created_at: string;
-    details: TransaksiDetail[];
+    user_kasir_id: string;
     kasir: {
         name: string;
     };
+    details: TransactionDetail[];
 }
 
-interface SalesReportProps {
-    transactions: TransaksiItem[];
-    summary: {
-        total_transactions: number;
-        total_sales: number;
-        avg_sales: number;
-    };
-    dateFrom: string;
-    dateTo: string;
+interface DailySalesSummary {
+    date: string;
+    display_date: string;
+    total_transactions: number;
+    total_items: number;
+    total_sales: number;
+    total_discount: number;
+    net_sales: number;
+    total_cost: number;
+    profit: number;
 }
 
-export default function SalesReport({ transactions, summary, dateFrom, dateTo }: SalesReportProps) {
-    const [filters, setFilters] = useState({
-        date_from: dateFrom || new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0],
-        date_to: dateTo || new Date().toISOString().split('T')[0],
-    });
+interface CategorySalesSummary {
+    kategori_id: string;
+    kategori_name: string;
+    total_transactions: number;
+    total_items: number;
+    total_sales: number;
+    total_discount: number;
+    net_sales: number;
+}
 
+interface ItemSalesSummary {
+    barang_id: string;
+    sku: string;
+    deskripsi: string;
+    total_qty: number;
+    total_sales: number;
+    total_discount: number;
+    net_sales: number;
+}
+
+interface Summary {
+    total_transactions: number;
+    total_sales: number;
+    avg_sales: number;
+    total_discount?: number;
+}
+
+type TabType = 'by-date' | 'by-category' | 'by-item';
+
+export default function SalesReport() {
+    const [activeTab, setActiveTab] = useState<TabType>('by-date');
     const [loading, setLoading] = useState(false);
 
-    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
+    // Shared filter states
+    const [dateFrom, setDateFrom] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        return date.toISOString().split('T')[0];
+    });
+    const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
+    const [activeButton, setActiveButton] = useState<'7days' | 'month' | 'year' | null>('7days');
+
+    // By Date
+    const [dailySales, setDailySales] = useState<DailySalesSummary[]>([]);
+    const [dailySummary, setDailySummary] = useState<Summary | null>(null);
+
+    // By Category
+    const [categorySales, setCategorySales] = useState<CategorySalesSummary[]>([]);
+    const [categorySummary, setCategorySummary] = useState<Summary | null>(null);
+    const [categoryPagination, setCategoryPagination] = useState({ current_page: 1, last_page: 1 });
+
+    // By Item
+    const [itemSales, setItemSales] = useState<ItemSalesSummary[]>([]);
+    const [itemSummary, setItemSummary] = useState<Summary | null>(null);
+    const [itemPagination, setItemPagination] = useState({ current_page: 1, last_page: 1 });
+
+    const fetchDailySales = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.post('/admin/report/sales-by-date', {
+                date_from: dateFrom,
+                date_to: dateTo,
+            });
+
+            if (response.data.status === 'ok') {
+                setDailySales(response.data.data || []);
+                setDailySummary(response.data.summary);
+            }
+        } catch (error) {
+            console.error('Error fetching daily sales:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSearch = () => {
-        setLoading(true);
-        router.get('/admin/report/sales', filters);
+    const fetchCategorySales = async (page: number = 1) => {
+        try {
+            setLoading(true);
+            const response = await axios.post('/admin/report/sales-by-category', {
+                date_from: dateFrom,
+                date_to: dateTo,
+                page,
+            });
+
+            if (response.data.status === 'ok') {
+                setCategorySales(response.data.data.data || []);
+                setCategorySummary(response.data.summary);
+                setCategoryPagination({
+                    current_page: response.data.data.current_page,
+                    last_page: response.data.data.last_page,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching category sales:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleExport = () => {
-        // Simple CSV export
-        let csv = 'Laporan Penjualan\n';
-        csv += `Periode: ${filters.date_from} hingga ${filters.date_to}\n\n`;
-        csv += 'ID Transaksi,Kasir,Tanggal,Qty Item,Total,Tax,Service,Pembayaran\n';
+    const fetchItemSales = async (page: number = 1) => {
+        try {
+            setLoading(true);
+            const response = await axios.post('/admin/report/sales-by-item', {
+                date_from: dateFrom,
+                date_to: dateTo,
+                page,
+            });
 
-        transactions.forEach((trans) => {
-            const itemCount = trans.details.reduce((sum, d) => sum + d.qty, 0);
-            const total = trans.details.reduce((sum, d) => sum + d.qty * d.harga - d.diskon, 0);
-            csv += `${trans.id},"${trans.kasir.name}","${new Date(trans.created_at).toLocaleDateString('id-ID')}",${itemCount},${total},${trans.tax},${trans.service},${trans.bayar}\n`;
-        });
+            if (response.data.status === 'ok') {
+                setItemSales(response.data.data.data || []);
+                setItemSummary(response.data.summary);
+                setItemPagination({
+                    current_page: response.data.data.current_page,
+                    last_page: response.data.data.last_page,
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching item sales:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
-        element.setAttribute('download', `laporan_penjualan_${filters.date_from}_${filters.date_to}.csv`);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+    useEffect(() => {
+        if (activeTab === 'by-date') {
+            fetchDailySales();
+        } else if (activeTab === 'by-category') {
+            fetchCategorySales(1);
+        } else if (activeTab === 'by-item') {
+            fetchItemSales(1);
+        }
+    }, [dateFrom, dateTo, activeTab]);
+
+    const handleQuickFilter = (type: '7days' | 'month' | 'year') => {
+        setActiveButton(type);
+        const date = new Date();
+        if (type === '7days') {
+            date.setDate(date.getDate() - 7);
+        } else if (type === 'month') {
+            date.setMonth(date.getMonth() - 1);
+        } else if (type === 'year') {
+            date.setFullYear(date.getFullYear() - 1);
+        }
+        setDateFrom(date.toISOString().split('T')[0]);
+        setDateTo(new Date().toISOString().split('T')[0]);
+    };
+
+    const getButtonClasses = (buttonType: '7days' | 'month' | 'year'): string => {
+        const isActive = activeButton === buttonType;
+        return isActive
+            ? 'px-4 py-2 w-24 bg-gray-300 text-gray-800 rounded-lg font-semibold shadow-lg ring-2 ring-offset-2 cursor-not-allowed opacity-100 transition-all'
+            : 'px-4 py-2 w-24 bg-blue-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all cursor-pointer';
+    };
+
+    const handleDownload = (data: any[], filename: string) => {
+        const csv = JSON.stringify(data, null, 2);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
     };
 
     return (
-        <AdminLayout title="Laporan Penjualan">
-            <div className="space-y-6">
-                {/* Filters */}
-                <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 space-y-4 border border-slate-700">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Date From */}
-                        <div>
-                            <label className="block text-sm font-medium text-white mb-2">Dari Tanggal</label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    name="date_from"
-                                    value={filters.date_from}
-                                    onChange={handleFilterChange}
-                                    className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-slate-500 pointer-events-none" />
+        <AdminLayout title="Sales Report">
+            <div className="min-h-screen bg-linear-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-8">
+                        <h1 className="text-4xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            📊 Laporan Penjualan
+                        </h1>
+                        <p className="text-gray-600 mt-2">Monitor dan analisis penjualan dengan berbagai perspektif</p>
+                    </div>
+
+                    {/* Filters Section */}
+                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
+                        <div className="space-y-4">
+                            {/* Date Range and Quick Filters */}
+                            <div className="flex flex-col md:flex-row gap-4 items-end flex-wrap">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Dari</label>
+                                    <input
+                                        type="date"
+                                        value={dateFrom}
+                                        onChange={(e) => {
+                                            setDateFrom(e.target.value);
+                                            setActiveButton(null);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Sampai</label>
+                                    <input
+                                        type="date"
+                                        value={dateTo}
+                                        onChange={(e) => {
+                                            setDateTo(e.target.value);
+                                            setActiveButton(null);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black"
+                                    />
+                                </div>
+
+                                {/* Quick Filters */}
+                                <button
+                                    onClick={() => handleQuickFilter('7days')}
+                                    disabled={activeButton === '7days'}
+                                    className={getButtonClasses('7days')}
+                                >
+                                    7 Hari
+                                </button>
+                                <button
+                                    onClick={() => handleQuickFilter('month')}
+                                    disabled={activeButton === 'month'}
+                                    className={getButtonClasses('month')}
+                                >
+                                    1 Bulan
+                                </button>
+                                <button
+                                    onClick={() => handleQuickFilter('year')}
+                                    disabled={activeButton === 'year'}
+                                    className={getButtonClasses('year')}
+                                >
+                                    1 Tahun
+                                </button>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Date To */}
-                        <div>
-                            <label className="block text-sm font-medium text-white mb-2">Sampai Tanggal</label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    name="date_to"
-                                    value={filters.date_to}
-                                    onChange={handleFilterChange}
-                                    className="w-full px-4 py-2 border border-slate-600 rounded-lg text-sm bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <Calendar className="absolute right-3 top-2.5 h-5 w-5 text-slate-500 pointer-events-none" />
-                            </div>
-                        </div>
-
-                        {/* Search Button */}
-                        <div className="flex items-end gap-2">
+                    {/* Tabs */}
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
+                        <div className="flex border-b border-gray-200">
                             <button
-                                onClick={handleSearch}
-                                disabled={loading}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition disabled:opacity-50"
+                                onClick={() => setActiveTab('by-date')}
+                                className={`flex-1 px-6 py-3 font-semibold transition-all ${
+                                    activeTab === 'by-date'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                }`}
                             >
-                                {loading ? 'Memuat...' : 'Lihat'}
+                                📅 Laporan per Tanggal
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('by-category')}
+                                className={`flex-1 px-6 py-3 font-semibold transition-all ${
+                                    activeTab === 'by-category'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                🏷️ Laporan per Kategori
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('by-item')}
+                                className={`flex-1 px-6 py-3 font-semibold transition-all ${
+                                    activeTab === 'by-item'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                📦 Laporan per Item
                             </button>
                         </div>
 
-                        {/* Export Button */}
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleExport}
-                                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
-                            >
-                                <Download className="h-5 w-5" />
-                                Export CSV
-                            </button>
+                        {/* Tab Content */}
+                        <div className="p-6">
+                            {loading && (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader className="w-8 h-8 text-blue-600 animate-spin" />
+                                </div>
+                            )}
+
+                            {/* By Date Tab */}
+                            {activeTab === 'by-date' && !loading && (
+                                <div className="space-y-4">
+                                    {dailySummary && (
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Penjualan</p>
+                                                <p className="text-2xl font-bold text-blue-700 mt-1">Rp {formatDigit(dailySummary.total_sales || 0)}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Transaksi</p>
+                                                <p className="text-2xl font-bold text-purple-700 mt-1">{dailySummary.total_transactions}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-orange-100 to-orange-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Cost</p>
+                                                <p className="text-2xl font-bold text-orange-700 mt-1">Rp {formatDigit(dailySummary.total_sales - (dailySummary.total_discount || 0) || 0)}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-green-100 to-green-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Profit</p>
+                                                <p className="text-2xl font-bold text-green-700 mt-1">Rp {formatDigit(dailySummary.avg_sales || 0)}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end mb-4">
+                                        <button
+                                            onClick={() => handleDownload(dailySales, 'sales-by-date')}
+                                            disabled={dailySales.length === 0}
+                                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                        </button>
+                                    </div>
+
+                                    {dailySales.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">Tidak ada data</div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="border-b-2 border-gray-200">
+                                                        <th className="text-center p-3 text-sm font-semibold text-gray-700">Tanggal</th>
+                                                        <th className="text-center p-3 text-sm font-semibold text-gray-700">Struk</th>
+                                                        <th className="text-right p-3 text-sm font-semibold text-gray-700">Brutto</th>
+                                                        <th className="text-right p-3 text-sm font-semibold text-gray-700">Diskon</th>
+                                                        <th className="text-right p-3 text-sm font-semibold text-gray-700">Netto</th>
+                                                        <th className="text-right p-3 text-sm font-semibold text-gray-700">Cost</th>
+                                                        <th className="text-right p-3 text-sm font-semibold text-gray-700">Profit</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dailySales.map((row) => (
+                                                        <tr key={row.date} className="border-b border-gray-100 hover:bg-gray-50">
+                                                            <td className="p-3 font-mono text-center text-sm font-medium text-gray-900">{row.display_date}</td>
+                                                            <td className="p-3 font-mono text-center text-sm text-gray-700">{row.total_transactions}</td>
+                                                            <td className="p-3 font-mono text-right text-sm font-bold text-blue-600">{formatDigit(row.total_sales)}</td>
+                                                            <td className="p-3 font-mono text-right text-sm text-amber-600 font-semibold">{formatDigit(row.total_discount)}</td>
+                                                            <td className="p-3 font-mono text-right text-sm font-bold text-black">{formatDigit(row.net_sales)}</td>
+                                                            <td className="p-3 font-mono text-right text-sm text-gray-700">{formatDigit(row.total_cost)}</td>
+                                                            <td className="p-3 font-mono text-right text-sm font-bold" style={{color: row.profit >= 0 ? '#059669' : '#dc2626'}}>
+                                                                {formatDigit(row.profit)}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* By Category Tab */}
+                            {activeTab === 'by-category' && !loading && (
+                                <div className="space-y-4">
+                                    {categorySummary && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Penjualan</p>
+                                                <p className="text-2xl font-bold text-blue-700 mt-1">Rp {formatDigit(categorySummary.total_sales || 0)}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Kategori Terjual</p>
+                                                <p className="text-2xl font-bold text-purple-700 mt-1">{categorySales.length}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-pink-100 to-pink-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Item</p>
+                                                <p className="text-2xl font-bold text-pink-700 mt-1">{categorySummary.total_transactions}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end mb-4">
+                                        <button
+                                            onClick={() => handleDownload(categorySales, 'sales-by-category')}
+                                            disabled={categorySales.length === 0}
+                                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                        </button>
+                                    </div>
+
+                                    {categorySales.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">Tidak ada data</div>
+                                    ) : (
+                                        <>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b-2 border-gray-200">
+                                                            <th className="text-left p-3 text-sm font-semibold text-gray-700">Kategori</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Transaksi</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Item</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Diskon</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Penjualan</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Bersih</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {categorySales.map((row) => (
+                                                            <tr key={row.kategori_id} className="border-b border-gray-100 hover:bg-gray-50">
+                                                                <td className="p-3 text-sm font-medium text-gray-900">{row.kategori_name}</td>
+                                                                <td className="p-3 text-right text-sm text-gray-700">{row.total_transactions}</td>
+                                                                <td className="p-3 text-right text-sm text-gray-700">{row.total_items}</td>
+                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">Rp {formatDigit(row.total_discount)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">Rp {formatDigit(row.total_sales)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-green-600">Rp {formatDigit(row.net_sales)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {/* Pagination */}
+                                            {categoryPagination.last_page > 1 && (
+                                                <div className="flex items-center justify-center gap-4 mt-6">
+                                                    <button
+                                                        onClick={() => fetchCategorySales(categoryPagination.current_page - 1)}
+                                                        disabled={categoryPagination.current_page === 1}
+                                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronLeft className="w-5 h-5" />
+                                                    </button>
+                                                    <span className="text-sm text-gray-600">
+                                                        {categoryPagination.current_page} / {categoryPagination.last_page}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => fetchCategorySales(categoryPagination.current_page + 1)}
+                                                        disabled={categoryPagination.current_page === categoryPagination.last_page}
+                                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronRight className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* By Item Tab */}
+                            {activeTab === 'by-item' && !loading && (
+                                <div className="space-y-4">
+                                    {itemSummary && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                            <div className="bg-linear-to-br from-blue-100 to-blue-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Penjualan</p>
+                                                <p className="text-2xl font-bold text-blue-700 mt-1">Rp {formatDigit(itemSummary.total_sales || 0)}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-purple-100 to-purple-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Item Terjual</p>
+                                                <p className="text-2xl font-bold text-purple-700 mt-1">{itemSales.length}</p>
+                                            </div>
+                                            <div className="bg-linear-to-br from-pink-100 to-pink-50 rounded-lg p-4 border border-white/60">
+                                                <p className="text-gray-600 text-sm">Total Qty</p>
+                                                <p className="text-2xl font-bold text-pink-700 mt-1">{itemSummary.total_transactions}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end mb-4">
+                                        <button
+                                            onClick={() => handleDownload(itemSales, 'sales-by-item')}
+                                            disabled={itemSales.length === 0}
+                                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                        </button>
+                                    </div>
+
+                                    {itemSales.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-500">Tidak ada data</div>
+                                    ) : (
+                                        <>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b-2 border-gray-200">
+                                                            <th className="text-left p-3 text-sm font-semibold text-gray-700">SKU</th>
+                                                            <th className="text-left p-3 text-sm font-semibold text-gray-700">Item</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Qty</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Diskon</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Penjualan</th>
+                                                            <th className="text-right p-3 text-sm font-semibold text-gray-700">Bersih</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {itemSales.map((row) => (
+                                                            <tr key={row.barang_id} className="border-b border-gray-100 hover:bg-gray-50">
+                                                                <td className="p-3 text-sm font-mono text-gray-700">{row.sku}</td>
+                                                                <td className="p-3 text-sm font-medium text-gray-900">{row.deskripsi}</td>
+                                                                <td className="p-3 text-right text-sm text-gray-700">{row.total_qty}</td>
+                                                                <td className="p-3 text-right text-sm text-amber-600 font-semibold">Rp {formatDigit(row.total_discount)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-blue-600">Rp {formatDigit(row.total_sales)}</td>
+                                                                <td className="p-3 text-right text-sm font-bold text-green-600">Rp {formatDigit(row.net_sales)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {/* Pagination */}
+                                            {itemPagination.last_page > 1 && (
+                                                <div className="flex items-center justify-center gap-4 mt-6">
+                                                    <button
+                                                        onClick={() => fetchItemSales(itemPagination.current_page - 1)}
+                                                        disabled={itemPagination.current_page === 1}
+                                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronLeft className="w-5 h-5" />
+                                                    </button>
+                                                    <span className="text-sm text-gray-600">
+                                                        {itemPagination.current_page} / {itemPagination.last_page}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => fetchItemSales(itemPagination.current_page + 1)}
+                                                        disabled={itemPagination.current_page === itemPagination.last_page}
+                                                        className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronRight className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    </div>
-                </div>
-
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 border border-slate-700">
-                        <p className="text-sm text-slate-400">Total Transaksi</p>
-                        <p className="text-3xl font-bold text-white mt-2">{summary.total_transactions}</p>
-                    </div>
-                    <div className="bg-slate-800 rounded-lg shadow-lg-lg p-4 border border-slate-700">
-                        <p className="text-sm text-slate-400">Total Penjualan</p>
-                        <p className="text-3xl font-bold text-green-400 mt-2">
-                            Rp {summary.total_sales.toLocaleString('id-ID')}
-                        </p>
-                    </div>
-                    <div className="bg-slate-800 rounded-lg shadow-lg p-4">
-                        <p className="text-sm text-slate-400">Rata-rata Penjualan</p>
-                        <p className="text-3xl font-bold text-blue-600 mt-2">
-                            Rp {summary.avg_sales.toLocaleString('id-ID')}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Table */}
-                <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-slate-700 border-b border-slate-700">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
-                                        ID Transaksi
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
-                                        Kasir
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
-                                        Tanggal
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase">
-                                        Item
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
-                                        Total
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
-                                        PPN
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
-                                        Service
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-300 uppercase">
-                                        Pembayaran
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-700">
-                                {transactions.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="px-6 py-4 text-center text-slate-300">
-                                            Tidak ada data transaksi
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    transactions.map((trans) => {
-                                        const itemCount = trans.details.reduce((sum, d) => sum + d.qty, 0);
-                                        const total = trans.details.reduce((sum, d) => sum + d.qty * d.harga - d.diskon, 0);
-                                        return (
-                                            <tr key={trans.id} className="hover:bg-slate-700">
-                                                <td className="px-6 py-4 text-sm font-mono text-white">
-                                                    {trans.id.substring(0, 8)}...
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-400">{trans.kasir.name}</td>
-                                                <td className="px-6 py-4 text-sm text-slate-400">
-                                                    {new Date(trans.created_at).toLocaleDateString('id-ID', {
-                                                        year: 'numeric',
-                                                        month: '2-digit',
-                                                        day: '2-digit',
-                                                    })}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-400">{itemCount}</td>
-                                                <td className="px-6 py-4 text-sm text-white text-right font-medium">
-                                                    Rp {total.toLocaleString('id-ID')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-400 text-right">
-                                                    Rp {trans.tax.toLocaleString('id-ID')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-400 text-right">
-                                                    Rp {trans.service.toLocaleString('id-ID')}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-white text-right font-bold">
-                                                    Rp {trans.bayar.toLocaleString('id-ID')}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>

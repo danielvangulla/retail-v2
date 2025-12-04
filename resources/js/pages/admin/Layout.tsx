@@ -57,7 +57,8 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             label: 'Laporan',
             icon: BarChart3,
             submenu: [
-                { label: 'Sales', href: '/admin/report/sales' },
+                { label: 'Penjualan', href: '/admin/report/sales' },
+                { label: 'Inventory', href: '/admin/report/inventory' },
                 { label: 'Profit', href: '/admin/profit' },
             ],
         },
