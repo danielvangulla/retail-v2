@@ -129,6 +129,42 @@ class Barang extends Model
         ->get();
     }
 
+    /**
+     * Get bulk stock status for multiple items (useful for cart verification)
+     * Returns array keyed by barang_id with available stock
+     */
+    public static function getBulkStockStatus(array $barangIds): array
+    {
+        if (empty($barangIds)) {
+            return [];
+        }
+
+        $barangs = self::whereIn('id', $barangIds)
+            ->select('id', 'allow_sold_zero_stock')
+            ->keyBy('id')
+            ->get();
+
+        $stocks = BarangStock::whereIn('barang_id', $barangIds)
+            ->select('barang_id', 'quantity', 'reserved')
+            ->get()
+            ->keyBy('barang_id');
+
+        $result = [];
+        foreach ($barangIds as $id) {
+            $stock = $stocks->get($id);
+            $available = $stock ? max(0, $stock->quantity - $stock->reserved) : 0;
+            $barang = $barangs->get($id);
+            $result[$id] = [
+                'available' => $available,
+                'quantity' => $stock?->quantity ?? 0,
+                'reserved' => $stock?->reserved ?? 0,
+                'allow_sold_zero_stock' => $barang?->allow_sold_zero_stock ?? false,
+            ];
+        }
+
+        return $result;
+    }
+
 
 
     public static function getAllBarang($show)
@@ -196,6 +232,11 @@ class Barang extends Model
     public function printer()
     {
         return $this->belongsTo(Printer::class, 'printer_id');
+    }
+
+    public function stock()
+    {
+        return $this->hasOne(BarangStock::class, 'barang_id', 'id');
     }
 
     public static function cetakList()

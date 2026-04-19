@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserController extends Controller
 {
@@ -65,7 +65,7 @@ class UserController extends Controller
             'name' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6|confirmed',
-            'level' => 'required|in:1,2',
+            'level' => 'required|in:1,2,3',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -89,9 +89,9 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|unique:users,name,' . $id . ',id',
-            'email' => 'required|email|unique:users,email,' . $id . ',id',
-            'level' => 'required|in:1,2',
+            'name' => 'required|unique:users,name,'.$id.',id',
+            'email' => 'required|email|unique:users,email,'.$id.',id',
+            'level' => 'required|in:1,2,3',
             'password' => 'nullable|min:6|confirmed',
         ]);
 
@@ -113,7 +113,7 @@ class UserController extends Controller
 
         // Prevent deleting last admin
         if ($user->level == 1 && User::where('level', 1)->count() === 1) {
-            return redirect('/admin/user')->with('error', 'Tidak bisa menghapus satu-satunya supervisor');
+            return redirect('/admin/user')->with('error', 'Tidak bisa menghapus satu-satunya admin');
         }
 
         $user->delete();

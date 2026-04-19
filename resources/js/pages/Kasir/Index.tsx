@@ -16,6 +16,8 @@ import LoadingModal from './components/LoadingModal';
 import useKasirKeyboard from './hooks/useKasirKeyboard';
 import useKasirCalculations from './hooks/useKasirCalculations';
 import { formatDigit } from '@/lib/formatters';
+import OpenShiftModal from './components/OpenShiftModal';
+import CloseShiftModal from './components/CloseShiftModal';
 
 interface Props {
     paymentTypes: PaymentType[];
@@ -82,6 +84,13 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const [paymentAmount, setPaymentAmount] = useState('');
     const [customerName, setCustomerName] = useState('');
 
+    // Shift state
+    interface ShiftData { id: string; open_time: string; saldo_awal: string; }
+    const [currentShift, setCurrentShift] = useState<ShiftData | null>(null);
+    const [showOpenShift, setShowOpenShift] = useState(false);
+    const [showCloseShift, setShowCloseShift] = useState(false);
+    const [shiftChecked, setShiftChecked] = useState(false);
+
     // Refs
     const inputRef = useRef<HTMLInputElement>(null);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -136,6 +145,48 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             confirmConfig.onCancel();
         }
     };
+
+    // ===== SHIFT MANAGEMENT =====
+    // Check for active shift on mount; show open-shift modal if none.
+    useEffect(() => {
+        axios.get('/shift/current').then((res) => {
+            if (res.data.shift) {
+                setCurrentShift(res.data.shift);
+            } else {
+                setShowOpenShift(true);
+            }
+            setShiftChecked(true);
+        }).catch(() => {
+            // Jika endpoint gagal, tetap biarkan kasir bekerja
+            setShiftChecked(true);
+        });
+    }, []);
+
+    const handleOpenShift = (saldoAwal: number) => {
+        axios.post('/shift/open', { saldo_awal: saldoAwal }).then((res) => {
+            setCurrentShift(res.data.shift);
+            setShowOpenShift(false);
+            inputRef.current?.focus();
+        }).catch(() => {
+            setShowOpenShift(false);
+            inputRef.current?.focus();
+        });
+    };
+
+    const handleCloseShift = (saldoAkhir: number, keterangan: string) => {
+        axios.post('/shift/close', { saldo_akhir: saldoAkhir, keterangan }).then((res) => {
+            const closedShift = res.data.shift;
+            setCurrentShift(null);
+            setShowCloseShift(false);
+            // Print close shift struk in new tab
+            window.open(`/print-shift/${closedShift.id}`, '_blank');
+            // Show open shift form for next shift
+            setTimeout(() => setShowOpenShift(true), 500);
+        }).catch(() => {
+            setShowCloseShift(false);
+        });
+    };
+    // ===== END SHIFT MANAGEMENT =====
 
     const handleLogoutClick = () => {
         showConfirmModal(
@@ -274,45 +325,69 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             return;
         }
 
-        // Reduce stok di backend
-        axios.post('/reduce-stock', { barang_id: id, qty: 1 })
-            .then((response) => {
-                if (response.data.status === 'ok') {
-                    // Update items dengan stok baru
-                    setItems(prevItems =>
-                        prevItems.map(item =>
-                            item.id === id ? { ...item, stock: response.data.data.stock } : item
-                        )
-                    );
-
-                    // Tambah ke selected items
-                    setSelectedItems(prev => {
-                        const exist = prev.find(v => v.id === id);
-
-                        if (exist) {
-                            return prev.map(v =>
-                                v.id === id ? { ...v, qty: (v.qty || 1) + 1 } : v
-                            );
-                        } else {
-                            if (selectedBarang) {
-                                // Simpan flag scanned
-                                return [...prev, { ...selectedBarang, qty: 1, scanned }];
-                            }
-                            return prev;
-                        }
-                    });
-                } else {
+        // NEW: 3-Stage Stock Flow
+        // Step 1: Check stock availability (with cache)
+        axios.post('/check-stock-availability', { barang_id: id, qty: 1 })
+            .then((checkResponse) => {
+                if (!checkResponse.data.is_available) {
                     showAlertModal(
-                        'Error',
-                        response.data.message || 'Gagal mengurangi stok',
-                        'error'
+                        'Stok Tidak Cukup',
+                        `Available: ${checkResponse.data.available} pcs. Tidak dapat menambah ${selectedBarang?.deskripsi}`,
+                        'warning'
                     );
+                    inputRef.current?.focus();
+                    return;
                 }
+
+                // Step 2: Reserve stok (tidak kurangi, hanya tandai sebagai reserved)
+                axios.post('/reserve-stock-item', { barang_id: id, qty: 1 })
+                    .then((reserveResponse) => {
+                        if (reserveResponse.data.status === 'ok') {
+                            // Update available stock in UI
+                            const updatedAvailable = reserveResponse.data.data?.available || 0;
+                            setItems(prevItems =>
+                                prevItems.map(item =>
+                                    item.id === id ? { ...item, stock: updatedAvailable } : item
+                                )
+                            );
+
+                            // Step 3: Add to selected items with reserved flag
+                            setSelectedItems(prev => {
+                                const exist = prev.find(v => v.id === id);
+
+                                if (exist) {
+                                    return prev.map(v =>
+                                        v.id === id ? { ...v, qty: (v.qty || 1) + 1, reserved: 1 } : v
+                                    );
+                                } else {
+                                    if (selectedBarang) {
+                                        return [...prev, { ...selectedBarang, qty: 1, scanned, reserved: 1 }];
+                                    }
+                                    return prev;
+                                }
+                            });
+
+                            console.log(`✓ Reserved: ${selectedBarang?.deskripsi}`);
+                        } else {
+                            showAlertModal(
+                                'Error',
+                                reserveResponse.data.message || 'Gagal reserve stok',
+                                'error'
+                            );
+                        }
+                    })
+                    .catch((error) => {
+                        showAlertModal(
+                            'Error',
+                            error.response?.data?.message || 'Gagal reserve stok',
+                            'error'
+                        );
+                    });
             })
             .catch((error) => {
                 showAlertModal(
                     'Error',
-                    error.response?.data?.message || 'Gagal memproses stok',
+                    error.response?.data?.message || 'Gagal cek stok',
                     'error'
                 );
             });
@@ -321,13 +396,32 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     }, [items, searchResults]);
 
     const resetAll = useCallback(() => {
+        // NEW: Release reserved items before clearing cart
+        if (selectedItems.length > 0) {
+            const itemsToRelease = selectedItems.map(item => ({
+                barang_id: item.id,
+                qty: item.qty,
+            }));
+
+            axios.post('/release-reserved-items', { items: itemsToRelease })
+                .then((response) => {
+                    console.log(`✓ Released ${response.data.released_count} items`);
+                    if (response.data.errors.length > 0) {
+                        console.warn('Release errors:', response.data.errors);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error releasing reserved items:', error);
+                });
+        }
+
         setSelectedItems([]);
         setIsPiutang(false);
         setIsStaff(false);
         setSearchQuery('');
         setShowSearchResults(false);
         inputRef.current?.focus();
-    }, []);
+    }, [selectedItems]);
 
     const handleEditQty = (item: BarangItem) => {
         setEditingItem(item);
@@ -338,28 +432,89 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const handleSaveQty = () => {
         if (editingItem && qtyInput) {
             const newQty = parseInt(qtyInput);
+            const oldQty = editingItem.qty || 1;
+            const qtyDiff = newQty - oldQty;
 
-            // Jika dari search (bukan scan), validasi stok
-            if (!editingItem.scanned) {
-                const currentItem = items.find(v => v.id === editingItem.id);
-                if (currentItem && newQty > currentItem.stock) {
-                    showAlertModal(
-                        'Stok Tidak Cukup',
-                        `Stok hanya tersedia ${currentItem.stock} unit. Anda mencoba edit ${newQty} unit.`,
-                        'warning'
-                    );
-                    return;
+            if (qtyDiff !== 0) {
+                // NEW: Handle qty change with reserved stock pattern
+                if (qtyDiff > 0) {
+                    // Increasing qty - need to reserve more
+                    axios.post('/check-stock-availability', { barang_id: editingItem.id, qty: qtyDiff })
+                        .then((checkResponse) => {
+                            if (!checkResponse.data.is_available) {
+                                showAlertModal(
+                                    'Stok Tidak Cukup',
+                                    `Available: ${checkResponse.data.available} pcs. Tidak dapat menambah ${qtyDiff} unit.`,
+                                    'warning'
+                                );
+                                return;
+                            }
+
+                            // Reserve additional qty
+                            axios.post('/reserve-stock-item', { barang_id: editingItem.id, qty: qtyDiff })
+                                .then((reserveResponse) => {
+                                    if (reserveResponse.data.status === 'ok') {
+                                        const updatedAvailable = reserveResponse.data.data?.available || 0;
+                                        setItems(prevItems =>
+                                            prevItems.map(item =>
+                                                item.id === editingItem.id ? { ...item, stock: updatedAvailable } : item
+                                            )
+                                        );
+
+                                        setSelectedItems(prev =>
+                                            prev.map(v =>
+                                                v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                            )
+                                        );
+                                    }
+                                })
+                                .catch((error) => {
+                                    showAlertModal('Error', error.response?.data?.message || 'Gagal reserve stok', 'error');
+                                });
+                        })
+                        .catch((error) => {
+                            showAlertModal('Error', error.response?.data?.message || 'Gagal cek stok', 'error');
+                        });
+                } else {
+                    // Decreasing qty - release some reserved
+                    axios.post('/release-reserved-items', { items: [{
+                        barang_id: editingItem.id,
+                        qty: Math.abs(qtyDiff),
+                    }] })
+                        .then((response) => {
+                            console.log(`✓ Released ${Math.abs(qtyDiff)} items`);
+                            setSelectedItems(prev =>
+                                prev.map(v =>
+                                    v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                )
+                            );
+                        })
+                        .catch((error) => {
+                            console.warn('Error releasing stok:', error);
+                            // Still update qty even if release fails
+                            setSelectedItems(prev =>
+                                prev.map(v =>
+                                    v.id === editingItem.id ? { ...v, qty: newQty } : v
+                                )
+                            );
+                        });
                 }
             }
 
-            if (!isNaN(newQty) && newQty > 0) {
-                setSelectedItems(prev =>
-                    prev.map(v =>
-                        v.id === editingItem.id ? { ...v, qty: newQty } : v
-                    )
-                );
-            } else if (newQty === 0) {
-                setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+            if (newQty === 0) {
+                // Remove item completely and release reserved
+                axios.post('/release-reserved-items', { items: [{
+                    barang_id: editingItem.id,
+                    qty: oldQty,
+                }] })
+                    .then((response) => {
+                        console.log(`✓ Released all items for removal`);
+                        setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+                    })
+                    .catch((error) => {
+                        console.warn('Error releasing stok:', error);
+                        setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
+                    });
             }
         }
         setShowQtyModal(false);
@@ -386,9 +541,10 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
         const popupWindow = window.open(url, '_blank', size);
         if (popupWindow) {
+            popupWindow.focus();
             popupWindow.print();
             setTimeout(() => {
-                // popupWindow.close();
+                popupWindow.close();
             }, 1000);
         }
     };    const handleDiskon = (item?: BarangItem) => {
@@ -580,33 +736,23 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             'Hapus Item',
             'Hapus item dari keranjang?',
             () => {
-                // Restore stok ke database
-                axios.post('/restore-stock', { barang_id: itemId, qty: 1 })
-                    .then((response) => {
-                        if (response.data.status === 'ok') {
-                            // Update local items
-                            setItems(prevItems =>
-                                prevItems.map(item =>
-                                    item.id === itemId ? { ...item, stock: response.data.data.stock } : item
-                                )
-                            );
+                // NEW: Release reserved stok ke database (not reduce)
+                const itemToDelete = selectedItems.find(v => v.id === itemId);
+                const qty = itemToDelete?.qty || 1;
 
-                            // Remove from selected items
-                            setSelectedItems(prev => prev.filter(v => v.id !== itemId));
-                        } else {
-                            showAlertModal(
-                                'Error',
-                                response.data.message || 'Gagal mengembalikan stok',
-                                'error'
-                            );
-                        }
+                axios.post('/release-reserved-items', { items: [{
+                    barang_id: itemId,
+                    qty: qty,
+                }] })
+                    .then((response) => {
+                        console.log(`✓ Released ${qty} items on deletion`);
+                        // Remove from selected items (stock will auto-refresh)
+                        setSelectedItems(prev => prev.filter(v => v.id !== itemId));
                     })
                     .catch((error) => {
-                        showAlertModal(
-                            'Error',
-                            error.response?.data?.message || 'Gagal mengembalikan stok',
-                            'error'
-                        );
+                        console.warn('Error releasing stok:', error);
+                        // Still remove from cart even if release fails
+                        setSelectedItems(prev => prev.filter(v => v.id !== itemId));
                     });
             },
             'warning'
@@ -708,7 +854,12 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
             <div className="h-screen flex flex-col bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
                 {/* Menu Bar */}
-                <KasirMenuBar userName={auth?.user?.name} userLevel={auth?.user?.level} onLogoutClick={handleLogoutClick} />
+                <KasirMenuBar
+                    userName={auth?.user?.name}
+                    userLevel={auth?.user?.level}
+                    onLogoutClick={handleLogoutClick}
+                    onCloseShift={currentShift ? () => setShowCloseShift(true) : undefined}
+                />
 
                 {/* Main Content - No Scroll */}
                 <div className="flex-1 flex flex-col gap-1 sm:gap-2 p-1 sm:p-2 overflow-hidden">
@@ -974,6 +1125,20 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             <LoadingModal
                 show={isLoading || isLoggingOut}
                 message={isLoggingOut ? 'Logging out...' : loadingMessage}
+            />
+
+            {/* Shift Modals */}
+            {shiftChecked && (
+                <OpenShiftModal
+                    show={showOpenShift}
+                    onConfirm={handleOpenShift}
+                />
+            )}
+            <CloseShiftModal
+                show={showCloseShift}
+                shift={currentShift}
+                onClose={() => setShowCloseShift(false)}
+                onConfirm={handleCloseShift}
             />
         </>
     );

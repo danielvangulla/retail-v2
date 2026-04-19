@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Komplemen;
 use App\Models\Transaksi;
 use App\Models\TransaksiDetail;
-use App\Models\TransaksiPayment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,9 +64,9 @@ class KomplemenController extends Controller
             ]);
 
             // Cek SPV password
-            $spv = User::where('level', 1)->first();
+            $spv = User::where('level', '<=', 2)->first();
 
-            if (!$spv || !Hash::check($validated['pin'], $spv->password)) {
+            if (! $spv || ! Hash::check($validated['pin'], $spv->password)) {
                 return response()->json([
                     'status' => 'error',
                     'msg' => 'Invalid Supervisor Password!',
@@ -129,7 +128,7 @@ class KomplemenController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Server Error: ' . $th->getMessage(),
+                'msg' => 'Server Error: '.$th->getMessage(),
             ], 500);
         }
     }
@@ -145,7 +144,7 @@ class KomplemenController extends Controller
                 'details.barang',
             ])->find($id);
 
-            if (!$trx) {
+            if (! $trx) {
                 return response()->json([
                     'status' => 'error',
                     'msg' => 'Transaksi tidak ditemukan',
@@ -177,7 +176,7 @@ class KomplemenController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Server Error: ' . $th->getMessage(),
+                'msg' => 'Server Error: '.$th->getMessage(),
             ], 500);
         }
     }
@@ -190,14 +189,14 @@ class KomplemenController extends Controller
         try {
             $trx = Transaksi::find($id);
 
-            if (!$trx) {
+            if (! $trx) {
                 return response()->json([
                     'status' => 'error',
                     'msg' => 'Transaksi tidak ditemukan',
                 ], 404);
             }
 
-            if (!$trx->is_komplemen) {
+            if (! $trx->is_komplemen) {
                 return response()->json([
                     'status' => 'error',
                     'msg' => 'Transaksi bukan komplemen',
@@ -212,7 +211,7 @@ class KomplemenController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Server Error: ' . $th->getMessage(),
+                'msg' => 'Server Error: '.$th->getMessage(),
             ], 500);
         }
     }

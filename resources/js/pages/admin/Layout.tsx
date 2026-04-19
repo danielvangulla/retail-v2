@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, Database } from 'lucide-react';
 
 interface AdminLayoutProps {
     title: string;
@@ -50,9 +50,25 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 { label: 'Retur Pembelian', href: '/admin/retur' },
                 { label: 'Stok Opname', href: '/admin/opname' },
                 { label: 'Kartu Stok', href: '/admin/kartu-stok' },
+                { label: 'History COGS', href: '/admin/cost-history' },
             ],
         },
-        { label: 'Laporan', href: '/admin/report/sales', icon: BarChart3 },
+        {
+            label: 'Laporan',
+            icon: BarChart3,
+            submenu: [
+                { label: 'Penjualan', href: '/admin/report/sales' },
+                { label: 'Profit', href: '/admin/profit' },
+            ],
+        },
+        {
+            label: 'Tools',
+            icon: MonitorCheck,
+            submenu: [
+                { label: 'Monitoring', href: '/admin/database-monitoring' },
+                { label: 'Data Management', href: '/admin/data-management' },
+            ],
+        },
     ];
 
     useEffect(() => {

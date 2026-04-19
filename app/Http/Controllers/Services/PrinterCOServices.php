@@ -2,24 +2,28 @@
 
 namespace App\Http\Controllers\Services;
 
-use Mike42\Escpos\Printer;
-use Mike42\Escpos\CapabilityProfile;
-use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
-
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Mike42\Escpos\CapabilityProfile;
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Mike42\Escpos\Printer;
 
 class PrinterCOServices extends BasePrinter implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $requestData;
+
     protected $copy;
 
-    public function __construct(Object $requestData, int $copy)
+    public int $tries = 1;   // Jangan retry — printer offline tidak boleh loop
+
+    public int $timeout = 15; // Timeout 15 detik per job
+
+    public function __construct(object $requestData, int $copy)
     {
         $this->requestData = $requestData;
         $this->copy = $copy;
@@ -27,14 +31,26 @@ class PrinterCOServices extends BasePrinter implements ShouldQueue
 
     public function handle(): void
     {
-        $copy = "";
+        try {
+            $this->doPrint();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('PrinterCOServices error: '.$e->getMessage(), [
+                'printer_ip' => $this->requestData->printer_ip ?? 'unknown',
+            ]);
+            // Fail silently — printer offline tidak boleh crash queue
+        }
+    }
+
+    private function doPrint(): void
+    {
+        $copy = '';
         if ($this->copy > 0) {
             $copy = "- Copy $this->copy";
         }
 
         $data = $this->requestData;
         $connector = new NetworkPrintConnector($data->printer_ip);
-        $profile = CapabilityProfile::load("default");
+        $profile = CapabilityProfile::load('default');
         $print = new Printer($connector, $profile);
 
         // init Printer
@@ -50,7 +66,7 @@ class PrinterCOServices extends BasePrinter implements ShouldQueue
 
         // Timestamp
         $print->setFont(Printer::FONT_B);
-        $print->text(date('Y-m-d H:i:s') . " | $data->no_co | $data->captain\n");
+        $print->text(date('Y-m-d H:i:s')." | $data->no_co | $data->captain\n");
         // $print->text(date('j F Y H:i:s') . "\n");
         $print->setFont(Printer::FONT_A);
 
@@ -60,7 +76,7 @@ class PrinterCOServices extends BasePrinter implements ShouldQueue
         $print->selectPrintMode();
 
         // Horizontal Line
-        $print->textRaw(str_repeat(chr(196), 45) . PHP_EOL);
+        $print->textRaw(str_repeat(chr(196), 45).PHP_EOL);
 
         // Justify Content Left
         $print->setJustification(Printer::JUSTIFY_LEFT);
@@ -73,7 +89,7 @@ class PrinterCOServices extends BasePrinter implements ShouldQueue
 
             if ($item->note != '-') {
                 $print->setFont(Printer::FONT_B);
-                $pad = str_pad("->", 10, ' ', STR_PAD_LEFT);
+                $pad = str_pad('->', 10, ' ', STR_PAD_LEFT);
                 $print->text("\n $pad $item->note");
                 $print->setFont(Printer::FONT_A);
             }
@@ -85,7 +101,7 @@ class PrinterCOServices extends BasePrinter implements ShouldQueue
         $print->setJustification(Printer::JUSTIFY_CENTER);
 
         // Horizontal Line
-        $print->textRaw(str_repeat(chr(196), 45) . PHP_EOL);
+        $print->textRaw(str_repeat(chr(196), 45).PHP_EOL);
 
         // Cut the receipt
         $print->feed();

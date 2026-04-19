@@ -4,20 +4,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barang;
-use App\Models\User;
-use App\Models\Transaksi;
 use App\Models\BarangStock;
-use App\Traits\ManageStok;
+use App\Models\Transaksi;
+use App\Models\User;
 use App\Services\StokProcessingService;
+use App\Traits\ManageStok;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\JsonResponse;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     use ManageStok;
+
     public function index(): Response
     {
         // Process any unprocessed stok items first
@@ -43,8 +44,9 @@ class DashboardController extends Controller
 
         // Get total users
         $totalUsers = User::count();
-        $supervisors = User::where('level', 1)->count();
-        $kasirs = User::where('level', '>=', 2)->count();
+        $admins = User::where('level', 1)->count();
+        $supervisors = User::where('level', 2)->count();
+        $kasirs = User::where('level', 3)->count();
 
         // Get sales trend (last 7 days)
         $salesTrend = Transaksi::selectRaw('DATE(created_at) as date, SUM(bayar) as total')
@@ -98,9 +100,10 @@ class DashboardController extends Controller
             'totalItems' => $totalItems,
             'lowStockItems' => $lowStockItems,
             'totalUsers' => $totalUsers,
+            'admins' => $admins,
             'supervisors' => $supervisors,
             'kasirs' => $kasirs,
-            'salesTrend' => $salesTrend->map(fn($item) => [
+            'salesTrend' => $salesTrend->map(fn ($item) => [
                 'date' => $item->date ? Carbon::parse($item->date)->translatedFormat('d M Y') : '-',
                 'total' => (int) $item->total,
             ]),
@@ -180,13 +183,13 @@ class DashboardController extends Controller
             'data' => [
                 'todaySales' => (int) $todaySales,
                 'monthSales' => (int) $monthSales,
-                'salesTrend' => $salesTrend->map(fn($item) => [
+                'salesTrend' => $salesTrend->map(fn ($item) => [
                     'date' => $item->date ? Carbon::parse($item->date)->translatedFormat('j M') : '-',
                     'total' => (int) $item->total,
                 ]),
                 'topProducts' => $topProducts,
                 'lowStockList' => $lowStockList,
-            ]
+            ],
         ]);
     }
 }

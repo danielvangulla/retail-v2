@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\BarangPrice;
+use App\Models\BarangStock;
 use App\Models\Kategori;
 use App\Models\Kategorisub;
 use Inertia\Inertia;
@@ -205,5 +206,41 @@ class BarangController extends Controller
         return Inertia::render('admin/Barang/LowStock', [
             'lowStocks' => $lowStocks,
         ]);
+    }
+
+    /**
+     * Get stock real dari barang_stock table (untuk opname)
+     */
+    public function getStock(string $barangId)
+    {
+        try {
+            $stock = BarangStock::where('barang_id', $barangId)->first();
+
+            if (!$stock) {
+                // Jika tidak ada record di barang_stock, return 0
+                return response()->json([
+                    'status' => 'ok',
+                    'data' => [
+                        'quantity' => 0,
+                        'reserved' => 0,
+                        'available' => 0,
+                    ],
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'data' => [
+                    'quantity' => $stock->quantity,
+                    'reserved' => $stock->reserved,
+                    'available' => $stock->available,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data stok',
+            ], 500);
+        }
     }
 }

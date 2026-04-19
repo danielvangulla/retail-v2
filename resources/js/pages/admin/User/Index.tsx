@@ -24,9 +24,9 @@ interface UserIndexProps {
 }
 
 const getLevelBadge = (level: number) => {
-    if (level === 0) return { text: 'Administrator', color: 'bg-green-100 text-black' };
-    if (level === 1) return { text: 'Supervisor', color: 'bg-purple-100 text-purple-800' };
-    if (level === 2) return { text: 'Kasir', color: 'bg-blue-100 text-blue-800' };
+    if (level === 1) return { text: 'Admin', color: 'bg-red-100 text-red-800' };
+    if (level === 2) return { text: 'SPV', color: 'bg-purple-100 text-purple-800' };
+    if (level === 3) return { text: 'Kasir', color: 'bg-blue-100 text-blue-800' };
     return { text: 'Unknown', color: 'bg-slate-700/30 text-gray-800' };
 };
 
@@ -92,8 +92,9 @@ export default function UserIndex({ users }: UserIndexProps) {
                             className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="">Semua Level</option>
-                            <option value="1">Supervisor</option>
-                            <option value="2">Kasir</option>
+                            <option value="1">Admin</option>
+                            <option value="2">SPV / Supervisor</option>
+                            <option value="3">Kasir</option>
                         </select>
 
                         {/* Search Button */}

@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('opnames', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id')->index();
-            $table->uuid('barang_id')->index();
-            $table->date('tgl')->nullable();
-            $table->integer('sistem')->default(0);
-            $table->integer('fisik')->default(0);
-            $table->integer('selisih')->default(0);
+            $table->uuid('user_id')->index()->constrained('users')->onDelete('cascade');
+            $table->uuid('barang_id')->index()->constrained('barang')->onDelete('cascade');
+            $table->date('tgl')->index();
+            $table->integer('sistem')->default(0)->comment('Stok sistem/database');
+            $table->integer('fisik')->default(0)->comment('Stok fisik/actual');
+            $table->integer('selisih')->default(0)->comment('Selisih (fisik - sistem)');
+            $table->text('keterangan')->nullable()->comment('Catatan/alasan selisih');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

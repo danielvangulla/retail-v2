@@ -63,7 +63,8 @@ class ReturController extends Controller
 
                 // Reduce stock and capture movement ID
                 try {
-                    $result = ManageStok::reduceStok($barang->id, $v->qtyRetur, 'out', 'retur', $retur->id, 'Retur #' . $retur->id, Auth::id());
+                    $hargaBeli = (int) $v->hargaBeli;
+                    $result = ManageStok::reduceStok($barang->id, $v->qtyRetur, 'out', 'retur', $retur->id, 'Retur #' . $retur->id, Auth::id(), $hargaBeli);
                     if ($result['success']) {
                         $detail->update([
                             'stok_processed' => true,

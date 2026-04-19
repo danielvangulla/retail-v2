@@ -4,22 +4,21 @@ namespace App\Http\Controllers\AuthCustom;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Helpers;
-use App\Models\Barang;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CustomLoginController extends Controller
 {
     public function register(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:' . User::class],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
-            'pin' => ['required', 'confirmed', 'numeric', 'unique:' . User::class],
+            'name' => ['required', 'string', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'pin' => ['required', 'confirmed', 'numeric', 'unique:'.User::class],
             'level' => ['required'],
         ]);
 
@@ -48,7 +47,7 @@ class CustomLoginController extends Controller
             ->orWhere('email', $request->username)
             ->first();
 
-        if (!isset($user)) {
+        if (! isset($user)) {
             throw ValidationException::withMessages([
                 'username' => 'invalid username, please try again',
             ]);
@@ -62,7 +61,7 @@ class CustomLoginController extends Controller
 
         $validate = Auth::attempt($credentials);
 
-        if (!$validate) {
+        if (! $validate) {
             RateLimiter::hit($this->throttleKey($user, $request));
 
             throw ValidationException::withMessages([
@@ -74,24 +73,31 @@ class CustomLoginController extends Controller
 
         $request->session()->regenerate();
 
-        // Redirect based on user level
-        // Level 1 = Supervisor, redirect to login-choice
-        // Level 2+ = Kasir, redirect to kasir page
-        $redirectUrl = $user->level == 1 ? '/login-choice' : '/kasir';
+        // Redirect berdasarkan level user:
+        // Level 1 = Admin  → langsung ke admin dashboard
+        // Level 2 = SPV    → login-choice (pilih kasir atau admin)
+        // Level 3 = Kasir  → langsung ke kasir
+        if ($user->level == 1) {
+            $redirectUrl = '/admin/dashboard';
+        } elseif ($user->level == 2) {
+            $redirectUrl = '/login-choice';
+        } else {
+            $redirectUrl = '/kasir';
+        }
 
         return redirect($redirectUrl);
     }
 
     private function throttleKey($user, $request): string
     {
-        return Str::transliterate(Str::lower($user->email) . '|' . $this->ip($request));
+        return Str::transliterate(Str::lower($user->email).'|'.$this->ip($request));
     }
 
     private function ip($request)
     {
         $ip = $request->getClientIp();
 
-        if (!$request->isFromTrustedProxy()) {
+        if (! $request->isFromTrustedProxy()) {
             return $ip;
         }
 
