@@ -16,6 +16,8 @@ import LoadingModal from './components/LoadingModal';
 import useKasirKeyboard from './hooks/useKasirKeyboard';
 import useKasirCalculations from './hooks/useKasirCalculations';
 import { formatDigit } from '@/lib/formatters';
+import OpenShiftModal from './components/OpenShiftModal';
+import CloseShiftModal from './components/CloseShiftModal';
 
 interface Props {
     paymentTypes: PaymentType[];
@@ -82,6 +84,13 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const [paymentAmount, setPaymentAmount] = useState('');
     const [customerName, setCustomerName] = useState('');
 
+    // Shift state
+    interface ShiftData { id: string; open_time: string; saldo_awal: string; }
+    const [currentShift, setCurrentShift] = useState<ShiftData | null>(null);
+    const [showOpenShift, setShowOpenShift] = useState(false);
+    const [showCloseShift, setShowCloseShift] = useState(false);
+    const [shiftChecked, setShiftChecked] = useState(false);
+
     // Refs
     const inputRef = useRef<HTMLInputElement>(null);
     const searchTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -136,6 +145,48 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             confirmConfig.onCancel();
         }
     };
+
+    // ===== SHIFT MANAGEMENT =====
+    // Check for active shift on mount; show open-shift modal if none.
+    useEffect(() => {
+        axios.get('/shift/current').then((res) => {
+            if (res.data.shift) {
+                setCurrentShift(res.data.shift);
+            } else {
+                setShowOpenShift(true);
+            }
+            setShiftChecked(true);
+        }).catch(() => {
+            // Jika endpoint gagal, tetap biarkan kasir bekerja
+            setShiftChecked(true);
+        });
+    }, []);
+
+    const handleOpenShift = (saldoAwal: number) => {
+        axios.post('/shift/open', { saldo_awal: saldoAwal }).then((res) => {
+            setCurrentShift(res.data.shift);
+            setShowOpenShift(false);
+            inputRef.current?.focus();
+        }).catch(() => {
+            setShowOpenShift(false);
+            inputRef.current?.focus();
+        });
+    };
+
+    const handleCloseShift = (saldoAkhir: number, keterangan: string) => {
+        axios.post('/shift/close', { saldo_akhir: saldoAkhir, keterangan }).then((res) => {
+            const closedShift = res.data.shift;
+            setCurrentShift(null);
+            setShowCloseShift(false);
+            // Print close shift struk in new tab
+            window.open(`/print-shift/${closedShift.id}`, '_blank');
+            // Show open shift form for next shift
+            setTimeout(() => setShowOpenShift(true), 500);
+        }).catch(() => {
+            setShowCloseShift(false);
+        });
+    };
+    // ===== END SHIFT MANAGEMENT =====
 
     const handleLogoutClick = () => {
         showConfirmModal(
@@ -426,10 +477,10 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                         });
                 } else {
                     // Decreasing qty - release some reserved
-                    axios.post('/release-reserved-items', [{
+                    axios.post('/release-reserved-items', { items: [{
                         barang_id: editingItem.id,
                         qty: Math.abs(qtyDiff),
-                    }])
+                    }] })
                         .then((response) => {
                             console.log(`✓ Released ${Math.abs(qtyDiff)} items`);
                             setSelectedItems(prev =>
@@ -452,10 +503,10 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
             if (newQty === 0) {
                 // Remove item completely and release reserved
-                axios.post('/release-reserved-items', [{
+                axios.post('/release-reserved-items', { items: [{
                     barang_id: editingItem.id,
                     qty: oldQty,
-                }])
+                }] })
                     .then((response) => {
                         console.log(`✓ Released all items for removal`);
                         setSelectedItems(prev => prev.filter(v => v.id !== editingItem.id));
@@ -689,10 +740,10 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 const itemToDelete = selectedItems.find(v => v.id === itemId);
                 const qty = itemToDelete?.qty || 1;
 
-                axios.post('/release-reserved-items', [{
+                axios.post('/release-reserved-items', { items: [{
                     barang_id: itemId,
                     qty: qty,
-                }])
+                }] })
                     .then((response) => {
                         console.log(`✓ Released ${qty} items on deletion`);
                         // Remove from selected items (stock will auto-refresh)
@@ -803,7 +854,12 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
             <div className="h-screen flex flex-col bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
                 {/* Menu Bar */}
-                <KasirMenuBar userName={auth?.user?.name} userLevel={auth?.user?.level} onLogoutClick={handleLogoutClick} />
+                <KasirMenuBar
+                    userName={auth?.user?.name}
+                    userLevel={auth?.user?.level}
+                    onLogoutClick={handleLogoutClick}
+                    onCloseShift={currentShift ? () => setShowCloseShift(true) : undefined}
+                />
 
                 {/* Main Content - No Scroll */}
                 <div className="flex-1 flex flex-col gap-1 sm:gap-2 p-1 sm:p-2 overflow-hidden">
@@ -1069,6 +1125,20 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             <LoadingModal
                 show={isLoading || isLoggingOut}
                 message={isLoggingOut ? 'Logging out...' : loadingMessage}
+            />
+
+            {/* Shift Modals */}
+            {shiftChecked && (
+                <OpenShiftModal
+                    show={showOpenShift}
+                    onConfirm={handleOpenShift}
+                />
+            )}
+            <CloseShiftModal
+                show={showCloseShift}
+                shift={currentShift}
+                onClose={() => setShowCloseShift(false)}
+                onConfirm={handleCloseShift}
             />
         </>
     );

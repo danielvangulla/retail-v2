@@ -2,19 +2,20 @@
 
 namespace App\Traits;
 
+use App\Events\StockUpdated;
 use App\Models\Barang;
+use App\Models\BarangCostHistory;
 use App\Models\BarangStock;
 use App\Models\BarangStockMovement;
-use App\Models\BarangCostHistory;
-use App\Events\StockUpdated;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 trait ManageStok
 {
     /**
      * Helper: Calculate weighted average cost (rounded to integer)
+     *
      * @return int Rounded average cost
      */
     private static function calculateWeightedAverage($quantityBefore, $costBefore, $quantityNew, $costNew): int
@@ -60,6 +61,7 @@ trait ManageStok
     /**
      * Tambah stok masuk (pembelian, retur dari pelanggan, dll)
      * Dengan weighted average cost calculation (integer, no decimal)
+     *
      * @return string|bool Movement ID jika sukses, false jika gagal
      */
     public static function addStok($barangId, int $qty, string $type = 'in', string $referenceType = '', string $referenceId = '', string $notes = '', $userId = null, $hargaBeli = null)
@@ -143,7 +145,7 @@ trait ManageStok
      */
     public static function reduceStok($barangId, int $qty, string $type = 'out', string $referenceType = '', string $referenceId = '', string $notes = '', $userId = null, $hargaBeli = null, $hargaJual = null): array
     {
-        return DB::transaction(function () use ($barangId, $qty, $type, $referenceType, $referenceId, $notes, $userId, $hargaBeli, $hargaJual) {
+        return DB::transaction(function () use ($barangId, $qty, $type, $referenceType, $referenceId, $notes, $userId, $hargaJual) {
             // Lock row untuk mencegah race condition
             $stock = BarangStock::lockForUpdate()
                 ->where('barang_id', $barangId)
@@ -153,7 +155,7 @@ trait ManageStok
             $available = $stock->quantity - $stock->reserved;
 
             // Validasi stok cukup - tapi izinkan jika allow_sold_zero_stock = true
-            if ($available < $qty && !($barang && $barang->allow_sold_zero_stock)) {
+            if ($available < $qty && ! ($barang && $barang->allow_sold_zero_stock)) {
                 return [
                     'success' => false,
                     'message' => "Stok tidak mencukupi. Available: {$available}, Requested: {$qty}",
@@ -216,9 +218,9 @@ trait ManageStok
      * Reserve stok untuk pending order (belum final)
      * Jika allow_sold_zero_stock=true, izinkan reserve meskipun available < qty
      */
-    public static function reserveStok($barangId, int $qty, string $referenceId = null, $allowSoldZeroStock = false): array
+    public static function reserveStok($barangId, int $qty, ?string $referenceId = null, $allowSoldZeroStock = false): array
     {
-        return DB::transaction(function () use ($barangId, $qty, $referenceId, $allowSoldZeroStock) {
+        return DB::transaction(function () use ($barangId, $qty, $allowSoldZeroStock) {
             $stock = BarangStock::lockForUpdate()
                 ->where('barang_id', $barangId)
                 ->firstOrFail();
@@ -226,7 +228,7 @@ trait ManageStok
             $available = $stock->quantity - $stock->reserved;
 
             // Validasi hanya jika allow_sold_zero_stock = false
-            if ($available < $qty && !$allowSoldZeroStock) {
+            if ($available < $qty && ! $allowSoldZeroStock) {
                 return [
                     'success' => false,
                     'message' => "Tidak bisa reserve. Available: {$available}, Requested: {$qty}",
@@ -237,6 +239,9 @@ trait ManageStok
                 'reserved' => $stock->reserved + $qty,
                 'last_updated_at' => now(),
             ]);
+
+            // Clear cache so availability check reflects new reservation immediately
+            self::clearStockCache($barangId);
 
             return [
                 'success' => true,
@@ -260,9 +265,88 @@ trait ManageStok
                 'last_updated_at' => now(),
             ]);
 
+            // Clear cache so availability check reflects released reservation immediately
+            self::clearStockCache($barangId);
+
             return [
                 'success' => true,
                 'message' => 'Reserve stok berhasil di-release',
+            ];
+        }, attempts: 3);
+    }
+
+    /**
+     * Checkout stok: atomically reduces quantity AND releases reservation.
+     * Digunakan KHUSUS saat kasir checkout — lebih aman dari reduceStok() biasa
+     * karena validasi menggunakan quantity (total fisik) bukan available (quantity-reserved),
+     * mengingat items sudah di-reserve sebelum checkout.
+     */
+    public static function checkoutStok($barangId, int $qty, string $referenceType = '', string $referenceId = '', string $notes = '', $userId = null, $hargaJual = null): array
+    {
+        return DB::transaction(function () use ($barangId, $qty, $referenceType, $referenceId, $notes, $userId, $hargaJual) {
+            $stock = BarangStock::lockForUpdate()
+                ->where('barang_id', $barangId)
+                ->firstOrFail();
+
+            $barang = Barang::find($barangId);
+
+            // Validasi: cukup quantity fisik untuk di-checkout
+            // (tidak gunakan available = quantity-reserved karena item sudah di-reserve)
+            if ($stock->quantity < $qty && ! ($barang && $barang->allow_sold_zero_stock)) {
+                return [
+                    'success' => false,
+                    'message' => "Stok fisik tidak mencukupi untuk checkout. Quantity: {$stock->quantity}, Requested: {$qty}",
+                    'quantity' => $stock->quantity,
+                    'requested' => $qty,
+                ];
+            }
+
+            $quantityBefore = $stock->quantity;
+            $quantityAfter = max(0, $quantityBefore - $qty);
+            $hargaRatarataLama = $stock->harga_rata_rata ?? 0;
+
+            // Atomically reduce quantity AND release reservation
+            $stock->update([
+                'quantity' => $quantityAfter,
+                'reserved' => max(0, $stock->reserved - $qty),
+                'last_updated_at' => now(),
+            ]);
+
+            // Catat movement history
+            $movement = BarangStockMovement::create([
+                'barang_id' => $barangId,
+                'type' => 'out',
+                'quantity' => $qty,
+                'quantity_before' => $quantityBefore,
+                'quantity_after' => $quantityAfter,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'notes' => $notes,
+                'user_id' => $userId,
+                'movement_date' => now(),
+                'harga_beli' => (int) $hargaRatarataLama,
+                'harga_jual' => (int) $hargaJual,
+            ]);
+
+            // Clear cache
+            self::clearStockCache($barangId);
+
+            Log::info('Stock checkout', [
+                'barang_id' => $barangId,
+                'qty' => $qty,
+                'harga_rata_rata_hpp' => $hargaRatarataLama,
+                'reference_id' => $referenceId,
+                'movement_id' => $movement->id,
+            ]);
+
+            // Broadcast stock update event
+            event(new StockUpdated($barangId, $quantityAfter, 'out'));
+
+            return [
+                'success' => true,
+                'message' => 'Stok berhasil di-checkout',
+                'remaining' => $quantityAfter,
+                'movement_id' => $movement->id,
             ];
         }, attempts: 3);
     }
@@ -324,6 +408,7 @@ trait ManageStok
     public static function getAvailableStok($barangId): int
     {
         $stock = self::getStok($barangId);
+
         return $stock ? max(0, $stock->quantity - $stock->reserved) : 0;
     }
 

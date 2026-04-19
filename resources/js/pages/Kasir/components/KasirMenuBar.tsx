@@ -1,14 +1,15 @@
 import { router } from '@inertiajs/react';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown, Clock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 interface KasirMenuBarProps {
     userName?: string;
     userLevel?: number;
     onLogoutClick?: () => void;
+    onCloseShift?: () => void;
 }
 
-export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogoutClick }: KasirMenuBarProps) {
+export default function KasirMenuBar({ userName = 'Kasir', userLevel = 3, onLogoutClick, onCloseShift }: KasirMenuBarProps) {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -76,8 +77,8 @@ export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogo
                 {userMenuOpen && (
                     <div className="absolute right-0 top-full mt-2 bg-slate-700 rounded-xl shadow-2xl border border-slate-600 overflow-hidden z-50 w-48">
 
-                        {/* Admin Menu - Only for Supervisor */}
-                        {userLevel === 1 && (
+                        {/* Admin Menu - Admin (1) and SPV (2) */}
+                        {(userLevel === 1 || userLevel === 2) && (
                             <>
                                 <button
                                     onClick={() => {
@@ -90,6 +91,22 @@ export default function KasirMenuBar({ userName = 'Kasir', userLevel = 2, onLogo
                                     <span>Halaman Admin</span>
                                 </button>
 
+                                <div className="border-t border-slate-600"></div>
+                            </>
+                        )}
+
+                        {onCloseShift && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        onCloseShift();
+                                        setUserMenuOpen(false);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-orange-400 hover:bg-orange-500/10 transition-colors duration-200 cursor-pointer"
+                                >
+                                    <Clock className="h-4 w-4" />
+                                    <span>Tutup Shift</span>
+                                </button>
                                 <div className="border-t border-slate-600"></div>
                             </>
                         )}

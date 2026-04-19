@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -33,14 +33,14 @@ class DataManagementController
 
         // Verify user password (supervisor access)
         $user = Auth::user();
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Password salah. Akses ditolak.',
             ], 401);
         }
 
-        // Check if user is supervisor (level 1)
+        // Check if user is admin (level 1 only — paling tinggi)
         if ($user->level !== 1) {
             return response()->json([
                 'success' => false,
@@ -53,7 +53,7 @@ class DataManagementController
 
             // Execute the recount command with output buffering
             $output = [];
-            Artisan::call('app:recount-stock-and-cost', [], new \Symfony\Component\Console\Output\BufferedOutput());
+            Artisan::call('app:recount-stock-and-cost', [], new \Symfony\Component\Console\Output\BufferedOutput);
 
             $endTime = microtime(true);
             $duration = round($endTime - $startTime, 2);
@@ -73,14 +73,14 @@ class DataManagementController
             ]);
         } catch (\Exception $e) {
             // Log the error
-            Log::error('Recount Stock and Cost Error: ' . $e->getMessage(), [
+            Log::error('Recount Stock and Cost Error: '.$e->getMessage(), [
                 'exception' => $e,
                 'user_id' => $user->id,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }

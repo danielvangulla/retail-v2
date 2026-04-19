@@ -22,7 +22,7 @@ export default function UserForm({ user, mode }: UserFormProps) {
         email: user?.email || '',
         password: '',
         password_confirmation: '',
-        level: user?.level || 2,
+        level: user?.level || 3,
     });
 
     const [loading, setLoading] = useState(false);
@@ -181,8 +181,9 @@ export default function UserForm({ user, mode }: UserFormProps) {
                                 errors.level ? 'border-red-400' : 'border-gray-200'
                             }`}
                         >
-                            <option value={1}>👑 Supervisor</option>
-                            <option value={2}>🛒 Kasir</option>
+                            <option value={1}>� Admin (Tertinggi)</option>
+                            <option value={2}>👑 SPV / Supervisor</option>
+                            <option value={3}>🛒 Kasir</option>
                         </select>
                         {errors.level && (
                             <p className="text-red-600 text-sm mt-1 flex items-center gap-1">

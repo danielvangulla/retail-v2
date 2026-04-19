@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\FrontRetail;
 
+use App\Events\DashboardUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Helpers;
 use App\Models\Barang;
@@ -12,10 +13,8 @@ use App\Models\TransaksiDetail;
 use App\Models\TransaksiPayment;
 use App\Models\TransaksiPaymentType;
 use App\Models\User;
-use App\Events\DashboardUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -35,7 +34,7 @@ class KasirController extends Controller
                     'details.barang',
                     'piutang',
                     'komplemen',
-                    'kasir'
+                    'kasir',
                 ])->find($trxId);
             }
 
@@ -52,11 +51,11 @@ class KasirController extends Controller
             $setup = Helpers::getSetup('perusahaan');
 
             // Provide fallback setup if null
-            if (!$setup) {
+            if (! $setup) {
                 $setup = (object) [
                     'nama' => 'TOKO',
                     'alamat1' => 'Alamat Toko',
-                    'alamat2' => 'Kota'
+                    'alamat2' => 'Kota',
                 ];
             }
 
@@ -68,7 +67,7 @@ class KasirController extends Controller
             $fallbackSetup = (object) [
                 'nama' => 'TOKO',
                 'alamat1' => 'Alamat Toko',
-                'alamat2' => 'Kota'
+                'alamat2' => 'Kota',
             ];
 
             return Inertia::render('Kasir/PrintBill', [
@@ -81,17 +80,17 @@ class KasirController extends Controller
     public function index()
     {
         $macId = (object) Helpers::macId();
-        if ($macId->status !== "registered.") {
+        if ($macId->status !== 'registered.') {
             return response()->json($macId, 403);
         }
 
-        $paymentTypes = TransaksiPaymentType::orderBy("urutan")->orderBy("ket")->get();
+        $paymentTypes = TransaksiPaymentType::orderBy('urutan')->orderBy('ket')->get();
 
         $keysArray = [
-            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-            ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-            ["z", "x", "c", "v", "b", "n", "m", ",", ".", "-"],
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+            ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+            ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+            ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'],
         ];
 
         // Get last transaction ID for this kasir
@@ -107,10 +106,10 @@ class KasirController extends Controller
 
     public function store(Request $r)
     {
-        if (!$r->state) {
+        if (! $r->state) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Akses ditolak !'
+                'msg' => 'Akses ditolak !',
             ], 403);
         }
 
@@ -128,7 +127,7 @@ class KasirController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'msg' => $e->getMessage()
+                'msg' => $e->getMessage(),
             ], 422);
         }
 
@@ -189,14 +188,14 @@ class KasirController extends Controller
 
         return response()->json([
             'status' => 'error',
-            'msg' => 'Request Not Found !'
+            'msg' => 'Request Not Found !',
         ], 404);
     }
 
     private function setPiutang($data)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $charge = $data->charge;
         $discSpv = $data->discSpv;
@@ -246,8 +245,8 @@ class KasirController extends Controller
 
     private function setKomplemen($data)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $netto = $data->total;
         $discSpv = $data->discSpv;
@@ -276,13 +275,14 @@ class KasirController extends Controller
         ];
 
         $trx = Transaksi::create($trxArr);
+
         return $trx->id;
     }
 
     private function setTransaksi($data)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $netto = $data->total;
         $discSpv = $data->discSpv;
@@ -311,13 +311,14 @@ class KasirController extends Controller
         ];
 
         $trx = Transaksi::create($trxArr);
+
         return $trx->id;
     }
 
     private function setTransaksiDetails($data, $trxId)
     {
-        $rateTax = env("RATE_TAX", 0);
-        $rateService = env("RATE_SERVICE", 0);
+        $rateTax = env('RATE_TAX', 0);
+        $rateService = env('RATE_SERVICE', 0);
 
         $user = Auth::user();
         $tgl = Helpers::transactionDate();
@@ -362,29 +363,27 @@ class KasirController extends Controller
 
             TransaksiDetail::create($trxArr);
 
-            // === PENTING: Kurangi stok SAAT checkout (bukan saat scanning) ===
-            // Ini memastikan stok hanya berkurang ketika transaksi sudah final
+            // === Checkout stok: atomic reduce quantity + release reservation ===
+            // Menggunakan checkoutStok (bukan reduceStok) agar tidak gagal ketika
+            // semua stok sudah di-reserve untuk transaksi ini sebelum checkout.
             $barangId = $v->sku ?? $v->id ?? null;
             if ($barangId && $qty > 0) {
                 try {
-                    // Reduce stok dan clear reserved (karena sudah checkout)
-                    $reduceResult = \App\Models\BarangStock::reduceStok(
+                    $checkoutResult = \App\Models\BarangStock::checkoutStok(
                         $barangId,
                         $qty,
-                        'out',
                         'penjualan_kasir',
                         $trxId,
                         "Penjualan di Kasir - Trx: {$trxId}",
-                        $user->id
+                        $user->id,
+                        $harga
                     );
 
-                    // Release reserved stok untuk item ini
-                    // (jika ada reserved dari scanning sebelumnya)
-                    if ($reduceResult['success']) {
-                        \App\Models\BarangStock::releaseReservedStok($barangId, $qty);
+                    if (! $checkoutResult['success']) {
+                        Log::warning("Stock checkout warning for barang {$barangId}: ".($checkoutResult['message'] ?? 'unknown'));
                     }
                 } catch (\Exception $e) {
-                    Log::warning("Stock reduction failed for barang {$barangId}: " . $e->getMessage());
+                    Log::warning("Stock checkout failed for barang {$barangId}: ".$e->getMessage());
                 }
             }
         }
@@ -403,24 +402,27 @@ class KasirController extends Controller
 
     public function validateSpv(Request $r)
     {
-        $spv = User::where('level', 1)->first();
+        // validateSpv: cek berdasarkan PIN dari user level 2 (SPV) ATAU level 1 (Admin)
+        $spv = User::where('level', '<=', 2)
+            ->whereRaw('pin = ?', [$r->pin])
+            ->first();
 
-        if (!$spv || !Hash::check($r->pin, $spv->password)) {
+        if (! $spv) {
             return response()->json([
-                "status" => "error",
-                "msg" => "Invalid PIN Supervisor !",
+                'status' => 'error',
+                'msg' => 'Invalid PIN Supervisor !',
             ], 401);
         }
 
         return response()->json([
-            "status" => "ok",
-            "msg" => "-",
+            'status' => 'ok',
+            'msg' => '-',
         ], 200);
     }
 
     public function trxEdit($id)
     {
-        $paymentTypes = TransaksiPaymentType::orderBy("urutan")->orderBy("ket")->get();
+        $paymentTypes = TransaksiPaymentType::orderBy('urutan')->orderBy('ket')->get();
 
         return Inertia::render('Kasir/Edit', [
             'transactionId' => $id,
@@ -434,26 +436,26 @@ class KasirController extends Controller
             $q->select('transaksi_id', 'sku', 'qty', 'disc_spv');
         }])->find($r->id);
 
-        if (!$trx) {
+        if (! $trx) {
             return response()->json([
-                "status" => "error",
-                "msg" => "Data not found !",
+                'status' => 'error',
+                'msg' => 'Data not found !',
             ], 404);
         }
 
         return response()->json([
-            "status" => "ok",
-            "msg" => "-",
-            "data" => $trx,
+            'status' => 'ok',
+            'msg' => '-',
+            'data' => $trx,
         ], 200);
     }
 
     public function update(Request $r)
     {
-        if (!$r->state) {
+        if (! $r->state) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Akses ditolak !'
+                'msg' => 'Akses ditolak !',
             ], 403);
         }
 
@@ -470,6 +472,7 @@ class KasirController extends Controller
         if ($r->state === 'full') {
             $trxId = $data->id;
 
+            $this->restoreStockForDetails($trxId);
             TransaksiDetail::where('transaksi_id', $trxId)->delete();
             TransaksiPayment::where('transaksi_id', $trxId)->delete();
 
@@ -486,6 +489,8 @@ class KasirController extends Controller
 
         if ($r->state === 'piutang') {
             $trxId = $data->id;
+
+            $this->restoreStockForDetails($trxId);
             TransaksiDetail::where('transaksi_id', $trxId)->delete();
             TransaksiPayment::where('transaksi_id', $trxId)->delete();
 
@@ -500,15 +505,17 @@ class KasirController extends Controller
         }
 
         if ($r->state === 'komplemen') {
-            $spv = User::where('pin', $r->pin)->where('level', 1)->first();
-            if (!$spv) {
+            $spv = User::where('pin', $r->pin)->where('level', '<=', 2)->first();
+            if (! $spv) {
                 return response()->json([
-                    "status" => "error",
-                    "msg" => "Invalid PIN Supervisor..!",
+                    'status' => 'error',
+                    'msg' => 'Invalid PIN Supervisor..!',
                 ], 403);
             }
 
             $trxId = $data->id;
+
+            $this->restoreStockForDetails($trxId);
             TransaksiDetail::where('transaksi_id', $trxId)->delete();
             TransaksiPayment::where('transaksi_id', $trxId)->delete();
 
@@ -524,14 +531,14 @@ class KasirController extends Controller
 
         return response()->json([
             'status' => 'error',
-            'msg' => 'Request Not Found !'
+            'msg' => 'Request Not Found !',
         ], 404);
     }
 
     private function updateTransaksi($data)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $netto = $data->total;
         $tax = $netto * $rateTax / 100;
@@ -554,8 +561,8 @@ class KasirController extends Controller
 
     private function updatePiutang($data)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $netto = $data->total;
         $tax = $netto * $rateTax / 100;
@@ -578,8 +585,8 @@ class KasirController extends Controller
 
     private function updateKomplemen($data, $spv)
     {
-        $rateTax = env("RATE_TAX");
-        $rateService = env("RATE_SERVICE");
+        $rateTax = env('RATE_TAX');
+        $rateService = env('RATE_SERVICE');
 
         $netto = $data->total;
         $tax = $netto * $rateTax / 100;
@@ -598,6 +605,39 @@ class KasirController extends Controller
         ];
 
         Transaksi::where('id', $data->id)->update($trxArr);
+    }
+
+    /**
+     * Restore stok untuk semua details transaksi yang akan di-edit.
+     * Dipanggil sebelum menghapus details lama agar stok tidak doubly berkurang.
+     */
+    private function restoreStockForDetails(string $trxId): void
+    {
+        $oldDetails = TransaksiDetail::where('transaksi_id', $trxId)
+            ->select('sku', DB::raw('SUM(qty) as total_qty'))
+            ->groupBy('sku')
+            ->get();
+
+        foreach ($oldDetails as $detail) {
+            $barangId = $detail->sku;
+            $qty = (int) $detail->total_qty;
+
+            if ($barangId && $qty > 0) {
+                try {
+                    \App\Models\BarangStock::addStok(
+                        $barangId,
+                        $qty,
+                        'in',
+                        'edit_transaksi',
+                        $trxId,
+                        "Restore stok akibat edit transaksi: {$trxId}",
+                        Auth::id()
+                    );
+                } catch (\Exception $e) {
+                    Log::warning("Restore stock failed for barang {$barangId} on edit trx {$trxId}: ".$e->getMessage());
+                }
+            }
+        }
     }
 
     public function trxDelete(Request $r)
@@ -621,19 +661,19 @@ class KasirController extends Controller
             $barangId = $r->barang_id;
             $qty = $r->qty ?? 1;
 
-            if (!$barangId || $qty <= 0) {
+            if (! $barangId || $qty <= 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Parameter tidak valid'
+                    'message' => 'Parameter tidak valid',
                 ], 400);
             }
 
             // Get barang
             $barang = Barang::find($barangId);
-            if (!$barang) {
+            if (! $barang) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Barang tidak ditemukan'
+                    'message' => 'Barang tidak ditemukan',
                 ], 404);
             }
 
@@ -648,10 +688,10 @@ class KasirController extends Controller
                 Auth::id()
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => $result['message'] ?? 'Gagal mengurangi stok'
+                    'message' => $result['message'] ?? 'Gagal mengurangi stok',
                 ], 400);
             }
 
@@ -666,13 +706,13 @@ class KasirController extends Controller
                     'barang_id' => $barangId,
                     'quantity' => $stock?->quantity ?? 0,
                     'reserved' => $stock?->reserved ?? 0,
-                    'stock' => $available
-                ]
+                    'stock' => $available,
+                ],
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => $th->getMessage()
+                'message' => $th->getMessage(),
             ], 500);
         }
     }
@@ -687,19 +727,19 @@ class KasirController extends Controller
             $barangId = $r->barang_id;
             $qty = $r->qty ?? 1;
 
-            if (!$barangId || $qty <= 0) {
+            if (! $barangId || $qty <= 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Parameter tidak valid'
+                    'message' => 'Parameter tidak valid',
                 ], 400);
             }
 
             // Get barang
             $barang = Barang::find($barangId);
-            if (!$barang) {
+            if (! $barang) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Barang tidak ditemukan'
+                    'message' => 'Barang tidak ditemukan',
                 ], 404);
             }
 
@@ -714,10 +754,10 @@ class KasirController extends Controller
                 Auth::id()
             );
 
-            if (!$result) {
+            if (! $result) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Gagal mengembalikan stok'
+                    'message' => 'Gagal mengembalikan stok',
                 ], 400);
             }
 
@@ -733,12 +773,12 @@ class KasirController extends Controller
                     'quantity' => $stock?->quantity ?? 0,
                     'reserved' => $stock?->reserved ?? 0,
                     'stock' => $available,
-                ]
+                ],
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error restoring stock: ' . $th->getMessage()
+                'message' => 'Error restoring stock: '.$th->getMessage(),
             ], 500);
         }
     }
@@ -757,10 +797,10 @@ class KasirController extends Controller
             $barangId = $r->input('barang_id');
             $qty = $r->input('qty', 1);
 
-            if (!$barangId || $qty <= 0) {
+            if (! $barangId || $qty <= 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Parameter tidak valid'
+                    'message' => 'Parameter tidak valid',
                 ], 400);
             }
 
@@ -769,7 +809,7 @@ class KasirController extends Controller
 
             $stockData = cache()->remember($cacheKey, 60, function () use ($barangId) {
                 $barang = Barang::with('stock')->find($barangId);
-                if (!$barang) {
+                if (! $barang) {
                     return null;
                 }
 
@@ -784,10 +824,10 @@ class KasirController extends Controller
                 ];
             });
 
-            if (!$stockData) {
+            if (! $stockData) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Barang tidak ditemukan'
+                    'message' => 'Barang tidak ditemukan',
                 ], 404);
             }
 
@@ -805,7 +845,7 @@ class KasirController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => $th->getMessage()
+                'message' => $th->getMessage(),
             ], 500);
         }
     }
@@ -820,10 +860,10 @@ class KasirController extends Controller
         try {
             $items = $r->input('items', []);
 
-            if (!is_array($items) || count($items) === 0) {
+            if (! is_array($items) || count($items) === 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Items array required'
+                    'message' => 'Items array required',
                 ], 400);
             }
 
@@ -836,7 +876,7 @@ class KasirController extends Controller
             if (empty($barangIds)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'No valid barang IDs'
+                    'message' => 'No valid barang IDs',
                 ], 400);
             }
 
@@ -862,7 +902,7 @@ class KasirController extends Controller
                     'allow_sold_zero_stock' => $stock['allow_sold_zero_stock'],
                 ];
 
-                if (!$isAvailable) {
+                if (! $isAvailable) {
                     $allAvailable = false;
                 }
             }
@@ -877,10 +917,12 @@ class KasirController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => $th->getMessage()
+                'message' => $th->getMessage(),
             ], 500);
         }
-    }    /**
+    }
+
+    /**
      * Reserve stock item saat ditambah ke cart
      * Ini BUKAN reduce stok, hanya tandai sebagai "reserved"
      * Stok akan benar-benar berkurang saat checkout
@@ -891,19 +933,19 @@ class KasirController extends Controller
             $barangId = $r->input('barang_id');
             $qty = $r->input('qty', 1);
 
-            if (!$barangId || $qty <= 0) {
+            if (! $barangId || $qty <= 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Parameter tidak valid'
+                    'message' => 'Parameter tidak valid',
                 ], 400);
             }
 
             // Get barang
             $barang = Barang::find($barangId);
-            if (!$barang) {
+            if (! $barang) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Barang tidak ditemukan'
+                    'message' => 'Barang tidak ditemukan',
                 ], 404);
             }
 
@@ -916,10 +958,10 @@ class KasirController extends Controller
                 $barang->allow_sold_zero_stock ?? false
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => $result['message'] ?? 'Gagal reserve stok'
+                    'message' => $result['message'] ?? 'Gagal reserve stok',
                 ], 400);
             }
 
@@ -935,12 +977,12 @@ class KasirController extends Controller
                     'quantity' => $stock?->quantity ?? 0,
                     'reserved' => $stock?->reserved ?? 0,
                     'available' => $available,
-                ]
+                ],
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error reserving stock: ' . $th->getMessage()
+                'message' => 'Error reserving stock: '.$th->getMessage(),
             ], 500);
         }
     }
@@ -953,10 +995,10 @@ class KasirController extends Controller
         try {
             $items = $r->input('items', []);
 
-            if (!is_array($items) || count($items) === 0) {
+            if (! is_array($items) || count($items) === 0) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Items tidak valid'
+                    'message' => 'Items tidak valid',
                 ], 400);
             }
 
@@ -968,8 +1010,9 @@ class KasirController extends Controller
                 $barangId = $item->barang_id ?? $item->id ?? null;
                 $qty = $item->qty ?? $item->quantity ?? 0;
 
-                if (!$barangId || $qty <= 0) {
+                if (! $barangId || $qty <= 0) {
                     $errors[] = "Item {$barangId} invalid";
+
                     continue;
                 }
 
@@ -994,9 +1037,8 @@ class KasirController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error releasing reserved items: ' . $th->getMessage()
+                'message' => 'Error releasing reserved items: '.$th->getMessage(),
             ], 500);
         }
     }
 }
-
