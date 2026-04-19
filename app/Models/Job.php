@@ -13,6 +13,8 @@ class Job extends Model
 
     protected $guarded = [];
 
-    // Allow all attributes to be mass-assignable
+    // Use Unix integer timestamps to match queue jobs table schema
+    protected $dateFormat = 'U';
+
     protected $fillable = ['process_name', 'is_running', 'by', 'queue', 'payload', 'attempts', 'reserved_at', 'available_at'];
 }

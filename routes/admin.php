@@ -12,14 +12,14 @@ use App\Http\Controllers\Admin\ReturController;
 use Illuminate\Support\Facades\Route;
 
 // Admin routes - protected by auth + supervisor middleware
-Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'supervisor'])->prefix('admin')->as('admin.')->group(function () {
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('admin.dashboard-data');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard-data', [DashboardController::class, 'getData'])->name('dashboard-data');
     Route::post('/process-stok', function() {
         $result = \App\Services\StokProcessingService::processAll();
         return response()->json(['status' => 'ok', 'data' => $result]);
-    })->name('admin.process-stok');
+    })->name('process-stok');
 
     // Setup / Basic Settings
     Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');
