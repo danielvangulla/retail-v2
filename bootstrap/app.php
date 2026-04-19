@@ -32,7 +32,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Register route middleware aliases
         $middleware->alias([
-            'supervisor' => CheckSupervisorLevel::class,
+            'admin'        => \App\Http\Middleware\CheckAdminLevel::class,
+            'supervisor'   => CheckSupervisorLevel::class,
             'check.module' => \App\Http\Middleware\CheckModulePermission::class,
         ]);
     })

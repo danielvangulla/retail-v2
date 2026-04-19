@@ -22,11 +22,12 @@ class CheckSupervisorLevel
             return redirect('/login');
         }
 
-        // Ensure user is admin (level 1) or supervisor/SPV (level 2)
+        // Ensure user is admin (level 1) or SPV (level 2)
         // Level 3 = Kasir, tidak boleh akses admin panel
         if (Auth::user()->level > 2) {
             return Inertia::render('errors/Unauthorized', [
-                'message' => 'Hanya admin dan supervisor yang dapat mengakses halaman ini.',
+                'message' => 'Akses ditolak. Halaman admin hanya untuk Administrator dan SPV.',
+                'backUrl' => '/home-space',
             ])->toResponse($request)->setStatusCode(403);
         }
 

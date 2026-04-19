@@ -15,10 +15,13 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReturController;
 use App\Http\Controllers\Admin\SetupController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VoidController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Admin routes - protected by auth + supervisor middleware
+// ─────────────────────────────────────────────────────────────────────────────
+// Routes yang bisa diakses oleh Administrator (level 1) DAN SPV (level 2)
+// ─────────────────────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::get('/', function () {
         return redirect()->route('admin.dashboard');
@@ -32,6 +35,21 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
 
         return response()->json(['status' => 'ok', 'data' => $result]);
     })->name('admin.process-stok');
+
+    // Void Transaksi (SPV action)
+    Route::get('/void', [VoidController::class, 'index'])->name('admin.void.index');
+    Route::post('/void', [VoidController::class, 'store'])->name('admin.void.store');
+    Route::get('/void/transactions', [VoidController::class, 'transactions'])->name('admin.void.transactions');
+
+    // Laporan Void (khusus SPV + Admin)
+    Route::get('/report/void', [VoidController::class, 'report'])->name('report.void');
+    Route::post('/report/void-data', [VoidController::class, 'reportData'])->name('report.void-data');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Routes yang HANYA bisa diakses oleh Administrator (level 1)
+// ─────────────────────────────────────────────────────────────────────────────
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
     // Profit Analysis Dashboard
     Route::get('/profit', function () {
@@ -93,7 +111,7 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::resource('/user', UserController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::post('/user-list', [UserController::class, 'list'])->name('user.list');
 
-    // Reports
+    // Reports (Admin only - SPV hanya bisa lihat laporan void di group supervisor di atas)
     Route::get('/report/sales', [ReportController::class, 'sales'])->name('report.sales');
     Route::post('/report/sales-data', [ReportController::class, 'salesData'])->name('report.sales-data');
     Route::post('/report/sales-by-date', [ReportController::class, 'salesByDate'])->name('report.sales-by-date');
@@ -129,3 +147,4 @@ Route::middleware(['auth', 'supervisor'])->prefix('admin')->group(function () {
     Route::get('/data-management', [DataManagementController::class, 'index'])->name('data-management.index');
     Route::post('/data-management/recount', [DataManagementController::class, 'recount'])->name('data-management.recount');
 });
+

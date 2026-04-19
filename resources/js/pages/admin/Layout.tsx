@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Menu, X, LogOut, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, Database } from 'lucide-react';
+import { Menu, X, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, AlertTriangle } from 'lucide-react';
 
 interface AdminLayoutProps {
     title: string;
@@ -12,11 +12,13 @@ interface NavItem {
     href?: string;
     icon: React.ElementType;
     submenu?: NavSubItem[];
+    minLevel?: number; // level MAX yang diizinkan (1 = admin only, 2 = spv+admin, dst)
 }
 
 interface NavSubItem {
     label: string;
     href: string;
+    minLevel?: number;
 }
 
 export default function AdminLayout({ title, children }: AdminLayoutProps) {
@@ -27,14 +29,20 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { props } = usePage();
     const auth = (props as any).auth;
+    const userLevel: number = auth?.user?.level ?? 99;
     const currentUrl = (props as any).url || window.location.pathname;
 
-    const navigationItems: NavItem[] = [
+    // Semua item navigasi dengan minLevel (level MAX yang diperbolehkan, 1 = admin only, 2 = spv+admin)
+    const allNavigationItems: NavItem[] = [
         { label: 'Dashboard', href: '/admin/dashboard', icon: Home },
-        { label: 'User', href: '/admin/user', icon: Users },
+        // Void Transaksi - khusus SPV + Admin
+        { label: 'Void Transaksi', href: '/admin/void', icon: AlertTriangle, minLevel: 2 },
+        // User - admin only
+        { label: 'User', href: '/admin/user', icon: Users, minLevel: 1 },
         {
             label: 'Setup',
             icon: Settings,
+            minLevel: 1,
             submenu: [
                 { label: 'Basic Settings', href: '/admin/setup' },
                 { label: 'Kategori', href: '/admin/kategori' },
@@ -45,6 +53,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
         {
             label: 'Inventory',
             icon: Package,
+            minLevel: 1,
             submenu: [
                 { label: 'Pembelian', href: '/admin/pembelian' },
                 { label: 'Retur Pembelian', href: '/admin/retur' },
@@ -57,19 +66,45 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
             label: 'Laporan',
             icon: BarChart3,
             submenu: [
-                { label: 'Penjualan', href: '/admin/report/sales' },
-                { label: 'Profit', href: '/admin/profit' },
+                // Laporan void: SPV + Admin
+                { label: 'Laporan Void', href: '/admin/report/void', minLevel: 2 },
+                // Laporan lain: admin only
+                { label: 'Penjualan', href: '/admin/report/sales', minLevel: 1 },
+                { label: 'Profit', href: '/admin/profit', minLevel: 1 },
             ],
         },
         {
             label: 'Tools',
             icon: MonitorCheck,
+            minLevel: 1,
             submenu: [
                 { label: 'Monitoring', href: '/admin/database-monitoring' },
                 { label: 'Data Management', href: '/admin/data-management' },
             ],
         },
     ];
+
+    // Filter nav items berdasarkan level user (minLevel tidak ada = semua bisa akses)
+    const navigationItems = allNavigationItems.filter((item) => {
+        if (item.minLevel === undefined) { return true; }
+        return userLevel <= item.minLevel;
+    }).map((item) => {
+        // Filter submenu juga
+        if (item.submenu) {
+            return {
+                ...item,
+                submenu: item.submenu.filter((sub) => {
+                    if (sub.minLevel === undefined) { return true; }
+                    return userLevel <= sub.minLevel;
+                }),
+            };
+        }
+        return item;
+    }).filter((item) => {
+        // Hapus parent menu yang submenu-nya kosong setelah difilter
+        if (item.submenu !== undefined) { return item.submenu.length > 0; }
+        return true;
+    });
 
     useEffect(() => {
         const handleBefore = () => setIsLoading(true);
@@ -280,7 +315,11 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-semibold text-gray-900">{auth?.user?.name}</p>
                                     <p className="text-xs text-gray-500 font-medium">
-                                        {auth?.user?.level === 1 ? '👑 Supervisor' : '🛒 Kasir'}
+                                        {auth?.user?.level === 1
+                                            ? '👑 Administrator'
+                                            : auth?.user?.level === 2
+                                            ? '🔐 SPV'
+                                            : '🛒 Kasir'}
                                     </p>
                                 </div>
                                 <button
