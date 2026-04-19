@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class CustomLoginController extends Controller
 {
@@ -39,7 +40,11 @@ class CustomLoginController extends Controller
     {
         $macId = (object) Helpers::macId();
         if ($macId->status !== 'registered.') {
-            return response()->json($macId, 403);
+            return Inertia::render('errors/Unregistered', [
+                'os'      => $macId->os ?? 'Unknown',
+                'status'  => $macId->status,
+                'message' => $macId->message ?? 'Contact developer to Register the App to this Machine.',
+            ])->toResponse($request)->setStatusCode(403);
         }
 
         // Find user by username or email (case-insensitive for name)

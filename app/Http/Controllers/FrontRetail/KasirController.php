@@ -81,7 +81,11 @@ class KasirController extends Controller
     {
         $macId = (object) Helpers::macId();
         if ($macId->status !== 'registered.') {
-            return response()->json($macId, 403);
+            return Inertia::render('errors/Unregistered', [
+                'os'      => $macId->os ?? 'Unknown',
+                'status'  => $macId->status,
+                'message' => $macId->message ?? 'Contact developer to Register the App to this Machine.',
+            ])->toResponse(request())->setStatusCode(403);
         }
 
         $paymentTypes = TransaksiPaymentType::orderBy('urutan')->orderBy('ket')->get();
