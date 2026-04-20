@@ -5,7 +5,8 @@ import { PaymentType, BarangItem } from '@/components/kasir/types';
 import QtyEditModal from './components/QtyEditModal';
 import DiskonModal from './components/DiskonModal';
 import KomplemenModal from './components/KomplemenModal';
-import PaymentModal from './components/PaymentModal';
+import PaymentModal, { PaymentLine } from './components/PaymentModal';
+import PendingPaymentModal from './components/PendingPaymentModal';
 import ActionButtons from './components/ActionButtons';
 import CartTable from './components/CartTable';
 import KasirMenuBar from './components/KasirMenuBar';
@@ -80,9 +81,9 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
     const [showKomplemenModal, setShowKomplemenModal] = useState(false);
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [selectedPaymentType, setSelectedPaymentType] = useState<PaymentType | null>(null);
-    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentLines, setPaymentLines] = useState<PaymentLine[]>([]);
     const [customerName, setCustomerName] = useState('');
+    const [showPendingModal, setShowPendingModal] = useState(false);
 
     // Shift state
     interface ShiftData { id: string; open_time: string; saldo_awal: string; }
@@ -629,23 +630,19 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             return;
         }
 
-        setSelectedPaymentType(paymentTypes[0] || null);
-        setPaymentAmount('');
+        setPaymentLines([{ type: paymentTypes[0] ?? null, amount: String(grandTotal) }]);
         setCustomerName('');
         setShowPaymentModal(true);
     };
 
     const handleSavePayment = async () => {
-        if (!selectedPaymentType) {
-            showAlertModal('Metode Pembayaran', 'Pilih metode pembayaran', 'warning');
+        const totalBayar = paymentLines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+        if (paymentLines.length === 0 || paymentLines.some((l) => !l.type)) {
+            showAlertModal('Metode Pembayaran', 'Pilih metode pembayaran untuk semua baris', 'warning');
             return;
         }
-
-        const payment = parseFloat(paymentAmount);
-        if (isNaN(payment) || payment < grandTotal) {
-            showAlertModal('Pembayaran Kurang', `Pembayaran minimal Rp ${formatNumber(grandTotal)}`, 'warning', () => {
-                paymentInputRef.current?.focus();
-            });
+        if (totalBayar < grandTotal) {
+            showAlertModal('Pembayaran Kurang', `Pembayaran minimal Rp ${formatNumber(grandTotal)}`, 'warning');
             return;
         }
 
@@ -668,18 +665,16 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 discPromo: totalPromo,
                 charge: totalCharge,
                 total: grandTotal,
-                bayar: payment,
-                typeId: selectedPaymentType.id,
+                totalBayar,
+                payments: paymentLines.map((l) => ({ type_id: l.type!.id, nominal: parseFloat(l.amount) })),
                 memberId: customerName || ''
             };
 
             const response = await axios.post('/proses-bayar', trxData);
 
             if (response.data.status === 'ok') {
-                // Extract transaction ID (backend returns 'trxId' as string)
                 const trxId = response.data.trxId;
 
-                // Validate it's a string
                 if (!trxId || typeof trxId !== 'string') {
                     console.error('Invalid trxId from response:', response.data);
                     showAlertModal('Error', 'Transaction ID tidak valid', 'error', resetAll);
@@ -688,31 +683,26 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
                 setLastTrxId(trxId);
 
-                const change = payment - grandTotal;
+                const change = totalBayar - grandTotal;
                 const message = change > 0
                     ? `Pembayaran berhasil!\nKembalian: Rp ${formatNumber(change)}`
                     : 'Pembayaran berhasil!';
 
                 showAlertModal('Sukses', message, 'success', () => {
-                    // Open print window in center of screen
                     const width = 400;
                     const height = 500;
                     const left = (window.screen.width - width) / 2;
                     const top = (window.screen.height - height) / 2;
                     const size = `width=${width},height=${height},left=${left},top=${top}`;
-
                     const popupWindow = window.open(`/print-bill/${trxId}`, '_blank', size);
                     if (popupWindow) {
                         popupWindow.print();
-                        setTimeout(() => {
-                            // popupWindow.close();
-                        }, 1000);
                     }
                 });
 
                 resetAll();
                 setShowPaymentModal(false);
-                setPaymentAmount('');
+                setPaymentLines([]);
                 setCustomerName('');
             } else {
                 showAlertModal('Gagal', 'Gagal memproses pembayaran: ' + (response.data.message || 'Unknown error'), 'error');
@@ -729,6 +719,81 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSavePendingTransaction = async () => {
+        try {
+            setIsLoading(true);
+            setLoadingMessage('Menyimpan transaksi pending...');
+
+            const trxData = {
+                state: 'pending_payment',
+                items: calculatedItems.map(item => ({
+                    id: item.id,
+                    qty: item.qty,
+                    harga: item.hargaJual,
+                    disc_spv: item.disc_spv || 0,
+                    disc_promo: item.disc_promo || 0,
+                    charge: item.charge || 0,
+                    total: item.total
+                })),
+                discSpv: totalDisc,
+                discPromo: totalPromo,
+                charge: totalCharge,
+                total: grandTotal,
+                totalBayar: 0,
+                payments: [],
+                memberId: customerName || ''
+            };
+
+            const response = await axios.post('/proses-bayar', trxData);
+
+            if (response.data.status === 'ok') {
+                const trxId = response.data.trxId;
+                setLastTrxId(trxId);
+                setShowPaymentModal(false);
+                setPaymentLines([]);
+                setCustomerName('');
+
+                // Print pending receipt
+                const width = 400;
+                const height = 500;
+                const left = (window.screen.width - width) / 2;
+                const top = (window.screen.height - height) / 2;
+                const size = `width=${width},height=${height},left=${left},top=${top}`;
+                const popupWindow = window.open(`/print-bill/${trxId}`, '_blank', size);
+                if (popupWindow) popupWindow.print();
+
+                resetAll();
+                showAlertModal('Transaksi Pending', 'Struk pending telah dicetak. Pelanggan dapat membayar nanti.', 'info');
+            } else {
+                showAlertModal('Gagal', 'Gagal menyimpan transaksi pending', 'error');
+            }
+        } catch (error: any) {
+            if (error.response?.status === 403) {
+                setSessionExpired(true);
+            } else {
+                showAlertModal('Gagal', 'Gagal menyimpan transaksi pending. Silakan coba lagi.', 'error');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePendingPaymentSuccess = (trxId: string, kembali: number) => {
+        setShowPendingModal(false);
+        setLastTrxId(trxId);
+        const msg = kembali > 0 ? `Pembayaran berhasil!\nKembalian: Rp ${formatNumber(kembali)}` : 'Pembayaran berhasil!';
+        showAlertModal('Lunas', msg, 'success', () => {
+            const width = 400;
+            const height = 500;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+            const size = `width=${width},height=${height},left=${left},top=${top}`;
+            const popupWindow = window.open(`/print-bill/${trxId}`, '_blank', size);
+            if (popupWindow) popupWindow.print();
+        });
+        inputRef.current?.focus();
     };
 
     const handleDeleteItem = (itemId: string) => {
@@ -827,7 +892,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 inputRef.current?.focus();
             } else if (showPaymentModal) {
                 setShowPaymentModal(false);
-                setPaymentAmount('');
+                setPaymentLines([]);
                 setCustomerName('');
                 inputRef.current?.focus();
             } else if (!showSearchResults && selectedItems.length > 0) {
@@ -1011,6 +1076,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                 selectedItemsCount={selectedItems.length}
                                 onReset={resetAll}
                                 onPrintLast={handlePrintLast}
+                                onBayarPending={() => setShowPendingModal(true)}
                                 onDiskon={() => handleDiskon()}
                                 onKomplemen={handleKomplemen}
                                 onTogglePiutang={handleTogglePiutang}
@@ -1081,19 +1147,29 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 show={showPaymentModal}
                 grandTotal={grandTotal}
                 paymentTypes={paymentTypes}
-                selectedPaymentType={selectedPaymentType}
                 isPiutang={isPiutang}
                 customerName={customerName}
-                paymentAmount={paymentAmount}
+                paymentLines={paymentLines}
                 paymentInputRef={paymentInputRef}
-                onPaymentTypeSelect={setSelectedPaymentType}
+                onPaymentLinesChange={setPaymentLines}
                 onCustomerNameChange={setCustomerName}
-                onPaymentAmountChange={setPaymentAmount}
                 onSave={handleSavePayment}
+                onSavePending={handleSavePendingTransaction}
                 onCancel={() => {
                     setShowPaymentModal(false);
-                    setPaymentAmount('');
+                    setPaymentLines([]);
                     setCustomerName('');
+                    inputRef.current?.focus();
+                }}
+                formatNumber={formatNumber}
+            />
+
+            <PendingPaymentModal
+                show={showPendingModal}
+                paymentTypes={paymentTypes}
+                onSuccess={handlePendingPaymentSuccess}
+                onClose={() => {
+                    setShowPendingModal(false);
                     inputRef.current?.focus();
                 }}
                 formatNumber={formatNumber}

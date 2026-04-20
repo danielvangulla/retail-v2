@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import React from 'react';
+import Barcode from 'react-barcode';
 import { formatTgl, formatTime, formatDigit } from '@/lib/formatters';
 
 interface Barang {
@@ -24,6 +25,7 @@ interface TransaksiDetail {
 
 interface Transaction {
     id: string;
+    status?: number;
     payments: any[];
     details: TransaksiDetail[];
     piutang?: any;
@@ -147,7 +149,26 @@ export default function PrintBill({ trx, setup }: Props) {
 
                     {/* Payment Details */}
                     <div className="text-[10px] my-0.5">
-                        {trx.piutang ? (
+                        {trx.status === 5 ? (
+                            <div className="text-center my-2">
+                                <div className="border-2 border-black py-1 px-2 text-center font-bold text-xs">
+                                    *** MENUNGGU PEMBAYARAN ***
+                                </div>
+                                <div className="flex justify-center my-1">
+                                    <Barcode
+                                        value={trx.id}
+                                        format="CODE128"
+                                        width={1}
+                                        height={40}
+                                        fontSize={8}
+                                        displayValue={false}
+                                        margin={2}
+                                    />
+                                </div>
+                                <div className="text-[9px] font-mono break-all">{trx.id}</div>
+                                <div className="text-[10px] mt-1">Tunjukkan struk ini untuk pembayaran</div>
+                            </div>
+                        ) : trx.piutang ? (
                             trx.piutang.is_staff ? (
                                 <div className="text-center">
                                     <div>Sisa Deposit {trx.piutang.name}</div>

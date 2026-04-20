@@ -4,6 +4,7 @@ interface ActionButtonsProps {
     selectedItemsCount: number;
     onReset: () => void;
     onPrintLast: () => void;
+    onBayarPending: () => void;
     onDiskon: () => void;
     onKomplemen: () => void;
     onTogglePiutang: () => void;
@@ -16,6 +17,7 @@ export default function ActionButtons({
     selectedItemsCount,
     onReset,
     onPrintLast,
+    onBayarPending,
     onDiskon,
     onKomplemen,
     onTogglePiutang,
@@ -47,6 +49,18 @@ export default function ActionButtons({
                 </svg>
                 <span className="hidden sm:inline">Re-Print</span>
                 <span className="sm:hidden">PRT</span>
+            </button>
+
+            <button
+                onClick={onBayarPending}
+                className="group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 bg-linear-to-br from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400
+                         text-white rounded-md sm:rounded-lg font-medium text-xs sm:text-base shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 cursor-pointer whitespace-nowrap shrink-0"
+            >
+                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span className="hidden sm:inline">Bayar Pending</span>
+                <span className="sm:hidden">BPD</span>
             </button>
 
             <button

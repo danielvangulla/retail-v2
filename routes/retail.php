@@ -30,6 +30,11 @@ if (env('APP_TYPE') === 'retail') {
         Route::get('/print-bill', [KasirController::class, 'printBill']);
         Route::get('/print-bill/{trxId}', [KasirController::class, 'printBill']);
 
+        // Transaksi Pending
+        Route::post('/get-pending-transaction', [KasirController::class, 'getPendingTransaction']);
+        Route::get('/list-pending-transactions', [KasirController::class, 'listPendingTransactions']);
+        Route::post('/bayar-pending', [KasirController::class, 'bayarPending']);
+
         Route::post('/validate-spv', [KasirController::class, 'validateSpv']);
 
         Route::post('/komplemen-list', [KomplemenController::class, 'list']);

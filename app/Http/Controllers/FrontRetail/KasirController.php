@@ -108,6 +108,9 @@ class KasirController extends Controller
         ]);
     }
 
+    /** Status konstan untuk transaksi pending (menunggu pembayaran). */
+    public const STATUS_PENDING = 5;
+
     public function store(Request $r)
     {
         if (! $r->state) {
@@ -119,14 +122,14 @@ class KasirController extends Controller
 
         try {
             $data = (object) $r->validate([
-                'items' => 'required',
-                'discSpv' => 'numeric',
-                'discPromo' => 'numeric',
-                'charge' => 'numeric',
-                'total' => 'required | numeric',
-                'bayar' => 'required | numeric',
-                'typeId' => '',
-                'memberId' => '',
+                'items'      => 'required',
+                'discSpv'    => 'numeric',
+                'discPromo'  => 'numeric',
+                'charge'     => 'numeric',
+                'total'      => 'required|numeric',
+                'totalBayar' => 'nullable|numeric',
+                'payments'   => 'nullable|array',
+                'memberId'   => '',
             ], Helpers::customErrorMsg());
         } catch (\Exception $e) {
             return response()->json([
@@ -135,20 +138,35 @@ class KasirController extends Controller
             ], 422);
         }
 
-        // Full Payment
+        // Full Payment (multi-payment)
         if ($r->state === 'full') {
             $trxId = $this->setTransaksi($data);
             $this->setTransaksiPayment($data, $trxId);
             $this->setTransaksiDetails($data, $trxId);
 
             // Broadcast dashboard update
-            event(new DashboardUpdated(['trxId' => $trxId, 'bayar' => $data->bayar], 'transaction'));
+            $totalBayar = $data->totalBayar ?? 0;
+            event(new DashboardUpdated(['trxId' => $trxId, 'bayar' => $totalBayar], 'transaction'));
 
             return response()->json([
                 'status' => 'ok',
                 'msg' => '-',
                 'trxId' => $trxId,
                 'tgl' => Helpers::transactionDate(),
+            ], 200);
+        }
+
+        // Pending Payment (cetak struk, bayar nanti)
+        if ($r->state === 'pending_payment') {
+            $trxId = $this->setPendingTransaction($data);
+            $this->setTransaksiDetails($data, $trxId);
+
+            event(new DashboardUpdated(['trxId' => $trxId], 'transaction'));
+
+            return response()->json([
+                'status' => 'ok',
+                'msg' => '-',
+                'trxId' => $trxId,
             ], 200);
         }
 
@@ -283,35 +301,80 @@ class KasirController extends Controller
         return $trx->id;
     }
 
-    private function setTransaksi($data)
+    private function setTransaksi($data): string
     {
-        $rateTax = env('RATE_TAX');
-        $rateService = env('RATE_SERVICE');
+        $rateTax = env('RATE_TAX', 0);
+        $rateService = env('RATE_SERVICE', 0);
 
         $netto = $data->total;
-        $discSpv = $data->discSpv;
-        $discPromo = $data->discPromo;
+        $discSpv = $data->discSpv ?? 0;
+        $discPromo = $data->discPromo ?? 0;
+        $charge = $data->charge ?? 0;
 
-        $brutto = $netto + $discSpv + $discPromo;
+        $brutto = $netto + $discSpv + $discPromo - $charge;
         $tax = $netto * $rateTax / 100;
         $service = $netto * $rateService / 100;
-        $bayar = $netto + $tax + $service;
+        $bayar = $netto + $tax + $service + $charge;
+
+        // Hitung total bayar dari array payments (multi-payment)
+        $totalBayar = $data->totalBayar ?? collect($data->payments ?? [])->sum('nominal');
+        $kembali = max(0, $totalBayar - $bayar);
 
         $trxArr = [
-            'tgl' => Helpers::transactionDate(),
-            'jam_selesai' => DB::raw('CURRENT_TIMESTAMP'),
-            'meja' => '-',
-            'brutto' => $brutto,
-            'disc_spv' => $discSpv,
-            'disc_promo' => $discPromo,
-            'netto' => $netto,
-            'tax' => $tax,
-            'service' => $service,
-            'bayar' => $bayar,
-            'payment' => $data->bayar,
-            'kembali' => $data->bayar - $bayar,
-            'status' => Meja::$EMPTY,
+            'tgl'          => Helpers::transactionDate(),
+            'jam_selesai'  => DB::raw('CURRENT_TIMESTAMP'),
+            'meja'         => '-',
+            'brutto'       => $brutto,
+            'disc_spv'     => $discSpv,
+            'disc_promo'   => $discPromo,
+            'netto'        => $netto,
+            'charge'       => $charge,
+            'tax'          => $tax,
+            'service'      => $service,
+            'bayar'        => $bayar,
+            'payment'      => $totalBayar,
+            'kembali'      => $kembali,
+            'status'       => Meja::$EMPTY,
             'user_kasir_id' => Auth::user()->id,
+        ];
+
+        $trx = Transaksi::create($trxArr);
+
+        return $trx->id;
+    }
+
+    private function setPendingTransaction($data): string
+    {
+        $rateTax = env('RATE_TAX', 0);
+        $rateService = env('RATE_SERVICE', 0);
+
+        $netto = $data->total;
+        $discSpv = $data->discSpv ?? 0;
+        $discPromo = $data->discPromo ?? 0;
+        $charge = $data->charge ?? 0;
+
+        $brutto = $netto + $discSpv + $discPromo - $charge;
+        $tax = $netto * $rateTax / 100;
+        $service = $netto * $rateService / 100;
+        $bayar = $netto + $tax + $service + $charge;
+
+        $trxArr = [
+            'tgl'           => Helpers::transactionDate(),
+            'jam_selesai'   => DB::raw('CURRENT_TIMESTAMP'),
+            'meja'          => '-',
+            'brutto'        => $brutto,
+            'disc_spv'      => $discSpv,
+            'disc_promo'    => $discPromo,
+            'netto'         => $netto,
+            'charge'        => $charge,
+            'tax'           => $tax,
+            'service'       => $service,
+            'bayar'         => $bayar,
+            'payment'       => 0,
+            'kembali'       => 0,
+            'status'        => self::STATUS_PENDING,
+            'user_kasir_id' => Auth::user()->id,
+            'user_cetak_id' => Auth::user()->id,
         ];
 
         $trx = Transaksi::create($trxArr);
@@ -393,15 +456,126 @@ class KasirController extends Controller
         }
     }
 
-    private function setTransaksiPayment($data, $trxId)
+    private function setTransaksiPayment($data, string $trxId): void
     {
-        $trxTypeArr = [
-            'transaksi_id' => $trxId,
-            'type_id' => $data->typeId,
-            'nominal' => $data->total,
-        ];
+        $payments = $data->payments ?? [];
+        foreach ($payments as $p) {
+            $p = (object) $p;
+            TransaksiPayment::create([
+                'transaksi_id' => $trxId,
+                'type_id'      => $p->type_id,
+                'nominal'      => $p->nominal,
+            ]);
+        }
+    }
 
-        TransaksiPayment::create($trxTypeArr);
+    /**
+     * Cari transaksi pending berdasarkan kode (UUID).
+     */
+    public function getPendingTransaction(Request $r)
+    {
+        $q = trim($r->input('q', ''));
+
+        if (empty($q)) {
+            return response()->json(['status' => 'error', 'msg' => 'Kode transaksi tidak boleh kosong'], 422);
+        }
+
+        $trx = Transaksi::with([
+            'details',
+            'details.barang',
+            'kasir',
+        ])
+            ->where('status', self::STATUS_PENDING)
+            ->where('is_cancel', 0)
+            ->where(function ($query) use ($q) {
+                $query->where('id', $q)
+                    ->orWhere('id', 'like', "%{$q}%");
+            })
+            ->first();
+
+        if (! $trx) {
+            return response()->json(['status' => 'error', 'msg' => 'Transaksi pending tidak ditemukan'], 404);
+        }
+
+        return response()->json(['status' => 'ok', 'data' => $trx], 200);
+    }
+
+    /**
+     * Ambil daftar semua transaksi pending (untuk tampilan list).
+     */
+    public function listPendingTransactions()
+    {
+        $trxs = Transaksi::with(['details', 'kasir'])
+            ->where('status', self::STATUS_PENDING)
+            ->where('is_cancel', 0)
+            ->where('tgl', Helpers::transactionDate())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json(['status' => 'ok', 'data' => $trxs], 200);
+    }
+
+    /**
+     * Proses pelunasan transaksi pending (multi-payment).
+     */
+    public function bayarPending(Request $r)
+    {
+        try {
+            $data = (object) $r->validate([
+                'trxId'              => 'required|string',
+                'payments'           => 'required|array|min:1',
+                'payments.*.type_id' => 'required',
+                'payments.*.nominal' => 'required|numeric|min:1',
+                'totalBayar'         => 'required|numeric',
+            ], Helpers::customErrorMsg());
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'msg' => $e->getMessage()], 422);
+        }
+
+        $trx = Transaksi::find($data->trxId);
+
+        if (! $trx || (int) $trx->status !== self::STATUS_PENDING) {
+            return response()->json(['status' => 'error', 'msg' => 'Transaksi pending tidak ditemukan'], 404);
+        }
+
+        if ((float) $data->totalBayar < (float) $trx->bayar) {
+            return response()->json([
+                'status' => 'error',
+                'msg'    => 'Pembayaran kurang dari total tagihan (Rp '.number_format($trx->bayar, 0, ',', '.').')',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($trx, $data) {
+            foreach ($data->payments as $p) {
+                $p = (object) $p;
+                TransaksiPayment::create([
+                    'transaksi_id' => $trx->id,
+                    'type_id'      => $p->type_id,
+                    'nominal'      => $p->nominal,
+                ]);
+            }
+
+            $kembali = max(0, (float) $data->totalBayar - (float) $trx->bayar);
+
+            $trx->update([
+                'status'        => Meja::$EMPTY,
+                'payment'       => $data->totalBayar,
+                'kembali'       => $kembali,
+                'user_kasir_id' => Auth::user()->id,
+                'jam_selesai'   => DB::raw('CURRENT_TIMESTAMP'),
+            ]);
+        });
+
+        $kembali = max(0, (float) $data->totalBayar - (float) $trx->bayar);
+
+        event(new DashboardUpdated(['trxId' => $trx->id, 'bayar' => $data->totalBayar], 'transaction'));
+
+        return response()->json([
+            'status'  => 'ok',
+            'msg'     => 'Pembayaran berhasil',
+            'trxId'   => $trx->id,
+            'kembali' => $kembali,
+        ], 200);
     }
 
     public function validateSpv(Request $r)
