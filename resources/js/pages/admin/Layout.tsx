@@ -70,6 +70,7 @@ export default function AdminLayout({ title, children }: AdminLayoutProps) {
                 { label: 'Laporan Void', href: '/admin/report/void', minLevel: 2 },
                 // Laporan lain: admin only
                 { label: 'Penjualan', href: '/admin/report/sales', minLevel: 1 },
+                { label: 'Pending', href: '/admin/report/pending', minLevel: 1 },
                 { label: 'Profit', href: '/admin/profit', minLevel: 1 },
             ],
         },

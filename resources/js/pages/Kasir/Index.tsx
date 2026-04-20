@@ -7,6 +7,8 @@ import DiskonModal from './components/DiskonModal';
 import KomplemenModal from './components/KomplemenModal';
 import PaymentModal, { PaymentLine } from './components/PaymentModal';
 import PendingPaymentModal from './components/PendingPaymentModal';
+import CustomerSelect, { CustomerOption } from './components/CustomerSelect';
+import CustomerCreateModal from './components/CustomerCreateModal';
 import ActionButtons from './components/ActionButtons';
 import CartTable from './components/CartTable';
 import KasirMenuBar from './components/KasirMenuBar';
@@ -82,7 +84,8 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentLines, setPaymentLines] = useState<PaymentLine[]>([]);
-    const [customerName, setCustomerName] = useState('');
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
+    const [showCustomerCreateModal, setShowCustomerCreateModal] = useState(false);
     const [showPendingModal, setShowPendingModal] = useState(false);
 
     // Shift state
@@ -421,6 +424,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         setIsStaff(false);
         setSearchQuery('');
         setShowSearchResults(false);
+        setSelectedCustomer(null);
         inputRef.current?.focus();
     }, [selectedItems]);
 
@@ -631,7 +635,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
         }
 
         setPaymentLines([{ type: paymentTypes[0] ?? null, amount: String(grandTotal) }]);
-        setCustomerName('');
         setShowPaymentModal(true);
     };
 
@@ -667,7 +670,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 total: grandTotal,
                 totalBayar,
                 payments: paymentLines.map((l) => ({ type_id: l.type!.id, nominal: parseFloat(l.amount) })),
-                memberId: customerName || ''
+                memberId: selectedCustomer?.value ?? ''
             };
 
             const response = await axios.post('/proses-bayar', trxData);
@@ -703,7 +706,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 resetAll();
                 setShowPaymentModal(false);
                 setPaymentLines([]);
-                setCustomerName('');
             } else {
                 showAlertModal('Gagal', 'Gagal memproses pembayaran: ' + (response.data.message || 'Unknown error'), 'error');
             }
@@ -743,7 +745,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 total: grandTotal,
                 totalBayar: 0,
                 payments: [],
-                memberId: customerName || ''
+                memberId: selectedCustomer?.value ?? ''
             };
 
             const response = await axios.post('/proses-bayar', trxData);
@@ -753,7 +755,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 setLastTrxId(trxId);
                 setShowPaymentModal(false);
                 setPaymentLines([]);
-                setCustomerName('');
 
                 // Print pending receipt
                 const width = 400;
@@ -893,7 +894,6 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             } else if (showPaymentModal) {
                 setShowPaymentModal(false);
                 setPaymentLines([]);
-                setCustomerName('');
                 inputRef.current?.focus();
             } else if (!showSearchResults && selectedItems.length > 0) {
                 resetAll();
@@ -931,7 +931,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                     {/* Header Section */}
                     <div className="bg-linear-to-br from-slate-800 to-slate-700 rounded-lg sm:rounded-xl shadow-2xl border border-slate-600 p-2 sm:p-3">
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                            <div className="flex-1 sm:max-w-md">
+                            <div className="flex-1 sm:max-w-md flex flex-col gap-1.5">
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                                         <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -951,6 +951,12 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-inner"
                                     />
                                 </div>
+                                {/* Customer Select */}
+                                <CustomerSelect
+                                    value={selectedCustomer}
+                                    onChange={setSelectedCustomer}
+                                    onAddNew={() => setShowCustomerCreateModal(true)}
+                                />
                             </div>
 
                             <div className="flex items-center gap-2 sm:gap-3 bg-linear-to-br from-blue-600 to-blue-500 px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-lg">
@@ -1148,17 +1154,15 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                 grandTotal={grandTotal}
                 paymentTypes={paymentTypes}
                 isPiutang={isPiutang}
-                customerName={customerName}
+                selectedCustomer={selectedCustomer}
                 paymentLines={paymentLines}
                 paymentInputRef={paymentInputRef}
                 onPaymentLinesChange={setPaymentLines}
-                onCustomerNameChange={setCustomerName}
                 onSave={handleSavePayment}
                 onSavePending={handleSavePendingTransaction}
                 onCancel={() => {
                     setShowPaymentModal(false);
                     setPaymentLines([]);
-                    setCustomerName('');
                     inputRef.current?.focus();
                 }}
                 formatNumber={formatNumber}
@@ -1201,6 +1205,16 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
             <LoadingModal
                 show={isLoading || isLoggingOut}
                 message={isLoggingOut ? 'Logging out...' : loadingMessage}
+            />
+
+            {/* Customer Create Modal */}
+            <CustomerCreateModal
+                show={showCustomerCreateModal}
+                onClose={() => setShowCustomerCreateModal(false)}
+                onSuccess={(customer) => {
+                    setSelectedCustomer(customer);
+                    setShowCustomerCreateModal(false);
+                }}
             />
 
             {/* Shift Modals */}

@@ -37,6 +37,10 @@ if (env('APP_TYPE') === 'retail') {
 
         Route::post('/validate-spv', [KasirController::class, 'validateSpv']);
 
+        // Customer (Piutang) search & create
+        Route::get('/customer-search', [KasirController::class, 'customerSearch']);
+        Route::post('/customer-store', [KasirController::class, 'customerStore']);
+
         Route::post('/komplemen-list', [KomplemenController::class, 'list']);
         Route::post('/komplemen-proses', [KomplemenController::class, 'proses']);
         Route::get('/transaksi-detail/{id}', [KomplemenController::class, 'detail']);

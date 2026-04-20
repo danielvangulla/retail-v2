@@ -223,4 +223,62 @@ class ReportController extends Controller
             'data' => $data,
         ]);
     }
+
+    public function pending(): Response
+    {
+        return Inertia::render('admin/Report/Pending');
+    }
+
+    public function pendingData(Request $request): JsonResponse
+    {
+        $STATUS_PENDING = 5;
+
+        $query = Transaksi::query()
+            ->where('is_cancel', 0)
+            ->whereIn('status', [$STATUS_PENDING, 0])
+            ->whereNotNull('piutang_id');
+
+        if ($request->date_from) {
+            $query->where('tgl', '>=', Carbon::parse($request->date_from)->startOfDay());
+        }
+
+        if ($request->date_to) {
+            $query->where('tgl', '<=', Carbon::parse($request->date_to)->endOfDay());
+        }
+
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhereHas('piutang', function ($pq) use ($search) {
+                        $pq->where('nama', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->status_filter && $request->status_filter !== 'all') {
+            if ($request->status_filter === 'pending') {
+                $query->where('status', $STATUS_PENDING);
+            } elseif ($request->status_filter === 'lunas') {
+                $query->where('status', 0);
+            }
+        }
+
+        $data = $query
+            ->with(['kasir:id,name', 'piutang:id,nama'])
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        $summary = [
+            'total_pending' => (clone $query)->where('status', $STATUS_PENDING)->count(),
+            'total_lunas'   => (clone $query)->where('status', 0)->count(),
+            'nilai_pending' => (clone $query)->where('status', $STATUS_PENDING)->sum('bayar'),
+        ];
+
+        return response()->json([
+            'status'  => 'ok',
+            'data'    => $data,
+            'summary' => $summary,
+        ]);
+    }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, RefObject } from 'react';
 import { PaymentType } from '@/components/kasir/types';
+import type { CustomerOption } from './CustomerSelect';
 
 export interface PaymentLine {
     type: PaymentType | null;
@@ -11,11 +12,10 @@ interface PaymentModalProps {
     grandTotal: number;
     paymentTypes: PaymentType[];
     isPiutang: boolean;
-    customerName: string;
+    selectedCustomer: CustomerOption | null;
     paymentLines: PaymentLine[];
     paymentInputRef: RefObject<HTMLInputElement | null>;
     onPaymentLinesChange: (lines: PaymentLine[]) => void;
-    onCustomerNameChange: (value: string) => void;
     onSave: () => void;
     onSavePending: () => void;
     onCancel: () => void;
@@ -27,11 +27,10 @@ export default function PaymentModal({
     grandTotal,
     paymentTypes,
     isPiutang,
-    customerName,
+    selectedCustomer,
     paymentLines,
     paymentInputRef,
     onPaymentLinesChange,
-    onCustomerNameChange,
     onSave,
     onSavePending,
     onCancel,
@@ -90,17 +89,25 @@ export default function PaymentModal({
                     <div className="text-white text-2xl sm:text-3xl font-bold">Rp {formatNumber(grandTotal)}</div>
                 </div>
 
-                {/* Customer Name (for Piutang) */}
-                {isPiutang && (
+                {/* Customer info */}
+                {(isPiutang || selectedCustomer) && (
                     <div className="mb-4">
-                        <label className="block text-slate-300 text-sm mb-1">Nama Customer</label>
-                        <input
-                            type="text"
-                            value={customerName}
-                            onChange={(e) => onCustomerNameChange(e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nama customer..."
-                        />
+                        <label className="block text-slate-300 text-sm mb-1">Customer</label>
+                        {selectedCustomer ? (
+                            <div className="flex items-center gap-2 px-3 py-2 bg-slate-700/60 border border-slate-600 rounded-lg">
+                                <svg className="h-4 w-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className="text-white text-sm font-medium">{selectedCustomer.label}</span>
+                                {selectedCustomer.is_staff === 1 && (
+                                    <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">Staff</span>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="px-3 py-2 bg-slate-700/40 border border-dashed border-slate-500 rounded-lg text-slate-400 text-sm italic">
+                                Customer belum dipilih
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -228,8 +235,9 @@ export default function PaymentModal({
                     </button>
                     <button
                         onClick={onSavePending}
-                        className="flex-1 min-w-[90px] px-3 py-2.5 bg-amber-600/80 hover:bg-amber-500 text-white rounded-lg font-medium text-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
-                        title="Cetak struk, bayar nanti saat customer kembali"
+                        disabled={!selectedCustomer}
+                        className="flex-1 min-w-[90px] px-3 py-2.5 bg-amber-600/80 hover:bg-amber-500 text-white rounded-lg font-medium text-sm transition-colors cursor-pointer flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-600/80"
+                        title={selectedCustomer ? "Cetak struk, bayar nanti saat customer kembali" : "Pilih member/customer terlebih dahulu untuk transaksi pending"}
                     >
                         <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -244,6 +252,11 @@ export default function PaymentModal({
                         Proses
                     </button>
                 </div>
+                {!selectedCustomer && (
+                    <p className="text-amber-400/80 text-xs text-center mt-1">
+                        Pilih member untuk mengaktifkan "Bayar Nanti"
+                    </p>
+                )}
             </div>
         </div>
     );

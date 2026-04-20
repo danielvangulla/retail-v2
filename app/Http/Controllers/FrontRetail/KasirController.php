@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Helpers;
 use App\Models\Barang;
 use App\Models\Meja;
+use App\Models\Piutang;
 use App\Models\PiutangBayar;
 use App\Models\Transaksi;
 use App\Models\TransaksiDetail;
@@ -375,6 +376,7 @@ class KasirController extends Controller
             'status'        => self::STATUS_PENDING,
             'user_kasir_id' => Auth::user()->id,
             'user_cetak_id' => Auth::user()->id,
+            'piutang_id'    => $data->memberId ?: null,
         ];
 
         $trx = Transaksi::create($trxArr);
@@ -596,6 +598,55 @@ class KasirController extends Controller
             'status' => 'ok',
             'msg' => '-',
         ], 200);
+    }
+
+    /**
+     * Search customers (piutangs) by name.
+     */
+    public function customerSearch(Request $r): \Illuminate\Http\JsonResponse
+    {
+        $q = trim($r->input('q', ''));
+
+        $query = Piutang::where('is_aktif', 1)->orderBy('name');
+
+        if ($q !== '') {
+            $query->where('name', 'like', "%{$q}%");
+        }
+
+        $customers = $query->limit(30)->get(['id', 'name', 'is_staff']);
+
+        return response()->json(['status' => 'ok', 'data' => $customers]);
+    }
+
+    /**
+     * Create a new customer (piutang).
+     */
+    public function customerStore(Request $r): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $validated = $r->validate([
+                'name' => 'required|string|max:100',
+            ], [
+                'name.required' => 'Nama customer wajib diisi.',
+                'name.max'      => 'Nama maksimal 100 karakter.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'msg' => $e->getMessage()], 422);
+        }
+
+        $customer = Piutang::create([
+            'name'     => trim($validated['name']),
+            'is_aktif' => 1,
+            'limit'    => 0,
+            'is_staff' => 0,
+            'deposit'  => 0,
+        ]);
+
+        return response()->json([
+            'status' => 'ok',
+            'msg'    => 'Customer berhasil ditambahkan.',
+            'data'   => ['id' => $customer->id, 'name' => $customer->name, 'is_staff' => 0],
+        ]);
     }
 
     public function trxEdit($id)

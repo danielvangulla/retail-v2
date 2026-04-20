@@ -120,6 +120,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/report/inventory', [ReportController::class, 'inventory'])->name('report.inventory');
     Route::post('/report/inventory-data', [ReportController::class, 'inventoryData'])->name('report.inventory-data');
 
+    // Laporan Pending
+    Route::get('/report/pending', [ReportController::class, 'pending'])->name('report.pending');
+    Route::post('/report/pending-data', [ReportController::class, 'pendingData'])->name('report.pending-data');
+
     // Opname (Stock Audit)
     Route::resource('/opname', OpnameController::class);
     Route::post('/opname-list', [OpnameController::class, 'opnameJson'])->name('opname.list');
