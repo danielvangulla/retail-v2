@@ -15,6 +15,7 @@ class Helpers extends Controller
             2 => 'Kasir',
             3 => 'Admin',
         ];
+
         return $arr[$level];
     }
 
@@ -35,16 +36,17 @@ class Helpers extends Controller
 
     public static function generateNoCO()
     {
-        $date = Date("dHis");
+        $date = date('dHis');
         $str = Str::random(5);
-        return $date . $str;
+
+        return $date.$str;
     }
 
     public static function getSetup($config_name)
     {
         $setups = Setup::where('config_name', $config_name)->first();
 
-        if (!$setups) {
+        if (! $setups) {
             return null;
         }
 
@@ -65,7 +67,7 @@ class Helpers extends Controller
         $multiplier = $configCode->multiplier;
 
         $arrCode = str_split($code);
-        $kodeOmset = "-";
+        $kodeOmset = '-';
 
         foreach ($arrCode as $k => $v) {
             $limitOmset = ($k + 1) * $multiplier;
@@ -81,11 +83,11 @@ class Helpers extends Controller
     public static function colors()
     {
         $arr = [
-            0 => "bg-green-600",
-            1 => "bg-yellow-500",
-            3 => "bg-red-500",
-            4 => "bg-gray-600",
-            9 => "bg-blue-500",
+            0 => 'bg-green-600',
+            1 => 'bg-yellow-500',
+            3 => 'bg-red-500',
+            4 => 'bg-gray-600',
+            9 => 'bg-blue-500',
         ];
 
         return $arr;
@@ -93,14 +95,14 @@ class Helpers extends Controller
 
     public static function transactionDate()
     {
-        $oprStart = trim(env("OPERATIONAL_START", "00:00:01"));
-        $tgl = date("Y-m-d");
+        $oprStart = trim(env('OPERATIONAL_START', '00:00:01'));
+        $tgl = date('Y-m-d');
 
-        $currentTime = strtotime(date("H:i:s")); // Get the current time as a timestamp
+        $currentTime = strtotime(date('H:i:s')); // Get the current time as a timestamp
         $oprStartTime = strtotime($oprStart); // Convert the oprStart time to a timestamp
 
         if ($currentTime < $oprStartTime) {
-            $tgl = date("Y-m-d", strtotime("-1 day", strtotime($tgl))); // Decrease $tgl by 1 day
+            $tgl = date('Y-m-d', strtotime('-1 day', strtotime($tgl))); // Decrease $tgl by 1 day
         }
 
         // Perform any other actions you want based on the comparison
@@ -126,7 +128,7 @@ class Helpers extends Controller
             $command = 'powershell.exe (Get-WmiObject Win32_ComputerSystemProduct).UUID';
             $machineId = trim(shell_exec($command));
 
-            if ($machineId !== config("auth.mac_id")) {
+            if ($machineId !== config('auth.mac_id')) {
                 return self::unregisteredInfo($os);
             }
         }
@@ -134,17 +136,18 @@ class Helpers extends Controller
         if ($os === 'LINUX') {
             $machineId = trim(file_get_contents('/var/lib/dbus/machine-id'));
 
-            if ($machineId !== config("auth.mac_id")) {
+            if ($machineId !== config('auth.mac_id')) {
                 return self::unregisteredInfo($os);
             }
         }
 
         if ($os === 'DARWIN') {
             $os = 'macOS';
-            $command = 'ioreg -rd1 -c IOPlatformExpertDevice | grep IOPlatformUUID | awk \'{print $3}\' | tr -d \'"\'';
-            $machineId = trim(shell_exec($command));
+            $raw = shell_exec('/usr/sbin/ioreg -rd1 -c IOPlatformExpertDevice') ?? '';
+            preg_match('/"IOPlatformUUID"\s*=\s*"([^"]+)"/', $raw, $matches);
+            $machineId = trim($matches[1] ?? '');
 
-            if ($machineId !== config("auth.mac_id")) {
+            if ($machineId !== config('auth.mac_id')) {
                 return self::unregisteredInfo($os);
             }
         }
@@ -160,7 +163,7 @@ class Helpers extends Controller
         return [
             'os' => $os,
             'status' => 'Unregistered.',
-            'message' => 'Contact developer to Register the App to this Machine.'
+            'message' => 'Contact developer to Register the App to this Machine.',
         ];
     }
 }

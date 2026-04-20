@@ -8,11 +8,11 @@ use App\Models\BarangPrice;
 use App\Models\BarangStock;
 use App\Models\Kategori;
 use App\Models\Kategorisub;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
 
 class BarangController extends Controller
 {
@@ -23,10 +23,10 @@ class BarangController extends Controller
         // Search filter
         if ($request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('deskripsi', 'LIKE', "%{$search}%")
-                  ->orWhere('sku', 'LIKE', "%{$search}%")
-                  ->orWhere('barcode', 'LIKE', "%{$search}%");
+                    ->orWhere('sku', 'LIKE', "%{$search}%")
+                    ->orWhere('barcode', 'LIKE', "%{$search}%");
             });
         }
 
@@ -59,15 +59,18 @@ class BarangController extends Controller
 
         if ($request->search) {
             $search = $request->search;
-            $query->where('deskripsi', 'LIKE', "%{$search}%")
-                ->orWhere('barcode', 'LIKE', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('deskripsi', 'LIKE', "%{$search}%")
+                    ->orWhere('sku', 'LIKE', "%{$search}%")
+                    ->orWhere('barcode', 'LIKE', "%{$search}%");
+            });
         }
 
         if ($request->kategori_id) {
             $query->where('kategori_id', $request->kategori_id);
         }
 
-        if ($request->show !== null) {
+        if ($request->show !== null && $request->show !== '') {
             $query->where('st_aktif', $request->show);
         }
 
@@ -91,6 +94,7 @@ class BarangController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'sku' => 'nullable|string|max:50|unique:barang,sku',
             'barcode' => 'nullable|unique:barang',
             'deskripsi' => 'required',
             'alias' => 'nullable',
@@ -114,13 +118,13 @@ class BarangController extends Controller
 
         // Generate SKU if not provided
         if (empty($validated['sku'])) {
-            $validated['sku'] = 'BRG-' . strtoupper(Str::random(8));
+            $validated['sku'] = 'BRG-'.strtoupper(Str::random(8));
         }
 
         $barang = Barang::create($validated);
 
         // Save harga bertingkat if provided
-        if (!empty($request->prices)) {
+        if (! empty($request->prices)) {
             foreach ($request->prices as $price) {
                 BarangPrice::create([
                     'barang_id' => $barang->id,
@@ -151,7 +155,8 @@ class BarangController extends Controller
         $barang = Barang::findOrFail($id);
 
         $validated = $request->validate([
-            'barcode' => 'nullable|unique:barang,barcode,' . $id . ',id',
+            'sku' => 'nullable|string|max:50|unique:barang,sku,'.$id.',id',
+            'barcode' => 'nullable|unique:barang,barcode,'.$id.',id',
             'deskripsi' => 'required',
             'alias' => 'nullable',
             'kategori_id' => 'required|exists:kategori,id',
@@ -176,7 +181,7 @@ class BarangController extends Controller
 
         // Delete old prices and create new ones
         $barang->prices()->delete();
-        if (!empty($request->prices)) {
+        if (! empty($request->prices)) {
             foreach ($request->prices as $price) {
                 BarangPrice::create([
                     'barang_id' => $barang->id,
@@ -216,7 +221,7 @@ class BarangController extends Controller
         try {
             $stock = BarangStock::where('barang_id', $barangId)->first();
 
-            if (!$stock) {
+            if (! $stock) {
                 // Jika tidak ada record di barang_stock, return 0
                 return response()->json([
                     'status' => 'ok',

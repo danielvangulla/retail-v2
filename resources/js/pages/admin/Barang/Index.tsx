@@ -54,12 +54,13 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
     const [loading, setLoading] = useState(false);
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-    const handleSearch = () => {
-        router.get('/admin/barang', {
-            search: search || undefined,
-            kategori_id: kategoriFilter || undefined,
-            show: showFilter || undefined,
-        }, {
+    const handleSearch = (overrides: { search?: string; kategori_id?: string; show?: string } = {}) => {
+        const params = {
+            search: ('search' in overrides ? overrides.search : search) || undefined,
+            kategori_id: ('kategori_id' in overrides ? overrides.kategori_id : kategoriFilter) || undefined,
+            show: ('show' in overrides ? overrides.show : showFilter) || undefined,
+        };
+        router.get('/admin/barang', params, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -128,8 +129,9 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                             <select
                                 value={kategoriFilter}
                                 onChange={(e) => {
-                                    setKategoriFilter(e.target.value);
-                                    handleSearch();
+                                    const val = e.target.value;
+                                    setKategoriFilter(val);
+                                    handleSearch({ kategori_id: val });
                                 }}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer"
                             >
@@ -148,8 +150,9 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                             <select
                                 value={showFilter}
                                 onChange={(e) => {
-                                    setShowFilter(e.target.value);
-                                    handleSearch();
+                                    const val = e.target.value;
+                                    setShowFilter(val);
+                                    handleSearch({ show: val });
                                 }}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer"
                             >

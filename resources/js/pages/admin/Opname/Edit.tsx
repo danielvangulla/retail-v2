@@ -65,12 +65,13 @@ export default function OpnameEdit({ opname, barangs }: Props) {
     const handleSearchBarang = (value: string) => {
         setSearchQuery(value);
         if (value.length >= 2) {
+            const q = value.toLowerCase();
             const filtered = barangList.filter(
                 (b) =>
-                    b.sku.toLowerCase().includes(value.toLowerCase()) ||
-                    b.barcode.toLowerCase().includes(value.toLowerCase()) ||
-                    b.deskripsi.toLowerCase().includes(value.toLowerCase()) ||
-                    b.alias.toLowerCase().includes(value.toLowerCase())
+                    b.sku.toLowerCase().includes(q) ||
+                    (b.barcode || '').toLowerCase().includes(q) ||
+                    b.deskripsi.toLowerCase().includes(q) ||
+                    (b.alias || '').toLowerCase().includes(q)
             );
             setFilteredBarang(filtered);
             setShowDropdown(true);

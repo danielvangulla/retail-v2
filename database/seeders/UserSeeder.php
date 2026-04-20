@@ -13,20 +13,32 @@ class UserSeeder extends Seeder
         $users = [
             [
                 'level' => 1,
-                'name' => 'supervisor',
-                'email' => 'supervisor@mail.com',
+                'name' => 'admin',
+                'email' => 'admin@mail.com',
                 'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
             ],
             [
                 'level' => 2,
+                'name' => 'spv',
+                'email' => 'spv@mail.com',
+                'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
+            ],
+            [
+                'level' => 3,
                 'name' => 'kasir',
                 'email' => 'kasir@mail.com',
                 'password' => bcrypt('password123'),
+                'email_verified_at' => now(),
             ],
         ];
 
-        foreach ($users as $user) {
-            User::factory()->create($user);
+        foreach ($users as $userData) {
+            User::updateOrCreate(
+                ['email' => $userData['email']],
+                $userData
+            );
         }
     }
 }

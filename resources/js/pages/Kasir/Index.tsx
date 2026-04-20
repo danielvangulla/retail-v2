@@ -221,7 +221,7 @@ export default function KasirIndex({ paymentTypes, keysArray, lastTrxId: initial
                             if (results.length === 1) {
                                 canSelectSearchResultRef.current = true;
                                 const exactMatch = results.find((item: BarangItem) =>
-                                    item.barcode.toLowerCase() === searchString ||
+                                    (item.barcode || '').toLowerCase() === searchString ||
                                     item.deskripsi.toLowerCase() === searchString
                                 );
 
