@@ -115,7 +115,7 @@ export default function BarangIndex({ barang, kategoris, filters }: BarangIndexP
                                 />
                                 <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                                 <button
-                                    onClick={handleSearch}
+                                    onClick={() => handleSearch()}
                                     className="absolute right-2 top-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
                                 >
                                     Cari

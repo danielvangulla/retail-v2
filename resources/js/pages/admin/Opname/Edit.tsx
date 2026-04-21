@@ -10,6 +10,7 @@ interface Barang {
     sku: string;
     barcode: string;
     deskripsi: string;
+    alias?: string;
     satuan: string;
     harga_beli: number;
     harga_jual1: number;
@@ -304,8 +305,8 @@ export default function OpnameEdit({ opname, barangs }: Props) {
                 title="Informasi"
                 message={infoMessage}
                 type="info"
-                isOpen={showInfoModal}
-                onClose={() => setShowInfoModal(false)}
+                show={showInfoModal}
+                onConfirm={() => setShowInfoModal(false)}
             />
         </>
     );

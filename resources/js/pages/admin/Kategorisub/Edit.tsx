@@ -8,7 +8,7 @@ interface EditProps {
     };
     kategoris: Array<{
         id: string;
-        nama: string;
+        ket: string;
     }>;
 }
 

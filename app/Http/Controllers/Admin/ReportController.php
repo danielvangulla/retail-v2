@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Transaksi;
 use App\Models\Barang;
+use App\Models\Transaksi;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ReportController extends Controller
 {
@@ -58,9 +58,79 @@ class ReportController extends Controller
         ]);
     }
 
-    public function inventory(): Response
+    public function inventory(Request $request): Response
     {
-        return Inertia::render('admin/Report/Inventory');
+        $search = $request->get('search', '');
+        $lowStock = $request->boolean('low_stock');
+
+        $query = Barang::with('kategori')
+            ->where('st_aktif', 1)
+            ->select('id', 'barcode', 'deskripsi', 'min_stock', 'harga_jual1', 'kategori_id');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('deskripsi', 'LIKE', "%{$search}%")
+                    ->orWhere('barcode', 'LIKE', "%{$search}%")
+                    ->orWhere('sku', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $barang = $query->orderBy('deskripsi')->get();
+
+        $totalItems = $barang->count();
+        $lowStockItems = $barang->filter(fn ($b) => $b->min_stock > 0)->count();
+
+        if ($lowStock) {
+            $barang = $barang->filter(fn ($b) => $b->min_stock > 0)->values();
+        }
+
+        return Inertia::render('admin/Report/Inventory', [
+            'barang' => $barang,
+            'summary' => [
+                'total_items' => $totalItems,
+                'total_stok' => 0,
+                'low_stock_items' => $lowStockItems,
+            ],
+            'search' => $search,
+            'lowStock' => $lowStock,
+        ]);
+    }
+
+    public function inventoryData(Request $request): JsonResponse
+    {
+        $search = $request->get('search', '');
+        $lowStock = $request->boolean('low_stock');
+
+        $query = Barang::with('kategori')
+            ->where('st_aktif', 1)
+            ->select('id', 'barcode', 'deskripsi', 'min_stock', 'harga_jual1', 'kategori_id');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('deskripsi', 'LIKE', "%{$search}%")
+                    ->orWhere('barcode', 'LIKE', "%{$search}%")
+                    ->orWhere('sku', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $barang = $query->orderBy('deskripsi')->get();
+
+        $totalItems = $barang->count();
+        $lowStockItems = $barang->filter(fn ($b) => $b->min_stock > 0)->count();
+
+        if ($lowStock) {
+            $barang = $barang->filter(fn ($b) => $b->min_stock > 0)->values();
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'data' => $barang,
+            'summary' => [
+                'total_items' => $totalItems,
+                'total_stok' => 0,
+                'low_stock_items' => $lowStockItems,
+            ],
+        ]);
     }
 
     public function salesByDate(Request $request): JsonResponse
@@ -69,7 +139,7 @@ class ReportController extends Controller
         $to = Carbon::parse($request->date_to)->endOfDay();
 
         // Query to get sales data with cost calculation using historical purchase price from stock movements
-        $sql = "
+        $sql = '
             SELECT
                 DATE(t.jam_mulai) as date,
                 COUNT(DISTINCT t.id) as total_transactions,
@@ -89,13 +159,14 @@ class ReportController extends Controller
             WHERE t.jam_mulai BETWEEN ? AND ?
             GROUP BY DATE(t.jam_mulai)
             ORDER BY date DESC
-        ";
+        ';
 
         $data = DB::connection()->select($sql, [$from, $to]);
 
         // Convert to collection and format dates
         $data = collect($data)->map(function ($item) {
             $item->display_date = \Carbon\Carbon::createFromFormat('Y-m-d', $item->date)->translatedFormat('d M Y');
+
             return $item;
         });
 
@@ -112,7 +183,7 @@ class ReportController extends Controller
         $page = $request->page ?? 1;
 
         // Query to get sales by category with cost calculation using historical purchase price from stock movements
-        $sql = "
+        $sql = '
             SELECT
                 k.id as kategori_id,
                 k.ket as kategori_name,
@@ -134,7 +205,7 @@ class ReportController extends Controller
             WHERE t.jam_mulai BETWEEN ? AND ?
             GROUP BY k.id, k.ket
             ORDER BY total_sales DESC
-        ";
+        ';
 
         $query = DB::connection()->select($sql, [$from, $to]);
 
@@ -172,7 +243,7 @@ class ReportController extends Controller
         $page = $request->page ?? 1;
 
         // Query to get sales by item with cost calculation using historical purchase price from stock movements
-        $sql = "
+        $sql = '
             SELECT
                 b.id as barang_id,
                 b.sku,
@@ -193,7 +264,7 @@ class ReportController extends Controller
             WHERE t.jam_mulai BETWEEN ? AND ?
             GROUP BY b.id, b.sku, b.deskripsi
             ORDER BY total_sales DESC
-        ";
+        ';
 
         $query = DB::connection()->select($sql, [$from, $to]);
 
@@ -271,13 +342,13 @@ class ReportController extends Controller
 
         $summary = [
             'total_pending' => (clone $query)->where('status', $STATUS_PENDING)->count(),
-            'total_lunas'   => (clone $query)->where('status', 0)->count(),
+            'total_lunas' => (clone $query)->where('status', 0)->count(),
             'nilai_pending' => (clone $query)->where('status', $STATUS_PENDING)->sum('bayar'),
         ];
 
         return response()->json([
-            'status'  => 'ok',
-            'data'    => $data,
+            'status' => 'ok',
+            'data' => $data,
             'summary' => $summary,
         ]);
     }

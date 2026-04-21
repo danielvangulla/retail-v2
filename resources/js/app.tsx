@@ -16,22 +16,16 @@ const getCsrfToken = (): string => {
     return token?.getAttribute('content') || '';
 };
 
-// Add response interceptor to update CSRF token from response header
-router.on('success', (event) => {
-    // Check if response has new CSRF token in headers
-    const csrfHeader = event.detail.response?.headers?.['x-csrf-token'];
-    if (csrfHeader) {
-        const metaTag = document.head.querySelector('meta[name="csrf-token"]');
-        if (metaTag) {
-            metaTag.setAttribute('content', csrfHeader);
-        }
-    }
+// Refresh CSRF token meta tag from page props on each navigation
+router.on('success', () => {
+    // CSRF token is managed by Inertia via cookies/session automatically
 });
 
-// Add error handler for 419 errors
-router.on('error', (error) => {
-    if (error.status === 419) {
-        console.warn('Session expired. Please refresh and try again.');
+// Handle validation errors
+router.on('error', (event) => {
+    const errors = event.detail.errors;
+    if (errors && Object.keys(errors).length > 0) {
+        console.warn('Validation errors:', errors);
     }
 });
 

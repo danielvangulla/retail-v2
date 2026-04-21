@@ -3,7 +3,7 @@ import KategorisubForm from './Form';
 interface CreateProps {
     kategoris: Array<{
         id: string;
-        nama: string;
+        ket: string;
     }>;
 }
 

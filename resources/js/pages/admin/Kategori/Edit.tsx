@@ -3,7 +3,7 @@ import KategoriForm from './Form';
 interface EditProps {
     kategori: {
         id: string;
-        nama: string;
+        ket: string;
     };
 }
 

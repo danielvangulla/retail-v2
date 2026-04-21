@@ -10,7 +10,7 @@ interface BarangItem {
     min_stock: number;
     harga_jual1: number;
     kategori: {
-        nama: string;
+        ket: string;
     };
 }
 
@@ -52,9 +52,9 @@ export default function InventoryReport({ barang, summary, search: initialSearch
         csv += 'Barcode,Deskripsi,Kategori,Stok,Min Stok,Nilai Barang,Status\n';
 
         barang.forEach((item) => {
-            const nilai = item.stok * item.harga_jual;
-            const status = item.stok <= item.min_stok ? 'RENDAH' : 'BAIK';
-            csv += `"${item.barcode}","${item.deskripsi}","${item.kategori.nama}",${item.stok},${item.min_stok},${nilai},"${status}"\n`;
+            const nilai = item.harga_jual1;
+            const status = 'N/A';
+            csv += `"${item.barcode}","${item.deskripsi}","${item.kategori.ket}",N/A,${item.min_stock},${nilai},"${status}"\n`;
         });
 
         const element = document.createElement('a');
@@ -203,7 +203,7 @@ export default function InventoryReport({ barang, summary, search: initialSearch
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-white">{item.deskripsi}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-400">
-                                                    {item.kategori.nama}
+                                                    {item.kategori.ket}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-400 text-center">
                                                     {item.min_stock}

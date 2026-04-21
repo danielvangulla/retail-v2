@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Menu, X, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, AlertTriangle } from 'lucide-react';
+import { Menu, X, Home, Package, Tag, Users, BarChart3, Settings, Loader, ChevronDown, MonitorCheck, AlertTriangle, LogOut } from 'lucide-react';
 
 interface AdminLayoutProps {
     title: string;
